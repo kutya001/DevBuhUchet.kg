@@ -453,7 +453,7 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .mh{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 10px 22px}
 .mh h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.015em;text-wrap:balance;line-height:1.25}
 .mh .sub{color:var(--muted);font-size:13px;margin-top:3px}
-.mb{padding:6px 22px 18px;overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:14px}
+.mb{padding:6px 22px 18px;overflow:auto;overflow-x:hidden;min-height:0;flex:1;display:flex;flex-direction:column;gap:14px}
 .mf{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 18px 14px 22px;border-top:1px solid var(--border);flex-wrap:wrap}
 .mf .grow{flex:1}
 .grabber{display:none}
@@ -737,7 +737,7 @@ const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">
 /* ═════════════ Utils ═════════════ */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const store={get(k,d){try{const v=localStorage.getItem('bu.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('bu.'+k,JSON.stringify(v))}catch(e){}}};
+const MEMSTORE={};const store={get(k,d){if(k in MEMSTORE)return MEMSTORE[k];try{const v=localStorage.getItem('bu.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){MEMSTORE[k]=v;try{localStorage.setItem('bu.'+k,JSON.stringify(v))}catch(e){}}};
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const R=mulberry(20261011);
 const pick=a=>a[Math.floor(R()*a.length)];
@@ -1140,6 +1140,7 @@ function openModal(o){
   document.body.appendChild(cover);
   const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1)}};
   MODALS.push(m);
+  formPager(m);
   const mark=e=>{if(e.target.closest&&e.target.closest('.form,.fld'))m.dirty=true};m.el.addEventListener('input',mark);m.el.addEventListener('change',mark);
   swipeDown(m.el,()=>m.el.querySelector('.mb'),{cover,can:()=>{if(m.dirty&&o.form){confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close});return false}return true},close:m.close});
   cover.addEventListener('pointerdown',e=>{if(e.target===cover&&!o.sticky)m.close()});
@@ -1417,7 +1418,7 @@ function grid(host,cfg){
 }
 
 /* ═════════════ Session, rights, features ═════════════ */
-const DATA_MODE=store.get('data','demo');
+let DATA_MODE=store.get('data','demo');
 const S={me:'e1',search:'',navHidden:store.get('nav',false),open:new Set(store.get('tree',[])),taskView:'day',cal:null,calSel:null,preset:null,loggedIn:true};
 const me=()=>S.me==='admin'?PLATFORM_ADMIN:EM[S.me];
 const isAdmin=()=>S.me==='admin';
@@ -1495,7 +1496,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-function demoBox(){return `<div class="demo"><label><b>Прототип.</b> Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'class="inp demo-data" aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
+function demoBox(){return `<div class="demo"><label><b>Прототип.</b> Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id));const cn=isAdmin()?{}:counts();
   $('#bnav').innerHTML=l.map(m=>`<a class="bn ${S.mod===m.id?'on':''}" href="#${m.id}" data-go="${m.id}" ${S.mod===m.id?'aria-current="page"':''}>${ic(m.icon)}<span>${esc(m.short)}</span>${m.id==='reports'&&cn.overdue?`<span class="badge red">${cn.overdue}</span>`:''}</a>`).join('');
@@ -1557,7 +1558,7 @@ document.addEventListener('click',e=>{
   if(b=t.closest('[data-shmod]')){closeSheet();go(b.dataset.shmod);return}
   if(b=t.closest('.bn')){/* hash link */}
 });
-document.addEventListener('change',e=>{if(e.target.id==='demo-user'||e.target.id==='demo-user-m'){switchUser(e.target.value)}if(e.target.classList.contains('demo-data')){const v=e.target.value;store.set('data',v);if(v==='empty'){store.set('tour.e1',null);store.set('chk.hidden',false)}location.hash='#home';location.reload()}});
+document.addEventListener('change',e=>{if(e.target.id==='demo-user'||e.target.id==='demo-user-m'){switchUser(e.target.value)}if(e.target.hasAttribute('data-demo-data'))setDataMode(e.target.value)});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(POP){closePop();return}if(MODALS.length){MODALS[MODALS.length-1].close();return}if($('#sheet').classList.contains('open')){closeSheet();return}}
   if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)&&!MODALS.length){e.preventDefault();$('#topbar').classList.add('searching');$('#q').focus()}
@@ -1574,6 +1575,8 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefer
 // otherwise springs back; the finishing animation keeps the finger's speed.
 const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FLICK=.5,SLOP=10,EASE='cubic-bezier(.2,.6,.35,1)';
+function hScrollEl(el,stop){for(let n=el;n&&n!==stop&&n.nodeType===1;n=n.parentElement){if(n.matches('.tabs,.bnav,.scf,input[type=range]'))return true;const ox=getComputedStyle(n).overflowX;if((ox==='auto'||ox==='scroll')&&n.scrollWidth>n.clientWidth+2)return n}return null}
+const canScrollX=(n,dx)=>dx<0?n.scrollLeft<n.scrollWidth-n.clientWidth-1:n.scrollLeft>1;
 function hScroll(el,stop){for(let n=el;n&&n!==stop&&n.nodeType===1;n=n.parentElement){if(n.matches('.tabs,.bnav,.scf,.gscroll,input[type=range]'))return true;const ox=getComputedStyle(n).overflowX;if((ox==='auto'||ox==='scroll')&&n.scrollWidth>n.clientWidth+2)return true}return false}
 function tracker(){const pts=[];return{add(x,y,ts){const t=ts||performance.now();pts.push({x,y,t});while(pts.length>2&&t-pts[0].t>90)pts.shift()},v(){if(pts.length<2)return{x:0,y:0};const a=pts[0],b=pts[pts.length-1];const dt=Math.max(8,b.t-a.t);return{x:(b.x-a.x)/dt,y:(b.y-a.y)/dt}},reset(){pts.length=0}}}
 // The ease-out curve starts ~3× faster than its average, so dist/v*3 continues at the release speed.
@@ -1595,6 +1598,22 @@ function swipeDown(el,scroller,{can,close,cover}){let st=null;const tr=tracker()
       el.style.transition=`transform ${ms}ms ${EASE}`;el.style.transform=`translateY(${dy+rest}px)`;if(cover){cover.style.transition=`background-color ${ms}ms`;cover.style.backgroundColor=rgbaA(bg,0)}afterAnim(el,ms,()=>{close();if(cover){cover.style.transition='';cover.style.backgroundColor=''}});return}
     el.style.transition=`transform 230ms ${EASE}`;el.style.transform='';if(cover){cover.style.transition='background-color 230ms';cover.style.backgroundColor=''}};
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',()=>{if(st)st.dy=0;end()})}
+// Swipe left/right inside a form with tabs (contractor, employee card…): same thresholds and paging as module tabs.
+function formPager(m){const el=m.el;let st=null;const tr=tracker();
+  const parts=()=>{const mb=el.querySelector('.mb');const tb=mb&&mb.querySelector(':scope>.tabs');return tb?{mb,tb,kids:[...mb.children].filter(k=>k!==tb)}:null};
+  const slide=(kids,x,ms)=>kids.forEach(k=>{k.style.transition=ms?`transform ${ms}ms ${EASE}`:'none';k.style.transform=x?`translateX(${x}px)`:''});
+  el.addEventListener('touchstart',e=>{st=null;if(e.touches.length>1||e.target.closest('input,textarea,select,.grabber,.mh'))return;const q=parts();if(!q)return;
+    const hs=hScrollEl(e.target,el);if(hs===true)return;const btns=[...q.tb.querySelectorAll('.tab')];const i=btns.findIndex(b=>b.classList.contains('on'));if(i<0||btns.length<2)return;
+    const p=e.touches[0];st={x0:p.clientX,y0:p.clientY,mode:null,dx:0,hs,btns,i,q};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
+    if(!st.mode){if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;st.mode=Math.abs(dx)>Math.abs(dy)?'x':'y';if(st.mode==='y'||st.hs&&canScrollX(st.hs,dx)){st=null;return}st.x0=p.clientX;st.dir=dx<0?1:-1}
+    e.preventDefault();let d=p.clientX-st.x0;const j=st.i+st.dir;if(j<0||j>=st.btns.length||Math.sign(d)===st.dir)d*=.25;st.dx=d;if(!RM())slide(st.q.kids,d)},{passive:false});
+  const end=cancel=>{if(!st||st.mode!=='x'){st=null;return}const s0=st;st=null;const W=el.clientWidth,v=tr.v().x,dx=s0.dx,j=s0.i+s0.dir;
+    const fire=!cancel&&j>=0&&j<s0.btns.length&&(((-dx*s0.dir)>W/3&&v*s0.dir<.1)||(-v*s0.dir>FLICK&&-dx*s0.dir>SLOP));
+    if(!fire){slide(s0.q.kids,0,RM()?0:230);return}
+    const go=()=>{s0.btns[j].click();if(RM())return;const q=parts();if(!q)return;slide(q.kids,s0.dir*W,0);void el.offsetWidth;slide(q.kids,0,ms)};
+    const ms=RM()?0:finishMs(W-Math.abs(dx),v);if(!ms){go();return}slide(s0.q.kids,-s0.dir*W,ms);afterAnim(s0.q.kids[0]||el,ms,go)};
+  el.addEventListener('touchend',()=>end(false));el.addEventListener('touchcancel',()=>end(true))}
 // Swipe left/right on the work area pages between module tabs: the current tab slides with the finger and the neighbour slides in.
 const TAB_SCROLL={};
 (function pager(){const pane=$('#pane');let st=null;const tr=tracker();
@@ -1615,10 +1634,10 @@ const TAB_SCROLL={};
     const j=st.i+dir;if(j>=0&&j<st.tabs.length){st.dir=dir;st.to=st.tabs[j].id;st.nb=renderNeighbour(st.to);st.tb=tabs&&$(`.tab[href$=".${st.to}"]`,tabs)}}
   function cleanup(){pane.classList.remove('paging');(st.cur||[]).forEach(k=>{k.style.transition='';k.style.transform='';k.style.willChange=''});const tabs=$('#tabs');if(tabs)tabs.classList.remove('swiping');if(st.ghost)st.ghost.remove()}
   pane.addEventListener('touchstart',e=>{st=null;if(MODALS.length||POP||TOUR.on||$('#sheet').classList.contains('open')||e.touches.length>1)return;const p=e.touches[0];
-    if(p.clientX<20||hScroll(e.target,pane))return;const tabs=modTabs(curMod());const i=tabs.findIndex(x=>x.id===S.tab);if(i<0||tabs.length<2)return;
-    st={x0:p.clientX,y0:p.clientY,mode:null,tabs,i,dx:0,dir:0};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
+    const hs=hScrollEl(e.target,pane);if(p.clientX<20||hs===true)return;const tabs=modTabs(curMod());const i=tabs.findIndex(x=>x.id===S.tab);if(i<0||tabs.length<2)return;
+    st={x0:p.clientX,y0:p.clientY,mode:null,tabs,i,dx:0,dir:0,hs};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
   pane.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
-    if(!st.mode){if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;st.mode=Math.abs(dx)>Math.abs(dy)?'x':'y';if(st.mode==='y'){st=null;return}st.x0=p.clientX;begin(dx<0?1:-1)}
+    if(!st.mode){if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;st.mode=Math.abs(dx)>Math.abs(dy)?'x':'y';if(st.mode==='y'||st.hs&&canScrollX(st.hs,dx)){st=null;return}st.x0=p.clientX;begin(dx<0?1:-1)}
     e.preventDefault();let d=p.clientX-st.x0;if(!st.nb||Math.sign(d)===st.dir)d*=.25;st.dx=d;if(!RM())paint(d,false)},{passive:false});
   function end(cancel){if(!st||st.mode!=='x'){st=null;return}const W=pane.clientWidth,v=tr.v().x,dx=st.dx;
     const fire=!cancel&&st.nb&&(((-dx*st.dir)>W/3&&v*st.dir<.1)||(-v*st.dir>FLICK&&-dx*st.dir>SLOP));
@@ -3456,7 +3475,19 @@ function emptyOrg(){
   EMP.splice(1);Object.keys(EM).forEach(k=>{if(k!=='e1')delete EM[k]});Object.assign(EMP[0],{tg:null,wallets:[],lastIn:'сейчас'});
   Object.values(ORG.types).forEach(t=>t.on=false);Object.assign(ORG,{address:'',head:'',accounts:[],created:TODAY});
 }
-seed();seedAudit();if(DATA_MODE==='empty')emptyOrg();derive();initTop();
+const DATA_KEYS={CPS,REPORTS,OPS,HIST,TASKS,FEEPAYS,SERVICES,PROJECTS,FILES,EMP};let SNAP=null;
+// Switches demo/empty data in place (no reload): restore the seeded snapshot, then empty it if asked.
+function setDataMode(v){DATA_MODE=v;store.set('data',v);
+  Object.entries(DATA_KEYS).forEach(([k,a])=>{a.length=0;a.push(...structuredClone(SNAP[k]))});
+  Object.keys(CPM).forEach(k=>delete CPM[k]);CPS.forEach(c=>CPM[c.id]=c);Object.keys(EM).forEach(k=>delete EM[k]);EMP.forEach(e=>EM[e.id]=e);
+  Object.keys(ORG).forEach(k=>delete ORG[k]);Object.assign(ORG,structuredClone(SNAP.ORG));
+  if(v==='empty'){emptyOrg();store.set('tour.e1',null);store.set('chk.hidden',false)}
+  MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
+  Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
+  if(location.hash==='#home.today')route();else location.hash='#home.today';
+  toast(v==='empty'?'Пустая организация: как сразу после регистрации':'Включены демо-данные','refresh');
+  if(v==='empty')setTimeout(()=>tourStart('full',0),600)}
+seed();seedAudit();SNAP=structuredClone({...DATA_KEYS,ORG});if(DATA_MODE==='empty')emptyOrg();derive();initTop();
 if(!location.hash||location.hash==='#')history.replaceState(null,'','#home');
 route();
 if(DATA_MODE==='empty'&&!(store.get('tour.e1',null)||{}).done)setTimeout(()=>tourStart('full',(store.get('tour.e1',null)||{}).i||0),700);
