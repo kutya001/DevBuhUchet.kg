@@ -457,6 +457,12 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .mf{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 18px 14px 22px;border-top:1px solid var(--border);flex-wrap:wrap}
 .mf .grow{flex:1}
 .grabber{display:none}
+.tab-ghost{position:fixed;z-index:20;pointer-events:none;border-radius:999px;border:2px solid var(--b-blue);transition:left .25s cubic-bezier(.2,.8,.2,1),top .25s,width .25s,height .25s,opacity .2s}
+.page.sw-n{animation:swN .22s ease-out}.page.sw-p{animation:swP .22s ease-out}
+@keyframes swN{from{opacity:.4;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes swP{from{opacity:.4;transform:translateX(-24px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.page.sw-n,.page.sw-p{animation:none}}
+.modal,.pop{touch-action:pan-y}
 @media (max-width:767px){
   .cover{place-items:end stretch;padding:0}
   .modal,.modal.wide,.modal.mid{width:100%;max-height:92dvh;height:auto;border-radius:var(--r-xl) var(--r-xl) 0 0;padding-bottom:env(safe-area-inset-bottom,0px);border-bottom:0}
@@ -1091,7 +1097,7 @@ function openPop(anchor,html,{pt,cls='',mount}={}){
   const W=innerWidth,H=innerHeight,w=el.offsetWidth,h=el.offsetHeight;let x,y;
   if(pt){x=pt.x;y=pt.y}else{const r=anchor.getBoundingClientRect();x=r.left;y=r.bottom+6;if(x+w>W-8)x=r.right-w;if(y+h>H-8)y=Math.max(8,r.top-h-6)}
   x=Math.max(8,Math.min(x,W-w-8));y=Math.max(8,Math.min(y,H-h-8));el.style.left=x+'px';el.style.top=y+'px';
-  POP=el;POP_ANCHOR=anchor;mount&&mount(el);
+  POP=el;POP_ANCHOR=anchor;mount&&mount(el);swipeDown(el,()=>el,()=>{closePop();return true});
   const f=el.querySelector('input:not([type=checkbox]),select');if(f&&!isMobile())f.focus();
   return el;
 }
@@ -1108,6 +1114,8 @@ function openModal(o){
   document.body.appendChild(cover);
   const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1)}};
   MODALS.push(m);
+  const mark=e=>{if(e.target.closest&&e.target.closest('.form,.fld'))m.dirty=true};m.el.addEventListener('input',mark);m.el.addEventListener('change',mark);
+  swipeDown(m.el,()=>m.el.querySelector('.mb'),()=>m.dirty&&o.form?(confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close}),false):(m.close(),true));
   cover.addEventListener('pointerdown',e=>{if(e.target===cover&&!o.sticky)m.close()});
   m.draw=()=>{
     const keep=m.el.querySelector('.mb')?m.el.querySelector('.mb').scrollTop:0;
@@ -1534,6 +1542,35 @@ document.addEventListener('focusin',e=>{if(isMobile()&&e.target.matches('input:n
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches||!a.matches('input:not([type=checkbox]),textarea'))$('#app').classList.remove('kb')},50));
 let wasMobile=isMobile();addEventListener('resize',()=>{const m=isMobile();if(m!==wasMobile){wasMobile=m;renderShell()}else fitTabs()});
 matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paintTheme);
+
+/* ═════════════ Swipes (touch only) ═════════════ */
+// Swipe down closes a form/popover: from the grabber/header, or when content is scrolled to the top.
+function hScroll(el,stop){for(let n=el;n&&n!==stop&&n.nodeType===1;n=n.parentElement){if(n.matches('.tabs,.bnav,.scf,.gscroll,input[type=range]'))return true;const ox=getComputedStyle(n).overflowX;if((ox==='auto'||ox==='scroll')&&n.scrollWidth>n.clientWidth+2)return true}return false}
+function swipeDown(el,scroller,close){let x0,y0,dy=0,mode=null;
+  el.addEventListener('touchstart',e=>{mode=null;dy=0;const t=e.target;const head=t.closest('.grabber,.mh');const sc=scroller();
+    if(!head&&(sc&&sc.scrollTop>0||t.closest('input,textarea,select')||hScroll(t,el))){x0=null;return}
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  el.addEventListener('touchmove',e=>{if(x0==null)return;const dx=e.touches[0].clientX-x0;dy=e.touches[0].clientY-y0;
+    if(!mode){if(Math.abs(dy)<8&&Math.abs(dx)<8)return;mode=dy>0&&Math.abs(dy)>Math.abs(dx)?'v':'x'}
+    if(mode!=='v')return;e.preventDefault();el.style.transition='none';el.style.animation='none';el.style.transform=`translateY(${Math.max(0,dy)}px)`},{passive:false});
+  el.addEventListener('touchend',()=>{if(mode!=='v'){x0=null;return}x0=null;mode=null;
+    const thr=Math.min(innerHeight/3,el.offsetHeight*.45);el.style.transition='transform .22s cubic-bezier(.2,.8,.2,1)';
+    if(dy>thr&&close()){el.style.transform=`translateY(${innerHeight}px)`}else el.style.transform=''});}
+// Swipe left/right on the work area switches module tabs in order (no wrap-around).
+let TAB_FROM=null;
+(function tabSwipe(){const pane=$('#pane');let x0=null,y0;
+  pane.addEventListener('touchstart',e=>{x0=null;if(MODALS.length||POP||$('#sheet').classList.contains('open')||e.touches.length>1)return;if(hScroll(e.target,pane))return;x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  pane.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0];const dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5)return;
+    const tabs=modTabs(curMod());const i=tabs.findIndex(x=>x.id===S.tab);const j=i+(dx<0?1:-1);if(i<0||j<0||j>=tabs.length)return;
+    const on=$('#tabs .tab.on');TAB_FROM=on?{r:on.getBoundingClientRect(),dir:dx<0?1:-1}:null;go(S.mod,tabs[j].id)},{passive:true});
+  addEventListener('hashchange',()=>{const f=TAB_FROM;TAB_FROM=null;if(!f)return;const on=$('#tabs .tab.on');const pg=$('#page');
+    pg.classList.remove('sw-n','sw-p');void pg.offsetWidth;pg.classList.add(f.dir>0?'sw-n':'sw-p');
+    if(!on||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    requestAnimationFrame(()=>{const r=on.getBoundingClientRect();const g=document.createElement('div');g.className='tab-ghost';
+      Object.assign(g.style,{left:f.r.left+'px',top:f.r.top+'px',width:f.r.width+'px',height:f.r.height+'px'});document.body.appendChild(g);
+      requestAnimationFrame(()=>{Object.assign(g.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'})});
+      setTimeout(()=>{g.style.opacity='0';setTimeout(()=>g.remove(),200)},260)})})})();
 
 function switchUser(id){S.me=id;MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');toast(`Вы вошли как: ${me().fio}`,'user')}
 
