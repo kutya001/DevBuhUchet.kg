@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Прототип Buhuchet.kg v15</title>
+<title>Прототип Buhuchet.kg v16</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -522,6 +522,28 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .chk-i span span{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
 .chk-i>.ic:first-child{color:var(--faint);margin-top:1px}
 .chk-i.ok{background:var(--pane-alt)}.chk-i.ok>.ic:first-child{color:var(--b-green,#3a8a5c)}.chk-i.ok b{color:var(--muted);text-decoration:line-through}
+.ck-g{padding:0;gap:0;overflow:hidden}
+.ck-gh{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;width:100%;font-size:14px}
+.ck-gh:hover{background:var(--row-hover)}.ck-gh:focus-visible{outline:2px solid var(--b-blue);outline-offset:-2px}
+.ck-chev{display:inline-flex;transition:transform .2s}.ck-chev.op{transform:rotate(90deg)}
+.ck-list{display:flex;flex-direction:column;border-top:1px solid var(--border)}
+.ck-i{display:flex;align-items:flex-start;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.ck-i:last-child{border-bottom:0}
+.ck-i.next{background:var(--sel)}
+.ck-i.ok .ck-t b{color:var(--muted)}.ck-i.ok .ck-st{color:var(--green)}
+.ck-i.skip{opacity:.55}.ck-i.skip .ck-t b{text-decoration:line-through}
+.ck-st{color:var(--faint);padding-top:2px}
+.ck-i>.grow{flex:1}
+.ck-t{font-size:13.5px;line-height:1.4}.ck-t .tag{margin-right:2px}
+.ck-star{color:var(--yellow);font-weight:700}
+.ck-act{display:flex;gap:6px;align-items:center;flex:none}
+@media (max-width:767px){.chk .row>.btn{white-space:normal;text-align:left;flex:1 1 100%;justify-content:center}.ck-i{flex-wrap:wrap}.ck-act{width:100%;padding-left:28px}.ck-act .btn{flex:1;justify-content:center}}
+#ckbar{position:fixed;right:22px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--raised);border:1px solid var(--border-strong);border-radius:999px;box-shadow:var(--shadow-l);font-size:13px;max-width:min(680px,calc(100vw - 24px));animation:slideUp .3s forwards}
+#ckbar .grow{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ckbar .ck-ok{color:var(--green);font-weight:600}
+@media (max-width:767px){#ckbar{bottom:calc(84px + env(safe-area-inset-bottom,0px));left:12px;right:12px;max-width:none;border-radius:var(--r-l)}}
+.ck-flash{animation:ckflash 1.3s ease-in-out 2;border-radius:var(--r-m)}
+@keyframes ckflash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 4px var(--b-blue)}}
 .chk-done .ic{color:var(--b-green,#3a8a5c)}
 #tour{position:fixed;inset:0;z-index:95}
 #tour[hidden]{display:none}
@@ -1426,18 +1448,18 @@ function grid(host,cfg){
       if(b=t.closest('[data-sort]')){const k=b.dataset.sort;const cur=s.sort&&s.sort.key===k?s.sort.dir:0;s.sort=cur===0?{key:k,dir:1}:cur===1?{key:k,dir:-1}:null;gsave(cfg.id);refresh();return}
       if(b=t.closest('[data-g]')){const p=b.dataset.g;if(s.closed.has(p))s.closed.delete(p);else s.closed.add(p);refresh();return}
       if(b=t.closest('[data-filt]')){filterPop(b,ac.find(c=>c.key===b.dataset.filt));return}
-      if(b=t.closest('[data-menu]')){rowMenu(b,byId[b.dataset.menu]);return}
+      if(b=t.closest('[data-menu]')){rowMenu(b,byId[b.dataset.menu]);ckHit('rowmenu.'+cfg.id);return}
       if(b=t.closest('[data-view]')){s.view=b.dataset.view;gsave(cfg.id);refresh();return}
       if(b=t.closest('[data-clr]')){delete s.filters[b.dataset.clr];s.page=0;refresh();return}
-      if(b=t.closest('[data-bulk]')){const list=[...s.sel].map(id=>byId[id]).filter(Boolean);cfg.bulk[+b.dataset.bulk].run(list,()=>{s.sel.clear()});return}
+      if(b=t.closest('[data-bulk]')){ckHit('bulk');const list=[...s.sel].map(id=>byId[id]).filter(Boolean);cfg.bulk[+b.dataset.bulk].run(list,()=>{s.sel.clear()});return}
       if(b=t.closest('[data-a]')){const a=b.dataset.a;
-        if(a==='cols')colsPop(b);
-        if(a==='grp')groupPop(b);
+        if(a==='cols'){colsPop(b);ckHit('cols')}
+        if(a==='grp'){groupPop(b);ckHit('grp')}
         if(a==='ungrp'){s.group=[];gsave(cfg.id);refresh()}
         if(a==='gall'){s.closed=new Set();refresh()}
         if(a==='gnone'){const all=[];const w=arr=>arr.forEach(x=>{all.push(x.path);if(x.sub)w(x.sub)});w(g.tree||[]);s.closed=new Set(all);refresh()}
         if(a==='opts')menu(b,[{label:'Обычно',icon:'list',on:s.density==='normal',run:()=>{s.density='normal';gsave(cfg.id);refresh()}},{label:'Компактно',icon:'menu',on:s.density==='compact',run:()=>{s.density='compact';gsave(cfg.id);refresh()}},{sep:true},{label:'На весь экран',icon:'columns',on:s.width==='full',run:()=>{s.width='full';gsave(cfg.id);refresh()}},{label:'По центру',icon:'table',on:s.width==='center',run:()=>{s.width='center';gsave(cfg.id);refresh()}},{sep:true},{label:'Сбросить вид',icon:'refresh',sub:'Столбцы, порядок, ширины, сортировка, группировка, плотность',run:()=>{delete GS[cfg.id];store.set('g5.'+cfg.id,{});const ns=gst(cfg);Object.assign(s,ns,{filters:s.filters});GS[cfg.id]=s;refresh();toast('Вид списка сброшен')}}]);
-        if(a==='xls'){const lines=[vc.map(c=>c.label).join('\t'),...g.rows.map(r=>vc.map(c=>{const v=c.val(r);if(['money','num','int'].includes(c.type))return v==null?'':String(v).replace('.',',');return colTxt(c,r).replace(/[\t\n]/g,' ')}).join('\t'))];copyText(lines.join('\n'),`Скопировано ${g.rows.length} ${plural(g.rows.length,'строка','строки','строк')} — вставьте в Excel`)}
+        if(a==='xls'){ckHit('xls');const lines=[vc.map(c=>c.label).join('\t'),...g.rows.map(r=>vc.map(c=>{const v=c.val(r);if(['money','num','int'].includes(c.type))return v==null?'':String(v).replace('.',',');return colTxt(c,r).replace(/[\t\n]/g,' ')}).join('\t'))];copyText(lines.join('\n'),`Скопировано ${g.rows.length} ${plural(g.rows.length,'строка','строки','строк')} — вставьте в Excel`)}
         if(a==='clrall'){s.filters={};s.page=0;if(S.search){clearSearch();ACTIVE.forEach(x=>x.refresh())}else refresh()}
         if(a==='clrq'){clearSearch();ACTIVE.forEach(x=>x.refresh())}
         if(a==='prev'){s.page--;refresh()}if(a==='next'){s.page++;refresh()}
@@ -1488,7 +1510,7 @@ const visCps=(all)=>CPS.filter(c=>(all||!c.archived)&&(can('viewAll')||c.resp===
 const visReports=()=>REPORTS.filter(r=>!r.superseded&&(can('viewAll')||r.resp===S.me));
 function born(o,who){o._cb=o._ub=who||S.me;o._ca=o._ua=nowStamp();return o}
 function touch(o){if(o){o._ub=S.me;o._ua=nowStamp()}return o}
-function log(ent,id,what,cp){HIST.push({at:nowStamp(),who:S.me,ent,id,cp,what});
+function log(ent,id,what,cp){HIST.push({at:nowStamp(),who:S.me,ent,id,cp,what});ckSoon();
   touch(ent==='r'?REPORTS.find(r=>r.id===id):ent==='cp'?CPM[id]:ent==='t'?TASKS.find(t=>t.id===id):ent==='emp'?EM[id]:ent==='org'?ORG.types&&ORG.types[id]:ent==='role'?ROLES.find(r=>r.id===id):ent==='p'?PROJECTS.find(p=>p.id===id):ent==='s'?SERVICES.find(s=>s.id===id):null)}
 const whoName=id=>!id?'':id==='admin'?'Администратор платформы':id==='system'?'Система':empName(id)||id;
 function auditKv(o){return `<div><span class="k">Создал</span><span class="v">${esc(whoName(o._cb)||'—')}<div class="aud">${fmtDT(o._ca)}</div></span></div><div><span class="k">Изменил</span><span class="v">${esc(whoName(o._ub||o._cb)||'—')}<div class="aud">${fmtDT(o._ua||o._ca)}</div></span></div>`}
@@ -1506,6 +1528,7 @@ const BIZ=[
  {id:'files',title:'Файловый менеджер',short:'Файлы',icon:'folder',desc:'Все файлы организации в одном месте: прикреплённые к отчётам, контрагентам, задачам, оплатам, финансовым операциям и проектам, а также загруженные вручную. У каждого файла виден источник.',feature:'files',add:filesAdd,render:renderFiles},
  {id:'staff',title:'Сотрудники',short:'Сотрудники',icon:'users',desc:'Сотрудники организации, их роли и права, закреплённые контрагенты и виртуальные счета.',perm:'staff',tabs:staffTabs,add:staffAdd,render:renderStaff},
  {id:'dicts',title:'Справочники',short:'Справочники',icon:'book',desc:'Виды отчётов из единого каталога платформы, которые подключила организация, и справочники платформы для просмотра.',tabs:()=>[{id:'types',label:'Виды отчётов',icon:'file'},{id:'platform',label:'Справочники платформы',icon:'lock'}],add:()=>[{label:'Попросить добавить',icon:'send',run:requestDlg}],render:renderDicts},
+ {id:'start',hidden:true,title:'Начало работы',short:'Начало',icon:'list',desc:'Чек-лист по всем модулям: что настроить и что попробовать. Пункты отмечаются сами, когда действие сохранено.',render:renderStart},
  {id:'org',title:'Моя организация',short:'Организация',icon:'landmark',desc:'Основные сведения и реквизиты организации, учётная политика и настройки. Редактирует владелец.',tabs:()=>[{id:'main',label:'Основное',icon:'landmark'},{id:'policy',label:'Учётная политика',icon:'sliders'},{id:'settings',label:'Настройки',icon:'gauge'}],render:renderOrg},
 ];
 const ADM=[
@@ -1513,6 +1536,7 @@ const ADM=[
  {id:'orgs',title:'Организации',short:'Организации',icon:'building',desc:'Организации-клиенты платформы: создание вместе с владельцем, блокировка.',add:()=>[{label:'Организация',icon:'building',run:addOrgDlg}],render:renderOrgs},
  {id:'pdicts',title:'Справочники платформы',short:'Справочники',icon:'book',desc:'Общие списки для всех организаций. Использованное значение нельзя удалить, только отключить. Каждое изменение пишется в историю.',tabs:pdTabs,add:pdAdd,render:renderPDicts},
  {id:'l10n',title:'Локализация',short:'Языки',icon:'globe',desc:'Словарь текстов интерфейса. Сейчас включён только русский язык; добавление других заложено в логику.',render:renderL10n},
+ {id:'start',hidden:true,title:'Начало работы',short:'Начало',icon:'list',desc:'Чек-лист администратора платформы.',render:renderStart},
  {id:'tg',title:'Телеграм',short:'Телеграм',icon:'tg',desc:'Бот платформы: журнал отправленных сообщений и ошибок, повтор отправки, рассылка объявлений.',tabs:()=>[{id:'log',label:'Журнал',icon:'list'},{id:'bot',label:'Настройка бота',icon:'sliders'},{id:'cast',label:'Рассылка',icon:'send'}],add:()=>[{label:'Объявление',icon:'send',run:()=>go('tg','cast')}],render:renderTg},
 ];
 const mods=()=>isAdmin()?ADM:BIZ.filter(m=>(!m.feature||feat(m.feature))&&(!m.perm||can(m.perm)));
@@ -1545,7 +1569,7 @@ function renderSide(){
   const l=mods();const u=me();
   let h=`<div class="brand"><div class="logo" aria-hidden="true"><i></i><i></i><i></i></div><div><div class="brand-name">Buhuchet.kg</div><div class="mode">${isAdmin()?'Admin':'Business'}</div></div></div><nav class="tree">`;
   const cn=isAdmin()?{}:counts();
-  l.forEach(m=>{const tabs=modTabs(m);const open=S.open.has(m.id);const on=S.mod===m.id;
+  l.filter(m=>!m.hidden).forEach(m=>{const tabs=modTabs(m);const open=S.open.has(m.id);const on=S.mod===m.id;
     const badge=m.id==='reports'&&cn.overdue?`<span class="badge red" title="Просрочено">${cn.overdue}</span>`:'';
     h+=`<div class="ti ${on?'on':''}"><a href="#${m.id}" data-go="${m.id}" ${on?'aria-current="page"':''}>${ic(m.icon)}<span>${esc(m.title)}</span>${badge}</a>${tabs.length?`<button class="tog ${open?'open':''}" data-tog="${m.id}" aria-label="${open?'Свернуть':'Раскрыть'} вкладки" aria-expanded="${open}">${ic('right','sm')}</button>`:''}</div>`;
     if(tabs.length&&open)h+=`<div class="subtree">${tabs.map(t=>`<a class="sti ${on&&S.tab===t.id?'on':''}" href="#${m.id}.${t.id}">${ic(t.icon||'right')}<span>${esc(t.label)}</span>${t.count!=null&&t.count!==''?`<span class="badge ${t.red&&t.count?'red':''}" style="margin-left:auto">${t.count}</span>`:''}</a>`).join('')}</div>`;
@@ -1556,7 +1580,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v15 · 14.10.2026';
+const PROTO_VER='v16 · 14.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id));const cn=isAdmin()?{}:counts();
@@ -1565,7 +1589,7 @@ function renderBnav(){
 }
 function renderSheet(){
   $('#sheet').innerHTML=`<div class="grabber"></div><div class="brand" style="padding:6px 4px 10px"><div class="logo" aria-hidden="true"><i></i><i></i><i></i></div><div><div class="brand-name">Buhuchet.kg</div><div class="mode">${isAdmin()?'Admin':'Business'}</div></div></div>
-  ${(()=>{const ids=BNAV[isAdmin()?'admin':'business'];const rest=mods().filter(m=>!ids.includes(m.id));return rest.length?`<div class="sheet-mods" role="navigation" aria-label="Другие модули">${rest.map(m=>`<button data-shmod="${m.id}" class="${S.mod===m.id?'on':''}">${ic(m.icon)}<span>${esc(m.title)}</span></button>`).join('')}</div>`:''})()}
+  ${(()=>{const ids=BNAV[isAdmin()?'admin':'business'];const rest=mods().filter(m=>!ids.includes(m.id)&&!m.hidden);return rest.length?`<div class="sheet-mods" role="navigation" aria-label="Другие модули">${rest.map(m=>`<button data-shmod="${m.id}" class="${S.mod===m.id?'on':''}">${ic(m.icon)}<span>${esc(m.title)}</span></button>`).join('')}</div>`:''})()}
   ${isAdmin()?'':`<button class="orgbtn" data-sh="org"><span class="av">${ic('landmark','sm')}</span><span><div class="o-n">${esc(ORG.name)}</div><div class="o-s">Профиль организации</div></span></button>`}
   <button class="orgbtn" data-sh="me"><span class="av round">${initials(me().fio)}</span><span><div class="o-n">Мой профиль</div><div class="o-s">${esc(me().fio)}</div></span></button>
   <button class="orgbtn" data-sh="out"><span class="av">${ic('logout','sm')}</span><span><div class="o-n">Выйти из аккаунта</div></span></button>${demoBox().replace('id="demo-user"','id="demo-user-m"').replace('for="demo-user"','for="demo-user-m"')}`;
@@ -1584,10 +1608,10 @@ function renderPage(fresh){
   const ab=$('#add-btn');if(ab)ab.onclick=()=>runAdd(ab);
   const fab=$('#fab');fab.hidden=!adds.length;fab.innerHTML=ic('plus');fab.onclick=()=>runAdd(fab);
   m.render($('#mbody'),S.tab,fresh);
-  {const sb=$('#stat-btn');const has=!!$('#mbody .plates');sb.hidden=!has;const k='stats.'+m.id;const off=()=>store.get(k,isMobile()?'off':'on')==='off';const ap=()=>{page.classList.toggle('nostats',off());sb.classList.toggle('on',!off());sb.setAttribute('aria-pressed',String(!off()));sb.title=off()?'Показать статистику':'Скрыть статистику'};ap();sb.onclick=()=>{store.set(k,off()?'on':'off');ap();fitTabs()}}
+  {const sb=$('#stat-btn');const has=!!$('#mbody .plates');sb.hidden=!has;const k='stats.'+m.id;const off=()=>store.get(k,isMobile()?'off':'on')==='off';const ap=()=>{page.classList.toggle('nostats',off());sb.classList.toggle('on',!off());sb.setAttribute('aria-pressed',String(!off()));sb.title=off()?'Показать статистику':'Скрыть статистику'};ap();sb.onclick=()=>{store.set(k,off()?'on':'off');ap();fitTabs();ckHit('stats')}}
   S.preset=null;
   fitTabs();
-  pane.scrollTop=keep;
+  pane.scrollTop=keep;ckVisit();
   $('#q-scope').textContent=tabs.length?(tabs.find(t=>t.id===S.tab)||{}).label||'':m.title;
   {const tl=tabs.length?(tabs.find(t=>t.id===S.tab)||{}).label||'':'';$('#tb-mod').textContent=m.title;$('#tb-tab').textContent=tl;$('#tb-tab').hidden=!tl;const tb=$('#tb-title');tb.classList.remove('full');tb.title=m.title+(tl?' · '+tl:'');tb.onclick=()=>tb.classList.toggle('full');const ti=$('#tb-info');ti.innerHTML=ic('info','sm');ti.onclick=()=>openPop(ti,`<h4>${esc(m.title)}</h4><div style="font-size:13px;line-height:1.5;max-width:300px">${esc(m.desc)}</div>`,{cls:'pad'})}
 }
@@ -1602,8 +1626,8 @@ function paintTheme(){$('#theme').innerHTML=ic(effTheme()==='dark'?'sun':'moon')
 function initTop(){
   $('#burger').innerHTML=ic('menu');$('#help').innerHTML=ic('help');$('#help').onclick=()=>helpMenu($('#help'));$('#search-ic').outerHTML=ic('search');$('#q-open').innerHTML=ic('search');paintTheme();
   $('#burger').onclick=()=>{if(isMobile()){openSheet();return}S.navHidden=!S.navHidden;store.set('nav',S.navHidden);$('#app').classList.toggle('nav-hidden',S.navHidden);fitTabs()};
-  $('#theme').onclick=()=>{const t=effTheme()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);store.set('theme',t);try{localStorage.setItem('bu.theme',t)}catch(e){}paintTheme()};
-  let deb;$('#q').addEventListener('input',e=>{clearTimeout(deb);deb=setTimeout(()=>{S.search=e.target.value;ACTIVE.forEach(g=>{g.s.page=0;g.refresh()});if(S.mod==='reports'&&S.tab==='matrix')renderPage()},120)});
+  $('#theme').onclick=()=>{ckHit('theme');const t=effTheme()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);store.set('theme',t);try{localStorage.setItem('bu.theme',t)}catch(e){}paintTheme()};
+  let deb;$('#q').addEventListener('input',e=>{clearTimeout(deb);deb=setTimeout(()=>{S.search=e.target.value;if(S.search)ckHit('search');ACTIVE.forEach(g=>{g.s.page=0;g.refresh()});if(S.mod==='reports'&&S.tab==='matrix')renderPage()},120)});
   $('#q-open').onclick=()=>{$('#topbar').classList.add('searching');$('#q').focus()};
   $('#q').addEventListener('blur',()=>{if(!S.search)$('#topbar').classList.remove('searching')});
   tick();setInterval(tick,20000);
@@ -1655,7 +1679,7 @@ function swipeDown(el,scroller,{can,close,cover}){let st=null;const tr=tracker()
     if(cover)cover.style.backgroundColor=rgbaA(st.bg,1-Math.min(1,st.dy/Math.max(200,el.offsetHeight)))},{passive:false});
   const end=()=>{if(!st||st.mode!=='v'){st=null;return}const v=tr.v().y,dy=st.dy,bg=st.bg;st=null;const thr=Math.min(el.offsetHeight/4,160);
     const fire=(dy>thr&&v>-.1)||(v>FLICK&&dy>SLOP);
-    if(fire&&can()){if(RM()){close();return}const rest=Math.max(0,el.getBoundingClientRect().top>innerHeight?0:innerHeight-el.getBoundingClientRect().top);const ms=finishMs(rest,v);
+    if(fire&&can()){ckHit('swipe');if(RM()){close();return}const rest=Math.max(0,el.getBoundingClientRect().top>innerHeight?0:innerHeight-el.getBoundingClientRect().top);const ms=finishMs(rest,v);
       el.style.transition=`transform ${ms}ms ${EASE}`;el.style.transform=`translateY(${dy+rest}px)`;if(cover){cover.style.transition=`background-color ${ms}ms`;cover.style.backgroundColor=rgbaA(bg,0)}afterAnim(el,ms,()=>{close();if(cover){cover.style.transition='';cover.style.backgroundColor=''}});return}
     el.style.transition=`transform 230ms ${EASE}`;el.style.transform='';if(cover){cover.style.transition='background-color 230ms';cover.style.backgroundColor=''}};
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',()=>{if(st)st.dy=0;end()})}
@@ -1673,7 +1697,7 @@ function formPager(m){const el=m.el;let st=null;const tr=tracker();
     const fire=!cancel&&j>=0&&j<s0.btns.length&&(((-dx*s0.dir)>W/3&&v*s0.dir<.1)||(-v*s0.dir>FLICK&&-dx*s0.dir>SLOP));
     if(!fire){slide(s0.q.kids,0,RM()?0:230);return}
     const go=()=>{s0.btns[j].click();if(RM())return;const q=parts();if(!q)return;slide(q.kids,s0.dir*W,0);void el.offsetWidth;slide(q.kids,0,ms)};
-    const ms=RM()?0:finishMs(W-Math.abs(dx),v);if(!ms){go();return}slide(s0.q.kids,-s0.dir*W,ms);afterAnim(s0.q.kids[0]||el,ms,go)};
+    ckHit('swipe');const ms=RM()?0:finishMs(W-Math.abs(dx),v);if(!ms){go();return}slide(s0.q.kids,-s0.dir*W,ms);afterAnim(s0.q.kids[0]||el,ms,go)};
   el.addEventListener('touchend',()=>end(false));el.addEventListener('touchcancel',()=>end(true))}
 // Swipe left/right on the work area pages between module tabs: the current tab slides with the finger and the neighbour slides in.
 const TAB_SCROLL={};
@@ -1702,7 +1726,7 @@ const TAB_SCROLL={};
     e.preventDefault();let d=p.clientX-st.x0;if(!st.nb||Math.sign(d)===st.dir)d*=.25;st.dx=d;if(!RM())paint(d,false)},{passive:false});
   function end(cancel){if(!st||st.mode!=='x'){st=null;return}const W=pane.clientWidth,v=tr.v().x,dx=st.dx;
     const fire=!cancel&&st.nb&&(((-dx*st.dir)>W/3&&v*st.dir<.1)||(-v*st.dir>FLICK&&-dx*st.dir>SLOP));
-    const target=fire?-st.dir*W:0;const ms=RM()?0:fire?finishMs(W-Math.abs(dx),v):230;const s0=st;
+    if(fire)ckHit('swipe');const target=fire?-st.dir*W:0;const ms=RM()?0:fire?finishMs(W-Math.abs(dx),v):230;const s0=st;
     if(ms)paint(target,true,ms);
     const finish=()=>{st=s0;if(fire){const pane=$('#pane');const old=$('#page');TAB_SCROLL[S.mod+'.'+S.tab]=pane.scrollTop;cleanup();old.remove();const nb=st.nb;
         nb.querySelectorAll('[id]').forEach(x=>{if(x.id.endsWith('__n'))x.id=x.id.slice(0,-3)});nb.id='page';const sv=+nb.dataset.sv||0;nb.classList.remove('pg-nb');nb.removeAttribute('style');delete nb.dataset.sv;
@@ -1735,28 +1759,175 @@ const tipI=t=>`<button type="button" class="icon-btn sm tipi" data-tip="${esc(t)
 document.addEventListener('click',e=>{const b=e.target.closest('.tipi');if(!b)return;e.preventDefault();e.stopPropagation();openPop(b,`<div style="padding:6px 8px;font-size:13px;line-height:1.5;max-width:300px">${esc(b.dataset.tip)}</div>`)},true);
 
 /* ═════════════ Начало работы: чек-лист ═════════════ */
-const CHECK=[
- ['profile','Заполнить профиль организации','Адрес, руководитель и банковский счёт попадают в документы и реквизиты.',()=>!!(ORG.address&&ORG.head&&ORG.accounts.length),()=>go('org','main'),'org'],
- ['types','Подключить виды отчётов','Из каталога платформы: по ним создаются отчёты и напоминания.',()=>Object.values(ORG.types).some(t=>t.on),()=>go('dicts','types'),'org'],
- ['staff','Добавить сотрудников','Каждому бухгалтеру — свой логин, роль и контрагенты.',()=>EMP.length>1,()=>go('staff','list'),'org'],
- ['tg','Привязать Telegram','Сюда приходят напоминания о сроках и коды для сброса пароля.',()=>!!me().tg,()=>profileDlg(),null],
- ['cps','Добавить контрагентов','По одному или списком из Excel.',()=>CPS.length>0,()=>go('cps','all'),'org'],
- ['assign','Назначить отчёты контрагентам','После этого отчёты и задачи создадутся сами.',()=>CPS.some(c=>c.assign.length),()=>go('cps','all'),'org'],
- ['money','Принять первые деньги','Деньги на налоги от контрагента ложатся на виртуальный счёт.',()=>OPS.some(o=>o.kind==='in'),()=>go('fin'),'org']];
-const chkItems=()=>isAdmin()?[]:CHECK.filter(c=>!c[5]||can(c[5]));
-function checklistHtml(){if(store.get('chk.hidden',false))return '';const it=chkItems();if(!it.length)return '';const done=it.filter(c=>c[3]()).length;
-  if(done===it.length)return `<div class="box chk chk-done" id="chk"><div class="row">${ic('ok')}<b class="grow">Всё готово к работе: начальная настройка пройдена</b><button class="btn sm ghost" data-chk-hide>Скрыть</button></div></div>`;
-  return `<div class="box chk" id="chk"><h3>Начало работы<span class="grow"></span><span class="chk-n">${done} из ${it.length}</span><button class="linkbtn" data-chk-hide style="text-transform:none;letter-spacing:0;font-size:12.5px">Скрыть</button></h3>
-  <div class="bar chk-bar" role="progressbar" aria-valuenow="${done}" aria-valuemax="${it.length}"><i style="width:${done/it.length*100}%"></i></div>
-  <div class="chk-list">${it.map(c=>{const ok=c[3]();return `<button class="chk-i ${ok?'ok':''}" data-chk="${c[0]}">${ic(ok?'ok':'circle')}<span class="grow"><b>${esc(c[1])}</b><span>${esc(c[2])}</span></span>${ok?'<span class="faint">сделано</span>':ic('right','sm')}</button>`}).join('')}</div></div>`}
-function chkClick(e){const h=e.target.closest('[data-chk-hide]');if(h){store.set('chk.hidden',true);renderPage();toast('Чек-лист скрыт. Вернуть его можно из «?» в верхней панели','help');return true}
-  const b=e.target.closest('[data-chk]');if(b){const c=CHECK.find(x=>x[0]===b.dataset.chk);c&&c[4]();return true}return false}
+// Item: {id,t,w,star,learn,done(),at:['mod.tab'],hit,go(),hl,mhl,perm,feat(),staff,mob,user}
+// Action items are organization-wide and are marked by fact; «Изучить» and personal items are per user.
+const CKS={org:{done:{},skip:{}},u:{}};const CK={active:null,bar:false,barOff:false,shown:{}};
+const ckU=()=>CKS.u[S.me]=CKS.u[S.me]||{done:{},skip:{}};
+const ckReset=()=>{CKS.org={done:{},skip:{}};CKS.u={};CK.active=null;CK.bar=false;CK.shown={};CK.congrats=0};
+// G(): where «Перейти» leads; mod/tab/hl are reused by «Показать как». after() opens a form right away.
+const G=(mod,tab,hl,mhl,after)=>{const f=()=>{if(mod)go(mod,tab);if(after)setTimeout(after,mod?220:0);else ckFlash(hl,mhl)};Object.assign(f,{mod,tab,hl,mhl});return f};
+const hasLog=(ent,id,re)=>HIST.some(h=>h.ent===ent&&(id==null||h.id===id)&&(!re||re.test(h.what||'')));
+const CKG=[
+ {id:'org',t:'Моя организация',items:[
+  {id:'profile',star:1,t:'Заполнить профиль организации',w:'Название, ИНН, адрес, руководитель и логотип попадают в документы и реквизиты.',perm:'org',done:()=>!!(ORG.name&&ORG.inn&&ORG.head),go:G('org','main','#og')},
+  {id:'accs',t:'Добавить реквизиты для приёма денег',w:'Счета организации видны в реквизитах для контрагентов.',perm:'org',done:()=>ORG.accounts.length>0,go:G('org','main','#og-addacc')},
+  {id:'policy',star:1,t:'Настроить учётную политику',w:'Включите нужные функции и отключите лишние: интерфейс сразу станет проще.',perm:'org',hit:'policy',done:()=>hasLog('org','policy'),go:G('org','policy','#mbody .box')},
+  {id:'remind',t:'Настроить дни напоминаний до срока',w:'За сколько дней до срока напоминать по умолчанию.',perm:'org',hit:'remind',go:G('org','policy','#rd-add')},
+  {id:'settings',t:'Проверить часовой пояс и время еженедельной сводки',w:'«Сегодня» и сводка по понедельникам считаются по этим настройкам.',perm:'org',done:()=>hasLog('org','settings'),go:G('org','settings','#st-save')},
+  {id:'storage',learn:1,t:'Посмотреть занятый объём хранилища',w:'Сколько места занимают файлы организации.',perm:'org',at:['org.settings'],go:G('org','settings','#org-storage')}]},
+ {id:'me',t:'Мой профиль',items:[
+  {id:'tg',star:1,user:1,staff:1,t:'Привязать Telegram',w:'Без него не придут напоминания и не работает сброс пароля.',done:()=>!!me().tg,go:G(null,null,'#me-open','#burger',()=>{profileDlg();ckFlash('#pf-tglink')})},
+  {id:'nmode',user:1,staff:1,t:'Выбрать режим уведомлений',w:'«Все», «Только просрочки и сводка» или «Только ручные задачи».',done:()=>hasLog('emp',S.me,/^Уведомления/),go:G(null,null,'#me-open','#burger',()=>{profileDlg();ckFlash('[name=pf-nm]')})},
+  {id:'theme',learn:1,t:'Выбрать тему оформления',w:'Светлая или тёмная — кнопка в верхней панели.',hit:'theme',go:G(null,null,'#theme')}]},
+ {id:'dicts',t:'Справочники',items:[
+  {id:'types',star:1,t:'Подключить виды отчётов из каталога платформы',w:'По подключённым видам создаются отчёты и напоминания.',perm:'dicts',done:()=>Object.values(ORG.types).some(t=>t.on),go:G('dicts','types','#dt-first, #dg')},
+  {id:'typecfg',t:'Настроить вид отчёта: дни напоминаний, файл и квитанция',w:'Для каждого вида — свои дни напоминаний и требования к файлам.',perm:'dicts',done:()=>hasLog('type')||hasLog('org',null,/^Настройки «/),go:G('dicts','types','#dg')},
+  {id:'pdicts',learn:1,t:'Посмотреть справочники платформы: режимы, формы собственности, органы, УГНС, банки',w:'Их ведёт администратор платформы, организация только использует.',at:['dicts.platform'],go:G('dicts','platform','#mbody')}]},
+ {id:'staff',t:'Сотрудники и роли',perm:'staff',items:[
+  {id:'roles',star:1,t:'Настроить роли и права',w:'В том числе «Видеть плату за обслуживание», «Откат статусов», «Настраивать показатели» и «Проверять показатели».',done:()=>hasLog('role'),go:G('staff','roles','#mbody')},
+  {id:'emps',star:1,t:'Добавить сотрудников',w:'Каждому — логин, пароль и роль.',done:()=>EMP.length>1,go:G('staff','list','#add-btn','#fab',()=>empAddDlg())},
+  {id:'empcard',learn:1,t:'Посмотреть карточку сотрудника и его виртуальный счёт',w:'Закреплённые контрагенты, деньги на налогах и списания.',hit:'empcard',go:G('staff','list','#mbody .gscroll, #mbody .gcards')},
+  {id:'empblock',learn:1,t:'Блокировка сотрудника и передача его контрагентов',w:'Меню «…» у сотрудника: заблокировать и передать контрагентов другому.',hit:'rowmenu.staff',go:G('staff','list','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'cps',t:'Контрагенты',items:[
+  {id:'cp1',star:1,t:'Добавить первого контрагента или загрузить из Excel',w:'Подойдёт любой способ: по одному или списком.',perm:'createCp',done:()=>CPS.length>0,go:G('cps','all','#add-btn','#fab',()=>addCpDlg())},
+  {id:'import',t:'Загрузка из Excel: «Выгрузить шаблон» → вставить → «Проверить» → «ОК»',w:'Удобно, когда клиентов много.',perm:'createCp',done:()=>hasLog('import'),go:G('cps','all','#add-btn','#fab',()=>importDlg())},
+  {id:'resp',star:1,t:'Закрепить за контрагентами ответственных',w:'Ответственный получает напоминания и видит отчёты контрагента.',perm:'assign',done:()=>{const a=CPS.filter(c=>!c.archived);return a.length>0&&a.every(c=>c.resp)},go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'tariff',t:'Указать стоимость обслуживания',w:'Журнал тарифов: ежемесячно или ежегодно, изменения — с 1-го числа.',perm:'fee',feat:()=>feat('fee'),done:()=>CPS.some(c=>c.tariffs&&c.tariffs.length),go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'flags',learn:1,t:'Отметки «Платит одной суммой» и «Обязательно требовать прикрепления при поступлении»',w:'Они в карточке контрагента на вкладке «Основное».',hit:'cp.main',go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'oneoff',t:'Добавить разового контрагента',w:'Для клиентов на одну работу: без отчётов и абонентской платы.',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','oneoff','#add-btn','#fab',()=>addCpDlg())},
+  {id:'pause',learn:1,t:'Приостановить и возобновить обслуживание, отменить запланированную приостановку',w:'На время паузы отчёты не создаются.',at:['cps.paused'],go:G('cps','paused','#mbody')},
+  {id:'archive',learn:1,t:'Отправить в архив и вернуть из архива',w:'Архивный контрагент не мешает в списках, история сохраняется.',at:['cps.archive'],go:G('cps','archive','#mbody')},
+  {id:'balance',learn:1,staff:1,t:'Баланс контрагента и история в карточке',w:'Свои контрагенты — вкладка «Мои контрагенты»; в карточке видны деньги и вся история.',hit:'cp.hist',go:G('cps','mine','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'reports',t:'Отчеты для сдачи',items:[
+  {id:'assign',star:1,t:'Назначить отчёты контрагентам',w:'Отчёты на каждый период после этого создаются сами.',perm:'assign',done:()=>CPS.some(c=>c.assign.length),go:G('reports','matrix','#add-btn','#fab',()=>massAssignDlg())},
+  {id:'matrix',learn:1,t:'Посмотреть сетку «Кто что сдаёт»',w:'Контрагенты по строкам, виды отчётов по столбцам.',at:['reports.matrix'],go:G('reports','matrix','#mbody')},
+  {id:'rtabs',learn:1,t:'Посмотреть вкладки «На неделе», «Просрочено», «Ожидают подтверждения» и «Календарь»',w:'С них бухгалтер начинает день.',at:['reports.week'],go:G('reports','week','#tabs')},
+  {id:'submit',star:1,staff:1,t:'Отметить первый отчёт «Сдан» с суммой к уплате',w:'Нажмите следующий шаг на шкале статуса.',perm:'changeStatus',done:()=>REPORTS.some(r=>r.status==='Сдан'||r.status==='Принят'),go:G('reports','week','#mbody .gscroll, #mbody .gcards')},
+  {id:'accept',staff:1,t:'Отметить отчёт «Принят»',w:'Только подтверждение органа значит, что отчёт засчитан.',perm:'changeStatus',done:()=>REPORTS.some(r=>r.status==='Принят'),go:G('reports','waiting','#mbody .gscroll, #mbody .gcards')},
+  {id:'bulk',learn:1,t:'Массовая отметка нескольких отчётов сданными',w:'Отметьте строки галочками — появится панель действий.',hit:'bulk',go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'ver',learn:1,t:'Создать уточнённый отчёт',w:'Меню «…» у сданного отчёта — «Уточнённый».',done:()=>REPORTS.some(r=>r.ver>0),go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'na',learn:1,t:'Отметить «Не требуется»',w:'Когда отчёт за период сдавать не нужно.',done:()=>REPORTS.some(r=>r.status==='Не требуется'),go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'scale',learn:1,t:'Шкала статусов, откат статуса и «История статусов»',w:'Откат — нажатием на предыдущий шаг, с причиной.',hit:'hist',go:G('reports','all','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'money',t:'Деньги на налоги',feat:()=>feat('taxpay'),items:[
+  {id:'in',star:1,staff:1,t:'Принять первые деньги от контрагента',w:'Кнопка «Принять деньги» — прямо в отчётах для сдачи.',perm:'money',done:()=>OPS.some(o=>o.kind==='in'),go:G('reports','week','[data-recv], #mbody .gscroll, #mbody .gcards')},
+  {id:'split',t:'Распределить одну сумму по нескольким отчётам и исправить распределение',w:'Одно поступление делится по налогам.',perm:'money',done:()=>OPS.some(o=>o.kind==='in'&&o.alloc&&o.alloc.length>1),go:G('fin','journal','#add-btn','#fab',()=>inDlg())},
+  {id:'pay',star:1,t:'Отметить налог оплаченным',w:'Только когда денег этого контрагента хватает.',perm:'money',done:()=>OPS.some(o=>o.kind==='pay'),go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'bonus',learn:1,t:'Списать остаток как бонус сотрудника',w:'Остаток после оплаты налогов можно списать в бонус.',feat:()=>feat('accounts')&&feat('finops'),at:['fin.wo'],go:G('fin','wo','#mbody')},
+  {id:'journal',learn:1,t:'Журнал поступлений и «Финансовые операции по контрагентам»',w:'Все деньги контрагентов в одном журнале.',feat:()=>feat('finops'),at:['fin.journal'],go:G('fin','journal','#mbody')},
+  {id:'svc',t:'Добавить разовую услугу',w:'Платная работа вне обслуживания.',perm:'projects',feat:()=>feat('finops'),done:()=>SERVICES.length>0,go:G('fin','proj','#add-btn','#fab',()=>serviceDlg())}]},
+ {id:'fee',t:'Плата за обслуживание',perm:'fee',feat:()=>feat('fee'),items:[
+  {id:'debtors',learn:1,t:'Посмотреть начисления и должников',w:'Кто сколько должен за обслуживание.',at:['cps.debtors'],go:G('cps','debtors','#mbody')},
+  {id:'feepay',t:'Принять оплату за обслуживание',w:'Оплата закрывает начисления по месяцам.',done:()=>FEEPAYS.length>0,go:G('cps','debtors','#mbody .gscroll, #mbody .gcards')},
+  {id:'feepause',learn:1,t:'Пауза и возобновление начислений',w:'Вкладка «Обслуживание» в карточке контрагента.',hit:'cp.fee',go:G('cps','all','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'tasks',t:'Задачи',feat:()=>feat('tasks'),items:[
+  {id:'regtasks',learn:1,staff:1,t:'Посмотреть регулярные задачи по отчётам',w:'По одной на каждый отчёт, закрываются сами.',at:['tasks.mine'],go:G('tasks','mine','#mbody')},
+  {id:'mtask',t:'Поставить первую ручную задачу',w:'Исполнитель, вид срока и нужен ли файл.',perm:'tasksCreate',done:()=>TASKS.some(t=>!t.reg),go:G('tasks','byme','#add-btn','#fab',()=>taskDlg())},
+  {id:'daymonth',learn:1,staff:1,t:'Различие «На день» и «На месяц» по цвету, фильтры и группировка',w:'Синяя метка — на день, фиолетовая — на месяц.',at:['tasks.overdue'],go:G('tasks','mine','.kd-legend')},
+  {id:'tdone',staff:1,t:'Отметить задачу выполненной или не выполненной с причиной',w:'Если нужен файл, без него задачу не закрыть.',done:()=>TASKS.some(t=>t.status==='Выполнена'||t.status==='Не выполнена'),go:G('tasks','mine','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'projects',t:'Проекты контрагентов',perm:'projects',feat:()=>feat('projects'),items:[
+  {id:'proj',t:'Создать проект',w:'Плановая стоимость и ответственные.',done:()=>PROJECTS.length>0,go:G('projects','all','#add-btn','#fab',()=>projectDlg())},
+  {id:'works',t:'Добавить работы и задачи по проекту',w:'Работы с исполнителями и сроками.',done:()=>PROJECTS.some(p=>p.works.length),go:G('projects','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'tranche',t:'Принять транш оплаты по проекту',w:'Проект можно оплачивать частями.',done:()=>PROJECTS.some(p=>p.pays.length),go:G('projects','all','#mbody .gscroll, #mbody .gcards')},
+  {id:'pstat',learn:1,t:'Статусы проекта и откат',w:'Шкала статусов, как у отчётов.',at:['projects.all'],go:G('projects','all','#mbody')}]},
+ {id:'kpi',t:'Показатели контрагентов',feat:()=>feat('indicators'),items:[
+  {id:'kset',t:'Настроить показатели',w:'Изменить примеры «Выручка» и «Количество сотрудников» или создать свои.',perm:'indSetup',done:()=>hasLog('kind'),go:G('kpi','setup','.kset')},
+  {id:'kval',staff:1,t:'Внести показатели за прошлый месяц',w:'Вкладка «Ввод за месяц»: как в Excel, можно вставить блок.',done:()=>IVALS.length>0,go:G('kpi','month','.kt, #mbody')},
+  {id:'kper',learn:1,staff:1,t:'Посмотреть итоги за период: сумма, среднее, максимум, минимум',w:'Пустой месяц не считается нулём.',at:['kpi.period'],go:G('kpi','period','#mbody')},
+  {id:'kchk',t:'Проверить месяц',w:'Статус «Проверено» ставит проверяющий.',perm:'indCheck',done:()=>KMS.some(k=>k.status==='Проверено'),go:G('kpi','period','#mbody')},
+  {id:'kcard',learn:1,t:'Вкладка «Показатели» в карточке контрагента',w:'Итоги и график по одному контрагенту.',hit:'cp.kpi',go:G('cps','all','#mbody .gscroll, #mbody .gcards')}]},
+ {id:'files',t:'Файловый менеджер',feat:()=>feat('files'),items:[
+  {id:'upload',t:'Загрузить файл вручную',w:'Файл получит источник «Загружен вручную».',done:()=>FILES.length>0,go:G('files',null,'#add-btn','#fab',()=>uploadDlg())},
+  {id:'ffind',learn:1,t:'Найти файл по контрагенту и источнику',w:'Все файлы организации в одном месте.',at:['files'],go:G('files',null,'#mbody')}]},
+ {id:'home',t:'Главная и аналитика',items:[
+  {id:'today',learn:1,t:'Сводка на сегодня',w:'Просрочки, сроки недели и ваши задачи.',at:['home.today'],go:G('home','today','#mbody .plates')},
+  {id:'anl',learn:1,t:'Аналитика выручки',w:'Выручка по контрагентам и месяцам.',perm:'fee',feat:()=>feat('fee'),at:['home.analytics'],go:G('home','analytics','#mbody')}]},
+ {id:'lists',t:'Работа со списками и интерфейсом',items:[
+  {id:'search',learn:1,staff:1,t:'Поиск в верхней панели и фильтры',w:'Ищет по открытой вкладке и всем видимым столбцам.',hit:'search',go:G(null,null,'.search','#q-open')},
+  {id:'cols',learn:1,staff:1,t:'Меню «Столбцы»: показать скрытые, поменять порядок',w:'Набор столбцов запоминается для каждого списка.',hit:'cols',go:G('cps','all','[data-a=cols]')},
+  {id:'grp',learn:1,staff:1,t:'Группировка до двух уровней и итоги',w:'Например, по ответственному и режиму.',hit:'grp',go:G('cps','all','[data-a=grp]')},
+  {id:'xls',learn:1,staff:1,t:'Экспорт в Excel',w:'Копирует отфильтрованные строки для вставки в Excel.',hit:'xls',go:G('cps','all','[data-a=xls]')},
+  {id:'stats',learn:1,staff:1,t:'Скрыть и показать статистику модуля',w:'Кнопка с графиком рядом с вкладками.',hit:'stats',go:G('reports','week','#stat-btn')},
+  {id:'swipe',learn:1,staff:1,mob:1,t:'Свайпы на телефоне: закрыть форму вниз, вкладки влево и вправо',w:'Каждое действие свайпом есть и кнопкой.',hit:'swipe',go:G('reports','week','#tabs')}]}];
+const CKA=[{id:'adm',t:'Администратор платформы',items:[
+  {id:'a-dicts',t:'Проверить справочники платформы (режимы, формы собственности, органы, УГНС, банки)',w:'Ими пользуются все организации.',at:['pdicts.regimes','pdicts.forms','pdicts.organs','pdicts.ugns','pdicts.banks'],go:G('pdicts','regimes','#mbody')},
+  {id:'a-types',star:1,t:'Сверить каталог видов отчётов, сроки и ставки с ГНС',w:'От каталога зависят сроки у всех организаций.',at:['pdicts.types'],go:G('pdicts','types','#mbody')},
+  {id:'a-xls',t:'Выгрузить и загрузить справочник через Excel с предпросмотром изменений',w:'Перед загрузкой видно, что добавится, изменится и отключится.',done:()=>PD_LOADS.some(l=>l.by===S.me&&l.at&&l.at.startsWith(TODAY)),hit:'pdload',go:G('pdicts','types','#mbody')},
+  {id:'a-cal',t:'Проверить производственный календарь',w:'По нему переносятся сроки с нерабочих дней.',at:['pdicts.calendar'],go:G('pdicts','calendar','#mbody')},
+  {id:'a-tpl',t:'Проверить шаблоны ролей и шаблоны сообщений Telegram',w:'Новые организации получают их по умолчанию.',at:['pdicts.templates'],go:G('pdicts','templates','#mbody')},
+  {id:'a-l10n',t:'Проверить тексты обучения в «Локализации»',w:'Тексты подсказок правятся без разработчика.',at:['l10n'],go:G('l10n',null,'#mbody')},
+  {id:'a-org',star:1,t:'Создать организацию и её владельца',w:'Владелец получит логин и пройдёт свой чек-лист.',done:()=>ORGS.some(o=>o._cb===S.me&&String(o._ca||'').startsWith(TODAY)),go:G('orgs',null,'#add-btn','#fab',()=>addOrgDlg())}]}];
+const ckShort=()=>!isAdmin()&&!(can('org')||me().role==='chief');
+function ckGroups(){if(isAdmin())return CKA.map(g=>({...g,items:g.items.slice()}));const sh=ckShort();
+  return CKG.filter(g=>(!g.perm||can(g.perm))&&(!g.feat||g.feat())).map(g=>({...g,items:g.items.filter(i=>(!sh||i.staff)&&(!i.perm||can(i.perm))&&(!i.feat||i.feat())&&(!i.mob||isMobile()))})).filter(g=>g.items.length)}
+const ckAll=()=>ckGroups().flatMap(g=>g.items);
+const ckScope=i=>i.learn||i.user||isAdmin()?ckU():CKS.org;
+const ckDone=i=>!!ckScope(i).done[i.id];
+const ckSkip=i=>!ckDone(i)&&!!ckScope(i).skip[i.id];
+const ckRes=i=>ckDone(i)||ckSkip(i);
+const ckFind=id=>[...CKG,...CKA].flatMap(g=>g.items).find(i=>i.id===id);
+function ckMark(i,how){const sc=ckScope(i);if(sc.done[i.id])return false;sc.done[i.id]=how||'auto';delete sc.skip[i.id];return true}
+function ckNext(after){const l=ckAll();const k=after?l.findIndex(i=>i.id===after):-1;return [...l.slice(k+1),...l.slice(0,k+1)].find(i=>!ckRes(i))||null}
+function ckStats(){const l=ckAll();const st=l.filter(i=>i.star);return {n:l.length,d:l.filter(ckRes).length,sn:st.length,sd:st.filter(ckRes).length}}
+// Called after saves, visits and first-use events.
+let ckT=null;function ckSoon(){clearTimeout(ckT);ckT=setTimeout(ckEval,250)}
+function ckEval(){const fresh=[];
+  ckAll().forEach(i=>{if(ckDone(i))return;let ok=false;try{ok=i.done?!!i.done():false}catch(e){ok=false}if(ok&&ckMark(i))fresh.push(i)});
+  const a=CK.active&&ckFind(CK.active);
+  if(a&&fresh.includes(a)&&!a.at)ckDoneDlg(a);
+  const st=ckStats();if(fresh.length&&st.sn&&st.sd===st.sn&&!CK.congrats){CK.congrats=1;setTimeout(()=>toast('Поздравляем: основная настройка пройдена, организация готова к работе','ok'),900)}
+  ckBar()}
+function ckHit(name){let hit=null;ckAll().forEach(i=>{if(i.hit===name&&ckMark(i)){if(CK.active===i.id)hit=i}});if(hit)setTimeout(()=>ckDoneDlg(hit),300);ckSoon()}
+function ckVisit(){const k=S.mod+(S.tab?'.'+S.tab:'');ckAll().forEach(i=>{if(i.at&&(i.at.includes(k)||i.at.includes(S.mod)))ckMark(i,'visit')});ckSoon()}
+function ckFlash(sel,msel){setTimeout(()=>{const s=isMobile()&&msel?msel:sel;if(!s)return;const el=[...document.querySelectorAll(s)].find(x=>x.getClientRects().length);if(!el)return;
+  el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('ck-flash');void el.offsetWidth;el.classList.add('ck-flash');setTimeout(()=>el.classList.remove('ck-flash'),2800)},380)}
+function ckGo(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;MODALS.slice().forEach(m=>m.close());i.go();ckBar()}
+function ckHow(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;const g=i.go;let mod=g.mod||null,tab=g.tab||null;
+  if(i.at&&!g.mod){[mod,tab]=i.at[0].split('.')}const hl=g.hl||'#mbody',mhl=g.mhl||hl;
+  TOUR.custom=[[mod,tab||null,hl.split(',')[0].trim(),mhl.split(',').pop().trim(),i.t,i.w+(i.learn?' Пункт отметится сам, когда вы откроете это место или воспользуетесь функцией.':' Пункт отметится сам, когда действие будет сохранено.')]];tourStart('item',0)}
+function ckDoneDlg(i){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(i.id);
+  openModal({noMax:true,size:'mid',render:()=>({title:`Готово: пункт «${esc(i.t)}» выполнен`,sub:(()=>{const s=ckStats();return `Начало работы: ${s.d} из ${s.n}`})(),
+    body:`<p style="margin:0;color:var(--muted);line-height:1.55">${nx?`Следующий шаг — «${esc(nx.t)}».`:'Все пункты чек-листа пройдены.'} Можно вернуться к чек-листу, сразу перейти к следующему шагу или остаться здесь.</p>`,
+    foot:`<button class="btn ghost" id="ckd-stay">Остаться здесь</button>${nx?`<button class="btn" id="ckd-next" title="${esc(nx.t)}">Следующий шаг: ${esc(nx.t.length>34?nx.t.slice(0,32)+'…':nx.t)}</button>`:''}<button class="btn cta" id="ckd-back">Вернуться к чек-листу</button>`,
+    mount(el,m){$('#ckd-stay',el).onclick=()=>{m.close();CK.bar=true;ckBar()};const n=$('#ckd-next',el);if(n)n.onclick=()=>{m.close();ckGo(nx.id)};
+      $('#ckd-back',el).onclick=()=>{MODALS.slice().forEach(x=>x.close());CK.active=null;CK.bar=false;ckBar();go('start')}}})})}
+function ckBar(){let b=$('#ckbar');const i=CK.active&&ckFind(CK.active);const show=i&&CK.bar&&!CK.barOff&&S.mod!=='start'&&!TOUR.on;
+  if(!b){b=document.createElement('div');b.id='ckbar';b.setAttribute('role','status');document.body.appendChild(b);
+    b.addEventListener('click',e=>{if(e.target.closest('[data-ckb=back]')){CK.bar=false;go('start')}if(e.target.closest('[data-ckb=x]')){CK.barOff=true;ckBar()}})}
+  b.hidden=!show;if(!show)return;const d=ckDone(i);
+  b.innerHTML=`${ic(d?'ok':'list','sm')}<span class="grow">Начало работы: <b>${esc(i.t)}</b>${d?' <span class="ck-ok">выполнено</span>':''}</span><button class="btn sm cta" data-ckb="back">К чек-листу</button><button class="icon-btn sm" data-ckb="x" aria-label="Закрыть плашку">${ic('x','sm')}</button>`}
+// Compact plate on Главная.
+function checklistHtml(){if(store.get('chk.hidden',false))return '';const l=ckAll();if(!l.length)return '';const s=ckStats();const nx=ckNext();
+  if(s.sd===s.sn)return `<div class="box chk chk-done" id="chk"><div class="row">${ic('ok')}<span class="grow"><b>Начало работы: ${s.d} из ${s.n}</b> <span class="muted">· основная настройка пройдена${s.d<s.n?', можно изучить остальное':''}</span></span><button class="btn sm" data-goto="start">Открыть</button><button class="btn sm ghost" data-chk-hide>Скрыть</button></div></div>`;
+  return `<div class="box chk" id="chk"><h3>Начало работы<span class="grow"></span><span class="chk-n">${s.d} из ${s.n}</span><button class="linkbtn" data-chk-hide style="text-transform:none;letter-spacing:0;font-size:12.5px">Скрыть</button></h3>
+  <div class="bar chk-bar" role="progressbar" aria-valuenow="${s.d}" aria-valuemax="${s.n}"><i style="width:${s.d/s.n*100}%"></i></div>
+  <div class="row">${nx?`<span class="grow">Следующий шаг: <b>${nx.star?'★ ':''}${esc(nx.t)}</b><span class="hint" style="display:block">${esc(nx.w)}</span></span><button class="btn cta" data-ckgo="${nx.id}">${ic('play','sm')}Продолжить</button>`:'<span class="grow"></span>'}<button class="btn" data-goto="start">${ic('list','sm')}Весь чек-лист</button></div></div>`}
+function chkClick(e){const h=e.target.closest('[data-chk-hide]');if(h){store.set('chk.hidden',true);renderPage();toast('Плашка скрыта. Чек-лист всегда открывается из «?» в верхней панели','help');return true}
+  const g=e.target.closest('[data-ckgo]');if(g){ckGo(g.dataset.ckgo);return true}
+  const o=e.target.closest('[data-goto="start"]');if(o){go('start');return true}return false}
+// Full page «Начало работы».
+function renderStart(body){const gs=ckGroups();const s=ckStats();const nx=ckNext();const closed=new Set(store.get('ck.closed.'+S.me,[]));
+  if(!gs.length){body.innerHTML=`<div class="state">${ic('list','lg')}<b>Пунктов нет</b><span>Для вашей роли чек-лист пуст.</span></div>`;return}
+  const row=i=>{const d=ckDone(i),k=ckSkip(i);return `<div class="ck-i ${d?'ok':''} ${k?'skip':''} ${nx&&nx.id===i.id?'next':''}" data-cki="${i.id}">
+    <span class="ck-st">${ic(d?'ok':k?'ban':'circle')}</span>
+    <div class="grow" style="min-width:0"><div class="ck-t">${i.star?'<span class="ck-star" title="Основной пункт: без него организация не может работать">★</span>':'<span class="tag">Изучить</span>'} <b>${esc(i.t)}</b>${i.learn&&!i.star?'':''}</div><div class="hint">${esc(i.w)}${d?` · <span class="green">${ckScope(i).done[i.id]==='hand'?'отмечено вручную':'выполнено'}</span>`:k?' · пропущено':''}</div></div>
+    <div class="ck-act">${d?'':`<button class="btn sm cta" data-ck-go="${i.id}">Перейти</button><button class="btn sm" data-ck-how="${i.id}">Показать как</button>`}<button class="icon-btn sm" data-ck-menu="${i.id}" aria-label="Ещё">${ic('more','sm')}</button></div></div>`};
+  body.innerHTML=`<div class="box chk"><h3>${isAdmin()?'Начало работы администратора платформы':ckShort()?'Начало работы: короткий чек-лист сотрудника':'Начало работы: полный путь по системе'}<span class="grow"></span><span class="chk-n">${s.d} из ${s.n}</span></h3>
+    <div class="bar chk-bar" role="progressbar" aria-valuenow="${s.d}" aria-valuemax="${s.n}"><i style="width:${s.d/s.n*100}%"></i></div>
+    <div class="row"><span class="grow muted">${s.sd===s.sn?`${ic('ok','sm')} Основные пункты «★» выполнены: организация готова к работе. Остальное — знакомство с функциями.`:`Основных пунктов «★»: ${s.sd} из ${s.sn}. Пункты отмечаются сами, когда действие сохранено.`}</span>${nx?`<button class="btn cta" data-ck-go="${nx.id}">${ic('play','sm')}Продолжить: ${esc(nx.t.length>40?nx.t.slice(0,38)+'…':nx.t)}</button>`:''}</div></div>
+  ${gs.map((g,gi)=>{const dn=g.items.filter(ckRes).length;const op=!closed.has(g.id);return `<div class="box ck-g" data-ckg="${g.id}"><button class="ck-gh" data-ck-tog="${g.id}" aria-expanded="${op}">${`<span class="ck-chev ${op?'op':''}">${ic('right','sm')}</span>`}<b class="grow">${gi+1}. ${esc(g.t)}</b><span class="chk-n ${dn===g.items.length?'green':''}">${dn} из ${g.items.length}</span></button>${op?`<div class="ck-list">${g.items.map(row).join('')}</div>`:''}</div>`}).join('')}`;
+  body.onclick=e=>{let b;
+    if(b=e.target.closest('[data-ck-tog]')){const id=b.dataset.ckTog;closed.has(id)?closed.delete(id):closed.add(id);store.set('ck.closed.'+S.me,[...closed]);renderPage();return}
+    if(b=e.target.closest('[data-ck-go]')){ckGo(b.dataset.ckGo);return}
+    if(b=e.target.closest('[data-ck-how]')){ckHow(b.dataset.ckHow);return}
+    if(b=e.target.closest('[data-ck-menu]')){const i=ckFind(b.dataset.ckMenu);const sc=ckScope(i);const d=ckDone(i),k=ckSkip(i);
+      menu(b,[i.learn&&!d?{label:'Отметить как изучено',icon:'ok',run:()=>{ckMark(i,'hand');renderPage()}}:null,!d&&!k?{label:'Пропустить',icon:'ban',sub:'Пункт станет серым и не помешает прогрессу',run:()=>{sc.skip[i.id]=1;renderPage()}}:null,k?{label:'Вернуть',icon:'refresh',run:()=>{delete sc.skip[i.id];renderPage()}}:null,{label:'Показать как',icon:'play',run:()=>ckHow(i.id)}].filter(Boolean))}};
+  if(nx&&S.preset!=='keep')setTimeout(()=>{const el=$(`[data-cki="${nx.id}"]`);if(el&&!closed.has(gs.find(g=>g.items.includes(nx)).id)){el.scrollIntoView({block:'center'});el.classList.add('ck-flash');setTimeout(()=>el.classList.remove('ck-flash'),2200)}},60)}
 
 /* ═════════════ Помощь «?» ═════════════ */
 function helpMenu(anchor){menu(anchor,[
   {label:'Начать обучение заново',icon:'play',sub:'Пошагово по всем модулям',run:()=>tourStart('full',0)},
   {label:'Подсказки на этой странице',icon:'info',sub:curMod().title,disabled:!tourSteps('page').length,reason:'Для этой страницы подсказок нет',run:()=>tourStart('page',0)},
-  isAdmin()?null:{label:'Чек-лист «Начало работы»',icon:'list',run:()=>{store.set('chk.hidden',false);go('home','today');setTimeout(()=>{const c=$('#chk');c&&c.scrollIntoView({block:'start',behavior:'smooth'})},150)}}])}
+  {label:'Чек-лист «Начало работы»',icon:'list',sub:(()=>{const s=ckStats();return `${s.d} из ${s.n}`})(),run:()=>{store.set('chk.hidden',false);go('start')}}])}
 
 /* ═════════════ Обучение (пошаговые подсказки) ═════════════ */
 // Each step: [module, tab|null, desktop selector, mobile selector, title, text, perm]. No element → bubble in the centre.
@@ -1765,7 +1936,7 @@ const TOUR_STEPS=[
  [null,null,'#tb-title','#tb-title','Где вы сейчас','В верхней панели всегда видно название раздела и вкладки. Значок «ⓘ» рядом объясняет, для чего этот раздел.'],
  [null,null,'.search','#q-open','Поиск','Ищет по открытой вкладке: по названию, ИНН, ответственному и любым видимым столбцам.'],
  [null,null,'#help','#help','Помощь','Здесь можно снова запустить обучение, посмотреть подсказки к текущей странице или открыть чек-лист «Начало работы».'],
- ['home','today','#chk','#chk','Чек-лист «Начало работы»','Семь шагов, после которых платформа работает сама: пункты отмечаются автоматически, когда дело сделано. Нажмите на пункт — откроется нужное место.'],
+ ['home','today','#chk','#chk','Чек-лист «Начало работы»','Полный путь по системе: по каждому модулю — что настроить и что попробовать. Пункты отмечаются сами, когда дело сделано; «Продолжить» ведёт к следующему шагу, а после сохранения можно вернуться к чек-листу.'],
  ['home','today','.plates','.plates','Сводка на сегодня','Когда появятся контрагенты, здесь будут просрочки, сроки недели и ваши задачи. Каждая плашка открывает список с уже применённым фильтром.'],
  ['cps','all','#tabs','#tabs','Вкладки раздела','Вкладки делят список: «Мои», «Все», «Должники», «Архив». На телефоне вкладки переключаются и свайпом влево-вправо.'],
  ['cps','all','#add-btn','#fab','Добавить контрагента','Добавляйте по одному или загрузите список из Excel: вставьте таблицу, система проверит и покажет ошибки до загрузки.','createCp'],
@@ -1778,9 +1949,9 @@ const TOUR_STEPS=[
  ['dicts','types','#mbody','#mbody','Виды отчётов','Каталог видов отчётов ведёт администратор платформы и сверяет с ГНС. Вы подключаете нужные виды и задаёте, за сколько дней напоминать.'],
  ['staff','list','#mbody','#mbody','Сотрудники и права','Добавьте сотрудников и выдайте роли: права решают, кто что видит и может менять. Каждый привязывает Telegram, чтобы получать напоминания.','staff']];
 const TOUR={on:false,steps:[],i:0,mode:'full'};
-function tourSteps(mode){const avail=new Set(mods().map(m=>m.id));
-  return TOUR_STEPS.filter(s=>(!s[0]||avail.has(s[0]))&&(!s[6]||can(s[6]))&&(mode!=='page'||s[0]===S.mod)).filter(s=>!(s[0]==='home'&&s[2]==='#chk'&&!chkItems().length))}
-function tourStart(mode,i){if(isAdmin())return;MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(store.get('chk.hidden',false)&&mode==='full')store.set('chk.hidden',false);
+function tourSteps(mode){if(mode==='item')return TOUR.custom||[];const avail=new Set(mods().map(m=>m.id));
+  return TOUR_STEPS.filter(s=>(!s[0]||avail.has(s[0]))&&(!s[6]||can(s[6]))&&(mode!=='page'||s[0]===S.mod)).filter(s=>!(s[0]==='home'&&s[2]==='#chk'&&(!ckAll().length||store.get('chk.hidden',false))))}
+function tourStart(mode,i){if(isAdmin()&&mode!=='item')return;MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(store.get('chk.hidden',false)&&mode==='full')store.set('chk.hidden',false);
   TOUR.mode=mode;TOUR.steps=tourSteps(mode);if(!TOUR.steps.length)return;TOUR.i=Math.min(i||0,TOUR.steps.length-1);TOUR.on=true;
   if(!$('#tour')){const o=document.createElement('div');o.id='tour';o.innerHTML='<div class="tour-hole"></div><div class="tour-bub" role="dialog" aria-live="polite"></div>';document.body.appendChild(o);
     o.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b)return;const a=b.dataset.tour;if(a==='next')tourGo(1);if(a==='prev')tourGo(-1);if(a==='skip')tourEnd(true)});
@@ -1789,7 +1960,7 @@ function tourStart(mode,i){if(isAdmin())return;MODALS.slice().forEach(m=>m.close
     addEventListener('resize',()=>TOUR.on&&tourPlace())}
   $('#tour').hidden=false;tourShow()}
 function tourGo(d){const j=TOUR.i+d;if(j<0)return;if(j>=TOUR.steps.length){tourEnd(false);return}TOUR.i=j;tourShow()}
-function tourEnd(skipped){TOUR.on=false;$('#tour').hidden=true;if(TOUR.mode==='full'){store.set('tour.'+S.me,{done:true,i:0});toast(skipped?'Обучение пропущено. Запустить заново можно из «?» в верхней панели':'Обучение пройдено. Запустить заново можно из «?» в верхней панели','help')}}
+function tourEnd(skipped){TOUR.on=false;$('#tour').hidden=true;ckBar();if(TOUR.mode==='full'){store.set('tour.'+S.me,{done:true,i:0});toast(skipped?'Обучение пропущено. Запустить заново можно из «?» в верхней панели':'Обучение пройдено. Запустить заново можно из «?» в верхней панели','help')}}
 function tourShow(){const s=TOUR.steps[TOUR.i];if(TOUR.mode==='full')store.set('tour.'+S.me,{done:false,i:TOUR.i});
   const need=s[0]&&(S.mod!==s[0]||(s[1]&&S.tab!==s[1]));if(need)go(s[0],s[1]);
   const bub=$('#tour .tour-bub');const n=TOUR.steps.length;
@@ -1807,7 +1978,7 @@ function tourPlace(){const s=TOUR.steps[TOUR.i];if(!s)return;const mob=isMobile(
   bub.style.left=x+'px';bub.style.top=y+'px'}
 const env=()=>0;
 
-function switchUser(id){S.me=id;MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');toast(`Вы вошли как: ${me().fio}`,'user')}
+function switchUser(id){S.me=id;CK.active=null;CK.bar=false;ckBar();MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');toast(`Вы вошли как: ${me().fio}`,'user')}
 
 /* ═════════════ Login & password recovery ═════════════ */
 function logoutDlg(){
@@ -1892,7 +2063,7 @@ function plate({icon,color,label,value,unit,sub,on,id}){return `<button class="p
 function homeTabs(){return [{id:'today',label:'Сводка',icon:'home'},feat('fee')&&can('fee')?{id:'analytics',label:'Аналитика',icon:'chart'}:null]}
 function renderHome(body,tab){
   if(tab==='analytics')return renderAnalytics(body);
-  if(!CPS.length){const c=checklistHtml();body.innerHTML=c||`<div class="state">${ic('building','lg')}<b>Добавьте первого контрагента</b><span>Сводка на сегодня появится, когда в организации будут контрагенты и их отчёты.</span><button class="btn cta" data-goto="cps.all">${ic('plus')}Перейти к контрагентам</button></div>`;
+  if(!CPS.length){const c=checklistHtml();body.innerHTML=c+`<div class="state">${ic('building','lg')}<b>Добавьте первого контрагента</b><span>Сводка на сегодня появится, когда в организации будут контрагенты и их отчёты.</span><button class="btn cta" data-goto="cps.all">${ic('plus')}Перейти к контрагентам</button></div>`;
     body.onclick=e=>{if(chkClick(e))return;const b=e.target.closest('[data-goto]');if(b){const[a,t]=b.dataset.goto.split('.');go(a,t)}};return}
   const u=me();const vr=visReports();const[w0,w1]=weekRange();
   const ovRep=vr.filter(r=>r.overdue),ovPay=vr.filter(r=>r.payOverdue);
@@ -2151,7 +2322,7 @@ function statusHist(k,o){const out=[];const add=(at,from,to,who,note,file)=>{if(
   if(k==='ind'){let cur='Не заполнено';add(o._ca,'',cur,o._cb||'system','Месяц открыт для заполнения');parse('km',o.id).forEach(h=>{const m=h.what.match(rx);if(!m)return;const to=m[2].trim();add(h.at,cur,to,h.who,[m[3],m[4]].filter(Boolean).join(', '));cur=to})}
   if(k==='proj'){const hs=parse('p',o.id).map(h=>[h,h.what.match(rx)]).filter(x=>x[1]);let cur=hs.length?hs[0][1][1]:o.status;add(o._ca||o.from,'',cur,o._cb||o.lead,'Проект создан');hs.forEach(([h,m])=>{add(h.at,cur,m[2].trim(),h.who,[m[3],m[4]].filter(Boolean).join(', '));cur=m[2].trim()})}
   out.forEach((e,i)=>{const nx=out[i+1];e.ms=(nx?stAt(nx.at):stAt(nowStamp()))-stAt(e.at);e.now=!nx});return out}
-function statusHistHtml(k,o,title){const h=statusHist(k,o);if(!h.length)return '';const map=SCALES[k].map();const tot={};h.forEach(e=>tot[e.to]=(tot[e.to]||0)+e.ms);
+function statusHistHtml(k,o,title){const h=statusHist(k,o);if(!h.length)return '';if(k==='rep'||k==='pay'||k==='r')ckHit('hist');const map=SCALES[k].map();const tot={};h.forEach(e=>tot[e.to]=(tot[e.to]||0)+e.ms);
   return `<div class="sh-blk">${title?`<div class="sh-t">${esc(title)}</div>`:''}<div class="tbl-wrap"><table class="mini sh"><thead><tr><th>Когда</th><th>Статус</th><th>Кто</th><th>Комментарий, файл</th><th class="num">В статусе</th></tr></thead><tbody>${h.slice().reverse().map(e=>`<tr><td class="tnum">${fmtDT(e.at)}</td><td>${e.from?`<span class="faint">${esc(e.from)} →</span> `:''}${pill(e.to,map,'sm')}</td><td>${esc(whoName(e.who)||'—')}</td><td>${/^откат/i.test(e.note)?`<span class="pill orange sm">${ic('history')}Откат</span> ${esc(e.note.replace(/^откат:\s*/i,''))}`:esc(e.note)||''}${e.file?` <span class="tag">${ic('clip','sm')}${esc(e.file)}</span>`:''}${!e.note&&!e.file?'<span class="faint">—</span>':''}</td><td class="num tnum">${durTxt(e.ms)}${e.now?' <span class="faint">· сейчас</span>':''}</td></tr>`).join('')}</tbody></table></div>
   <div class="sh-sum">${Object.entries(tot).map(([s,ms])=>`<span>${esc(s)}: <b>${durTxt(ms)}</b></span>`).join('')}</div></div>`}
 function setStatus(r,st){const o=r.status;r.status=st;if(st==='К сдаче'||st==='В работе'){}log('r',r.id,`Статус: ${o} → ${st}`,r.cp);refreshAll();toast(`Статус: ${st}`)}
@@ -2527,7 +2698,7 @@ function openCp(c,tab){
       body:`<div class="tabs sm" style="margin:0">${tabs.map(t=>`<button class="tab ${st.tab===t[0]?'on':''}" data-ct="${t[0]}">${ic(t[2])}<span class="lbl">${t[1]}</span></button>`).join('')}</div>${b}`,
       foot:`<button class="btn" id="cp-more">${ic('more','sm')}Действия</button><div class="grow"></div><button class="btn cta" data-close>Готово</button>`,
       mount(el,mm){const q=s=>el.querySelector(s);
-        {const on=el.querySelector('.tabs .tab.on'),t=on&&on.parentElement;if(t&&t.scrollWidth>t.clientWidth)t.scrollLeft=on.offsetLeft-t.offsetLeft-(t.clientWidth-on.offsetWidth)/2}
+        ckHit('cp.'+st.tab);{const on=el.querySelector('.tabs .tab.on'),t=on&&on.parentElement;if(t&&t.scrollWidth>t.clientWidth)t.scrollLeft=on.offsetLeft-t.offsetLeft-(t.clientWidth-on.offsetWidth)/2}
         if(st.tab==='kpi')kpiCardMount(el,c,st,mm);
         $$('[data-ct]',el).forEach(x=>x.onclick=()=>{st.tab=x.dataset.ct;mm.draw()});
         q('#cp-more').onclick=e=>menu(e.currentTarget,cpActions(c).filter(x=>x.label!=='Открыть карточку'));
@@ -3187,7 +3358,7 @@ function transferDlg(e,after){const st=empStats(e);const cps=CPS.filter(c=>c.res
 function blockDlg(e){const n=empStats(e).cps;
   if(n){confirmDlg({title:`Сначала передайте ${n} ${plural(n,'контрагента','контрагентов','контрагентов')}`,text:`Заблокированный сотрудник не может войти. Его контрагенты, несданные отчёты и открытые задачи нужно передать другому ответственному.`,ok:'Передать и заблокировать',danger:true,run:()=>transferDlg(e,()=>{e.active=false;log('emp',e.id,'Заблокирован')})});return}
   confirmDlg({title:`Заблокировать ${esc(e.short)}?`,text:'Сотрудник не сможет войти. Его история сохранится.',ok:'Заблокировать',danger:true,run:()=>{e.active=false;log('emp',e.id,'Заблокирован');refreshAll();toast('Сотрудник заблокирован','lock')}})}
-function empCard(e,tab){
+function empCard(e,tab){ckHit('empcard');
   openModal({size:'wide',live:true,state:{tab:tab||'main'},render:m=>{const st=m.state;const s=empStats(e);const tabs=[['main','Основное','user'],['cps','Контрагенты','building'],feat('accounts')&&feat('taxpay')?['acc','Счёт','wallet']:null].filter(Boolean);let b='';
     if(st.tab==='main')b=`<div class="box"><div class="kv">${auditKv(e)}<div><span class="k">Логин</span><span class="v mono">${esc(e.login)}</span></div><div><span class="k">Телефон</span><span class="v">${phoneHtml(e.phone)}</span></div><div><span class="k">Роль</span><span class="v">${esc(ROLES.find(r=>r.id===e.role).name)}</span></div><div><span class="k">Telegram</span><span class="v">${e.tg?esc(e.tg):'<span class="orange">не привязан</span>'}</span></div><div><span class="k">Последний вход</span><span class="v">${esc(e.lastIn)}</span></div><div><span class="k">Статус</span><span class="v">${e.active?'Активен':'Заблокирован'}</span></div></div></div>
       <div class="plates">${plate({id:'a',icon:'building',color:'blue',label:'Контрагентов',value:s.cps})}${plate({id:'b',icon:'file',color:'yellow',label:'Несданных отчётов',value:s.open})}${plate({id:'c',icon:'alert',color:s.over?'red':'green',label:'Просрочено',value:s.over})}${plate({id:'d',icon:'task',color:'purple',label:'Открытых задач',value:s.tasks})}</div>
@@ -3270,9 +3441,10 @@ function renderOrg(body,tab){
       if(!x.checked){const need=FEATURES.filter(f=>f[3]&&f[3].includes(k)&&feat(f[0]));if(need.length){x.checked=true;toast(`Сначала отключите «${need[0][1]}» — она работает только вместе с этой функцией`,'alert',true);return}}
       else{const f=FEATURES.find(f=>f[0]===k);if(f[3]){const off=f[3].filter(d=>!feat(d));if(off.length){x.checked=false;toast(`Сначала включите «${FEATURES.find(z=>z[0]===off[0])[1]}»`,'alert',true);return}}}
       ORG.features[k]=x.checked;log('org','policy',`${x.checked?'Включена':'Отключена'} функция «${FEATURES.find(f=>f[0]===k)[1]}»`);refreshAll();toast(`${FEATURES.find(f=>f[0]===k)[1]}: ${x.checked?'включено':'отключено'}`)};
-    $$('[data-rd]',body).forEach(b=>b.onclick=()=>{ORG.remind.splice(+b.dataset.rd,1);renderPage()});const ra=$('#rd-add',body);if(ra)ra.onkeydown=e=>{if(e.key==='Enter'){const n=+ra.value;if(n>0&&n<=60&&!ORG.remind.includes(n)){ORG.remind.push(n);ORG.remind.sort((a,b)=>b-a);renderPage();toast('Набор дней сохранён')}}};
+    $$('[data-rd]',body).forEach(b=>b.onclick=()=>{ORG.remind.splice(+b.dataset.rd,1);renderPage();ckHit('remind')});const ra=$('#rd-add',body);if(ra)ra.onkeydown=e=>{if(e.key==='Enter'){const n=+ra.value;if(n>0&&n<=60&&!ORG.remind.includes(n)){ORG.remind.push(n);ORG.remind.sort((a,b)=>b-a);renderPage();ckHit('remind');toast('Набор дней сохранён')}}};
     return}
-  body.innerHTML=`<div class="box"><h3>Общие</h3><div class="form">${fld('Часовой пояс',sel('st-tz',['Asia/Bishkek (UTC+6)'],ORG.tz,ro?'disabled':''),{id:'st-tz',hint:'«Сегодня» и «эта неделя» считаются по нему'})}${fld('Роль по умолчанию для новых сотрудников',sel('st-role',ROLES.filter(r=>r.id!=='owner').map(r=>[r.id,r.name]),ORG.defaultRole,ro?'disabled':''),{id:'st-role'})}</div></div>
+  const fs=allFiles();const used=fs.reduce((a,f)=>a+(f.size||0),0);
+  body.innerHTML=`<div class="box" id="org-storage"><h3>Хранилище файлов</h3><div class="row"><span class="grow">Занято <b>${fmtSize(used)}</b> · файлов: ${fs.length}</span><span class="hint">Ограничение на один файл — 20 МБ</span></div></div><div class="box"><h3>Общие</h3><div class="form">${fld('Часовой пояс',sel('st-tz',['Asia/Bishkek (UTC+6)'],ORG.tz,ro?'disabled':''),{id:'st-tz',hint:'«Сегодня» и «эта неделя» считаются по нему'})}${fld('Роль по умолчанию для новых сотрудников',sel('st-role',ROLES.filter(r=>r.id!=='owner').map(r=>[r.id,r.name]),ORG.defaultRole,ro?'disabled':''),{id:'st-role'})}</div></div>
   <div class="box"><h3>Напоминания в Telegram</h3>${feat('telegram')?`<label class="check-row"><input type="checkbox" class="sw" id="st-rep" ${ORG.overdueRepeat?'checked':''} ${ro?'disabled':''}><span class="grow">Повторять при просрочке каждый день<div class="hint">Ответственному, главному бухгалтеру и владельцу — пока отчёт не сдан</div></span></label>
   <div class="form">${fld('Еженедельная сводка, понедельник',inp('st-dg',ORG.digest,`type="time" ${ro?'disabled':''}`),{id:'st-dg'})}${fld('Напомнить, если отчёт не принят, через дней',inp('st-wait',ORG.waitDays,`type="number" min="1" max="30" ${ro?'disabled':''}`),{id:'st-wait'})}</div><span class="hint">Все напоминания одному человеку за день собираются в одно сообщение.</span>`:`<div class="note">${ic('info')}<span>Напоминания в Telegram отключены в учётной политике.</span></div>`}</div>
   ${ro?'':`<div class="row"><div class="grow"></div><button class="btn cta" id="st-save">Сохранить настройки</button></div>`}`;
@@ -3774,7 +3946,7 @@ function setDataMode(v){DATA_MODE=v;store.set('data',v);
   Object.entries(DATA_KEYS).forEach(([k,a])=>{a.length=0;a.push(...structuredClone(SNAP[k]))});
   Object.keys(CPM).forEach(k=>delete CPM[k]);CPS.forEach(c=>CPM[c.id]=c);Object.keys(EM).forEach(k=>delete EM[k]);EMP.forEach(e=>EM[e.id]=e);
   Object.keys(ORG).forEach(k=>delete ORG[k]);Object.assign(ORG,structuredClone(SNAP.ORG));
-  if(v==='empty'){emptyOrg();store.set('tour.e1',null);store.set('chk.hidden',false)}
+  ckReset();if(v==='empty'){emptyOrg();store.set('tour.e1',null);store.set('chk.hidden',false)}
   MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
   Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
   if(location.hash==='#home.today')route();else location.hash='#home.today';
@@ -3782,7 +3954,7 @@ function setDataMode(v){DATA_MODE=v;store.set('data',v);
   if(v==='empty')setTimeout(()=>tourStart('full',0),600)}
 seed();seedKpi();seedAudit();SNAP=structuredClone({...DATA_KEYS,ORG});if(DATA_MODE==='empty')emptyOrg();derive();initTop();
 if(!location.hash||location.hash==='#')history.replaceState(null,'','#home');
-route();
+route();ckEval();
 if(DATA_MODE==='empty'&&!(store.get('tour.e1',null)||{}).done)setTimeout(()=>tourStart('full',(store.get('tour.e1',null)||{}).i||0),700);
 </script>
 
