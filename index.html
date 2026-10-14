@@ -2364,7 +2364,7 @@ function restDlg(cs){
     foot:`<div class="grow"></div><button class="btn cta" data-close>${left.length?'Решить позже':'Готово'}</button>`,
     mount(el){$$('[data-rf]',el).forEach(b=>b.onclick=()=>moneyOpDlg(CPM[+b.dataset.rf],'refund'));$$('[data-bn]',el).forEach(b=>b.onclick=()=>moneyOpDlg(CPM[+b.dataset.bn],'bonus'))}}}});
 }
-function assignTypes(c,ids,from,rates,fixed,quiet,cfgs){ids.forEach(id=>{let a=c.assign.find(a=>a.t===id&&!a.to);if(!a){a={t:id,from:from||TODAY,to:null,resp:null,rate:(rates&&rates[id])||(t.rates&&t.rates.length?t.rates[Math.min(1,t.rates.length-1)]:null)};c.assign.push(a)}if(fixed&&fixed[id]!=null)a.fixed=fixed[id];if(cfgs&&cfgs[id])Object.assign(a,cfgs[id]);const t=tEff(T[id],a);
+function assignTypes(c,ids,from,rates,fixed,quiet,cfgs){ids.forEach(id=>{let a=c.assign.find(a=>a.t===id&&!a.to);if(!a){a={t:id,from:from||TODAY,to:null,resp:null,rate:(rates&&rates[id])||(T[id].rates&&T[id].rates.length?T[id].rates[Math.min(1,T[id].rates.length-1)]:null)};c.assign.push(a)}if(fixed&&fixed[id]!=null)a.fixed=fixed[id];if(cfgs&&cfgs[id])Object.assign(a,cfgs[id]);const t=tEff(T[id],a);
   periodList(t).filter(p=>pend(t,p)>=TODAY.slice(0,8)+'01'||t.per!=='M').forEach(p=>{if(t.per==='M'&&pstart(t,p)<TODAY.slice(0,8)+'01')return;if(REPORTS.some(r=>r.cp===c.id&&r.t===id&&r.pkey===pstart(t,p)))return;
     if(t.per!=='M'&&dueOf(t,p).due<TODAY)return;REPORTS.push(makeReport(c,t,p,a.resp||c.resp))});
   if(!quiet)log('cp',c.id,`Назначен отчёт: ${t.name}${t.kind==='internal'?', '+PER_LABEL[t.per].toLowerCase()+', '+ruleText(t):''}`,c.id)})}
@@ -2618,7 +2618,7 @@ function addCpDlg(){
       $('#nc-ok',el).onclick=()=>{const name=val(el,'nc-name'),inn=val(el,'nc-inn'),ph=readPhone(el,'nc-ph'),resp=val(el,'nc-resp');
         const dup=CPS.find(c=>c.inn===inn);
         const ok=[setErr(el,'nc-name',name?'':'Введите название'),
-          setErr(el,'nc-inn',!/^\d{14}$/.test(inn)?'ИНН — ровно 14 цифр':!/^[0-2]/.test(inn)?'ИНН в КР начинается с 0, 1 или 2':dup?`Такой ИНН уже есть: ${dup.name}`:''),
+          setErr(el,'nc-inn',!/^\d{14}$/.test(inn)?'ИНН — ровно 14 цифр':!/^[0-2]/.test(inn)?'ИНН в КР начинается с 0, 1 или 2':dup?`Такой ИНН уже есть: ${dup.name}${dup.archived?' (в архиве — верните его из архива, а не создавайте заново)':''}`:''),
           setErr(el,'nc-ph',ph.empty?'Введите номер телефона':!ph.ok?`Номер для этой страны — ${ph.need} цифр`:''),
           reg?setErr(el,'nc-types',st.sel.size?'':'Выберите хотя бы один отчёт'):true,
           setErr(el,'nc-resp',resp?'':'Выберите ответственного'),
@@ -2629,7 +2629,9 @@ function addCpDlg(){
           kind:st.kind,ugns:val(el,'nc-ugns')||null,oneSum:false,needInFile:!!($('#nc-needf',el)&&$('#nc-needf',el).checked),periods:reg?[{from:start.slice(0,7),to:null}]:[]};
         if($('#nc-fee',el))c.tariffs.push({amount:parseNum(val(el,'nc-fee')),per:st.per,from:start.slice(0,7),by:S.me,at:TODAY,note:'Первая ставка'});
         if(!st.regime)setTimeout(()=>toast('Режим налогообложения не указан: проверьте, что назначены правильные отчёты','alert',true),1600);
-        born(c);CPS.push(c);CPM[c.id]=c;log('cp',c.id,reg?'Контрагент создан':'Создан разовый контрагент',c.id);if(reg)assignTypes(c,[...st.sel],start,st.rates);
+        const nR=REPORTS.length,nH=HIST.length;
+        try{born(c);CPS.push(c);CPM[c.id]=c;log('cp',c.id,reg?'Контрагент создан':'Создан разовый контрагент',c.id);if(reg)assignTypes(c,[...st.sel],start,st.rates)}
+        catch(err){const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];REPORTS.length=nR;HIST.length=nH;console.error(err);toast('Не удалось сохранить контрагента, ничего не создано. Попробуйте ещё раз','alert',true);return}
         m.close();refreshAll();toast(reg?`Контрагент добавлен, отчётов создано: ${REPORTS.filter(r=>r.cp===c.id).length}`:'Разовый контрагент добавлен','building');openCp(c)}}};
   }});
 }
