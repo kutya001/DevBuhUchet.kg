@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Прототип Buhuchet.kg v16</title>
+<title>Прототип Buhuchet.kg v17</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -1213,7 +1213,7 @@ function openModal(o){
   const cover=document.createElement('div');cover.className='cover';
   cover.innerHTML=`<div class="modal ${o.size||''}" role="dialog" aria-modal="true"></div>`;
   document.body.appendChild(cover);
-  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1)}};
+  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1);if(typeof ckSoon==='function')ckSoon()}};
   m.canMax=!!(o.size||o.form)&&!o.noMax;m.maxKey='modal.max.'+(o.form?'form':'card');if(o.form&&o.size!=='wide')m.el.classList.add('narrow');
   m.setMax=(on,save)=>{if(!m.canMax)on=false;m.max=on;const fl=m.el.getBoundingClientRect();cover.classList.toggle('max',on);m.el.classList.toggle('max',on);
     if(save){store.set(m.maxKey,on);
@@ -1238,7 +1238,7 @@ function openModal(o){
   if(!isMobile()){const f=m.el.querySelector('.mb .fld input:not([type=checkbox]):not([readonly]),.mb .fld textarea,.mb .fld select');f&&f.focus({preventScroll:true})}
   return m;
 }
-function toast(msg,icon='check',bad=false){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.innerHTML=ic(icon)+`<span>${esc(msg)}</span>`;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320)},3200)}
+function toast(msg,icon='check',bad=false){if(!bad&&typeof ckSoon==='function'&&!CK.quiet)ckSoon();const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.innerHTML=ic(icon)+`<span>${esc(msg)}</span>`;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320)},3200)}
 function confirmDlg({title,text,ok='Подтвердить',danger=false,run}){
   openModal({noMax:true,render:()=>({title,body:`<p style="margin:0;color:var(--muted);line-height:1.55">${text}</p>`,foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn ${danger?'danger':'cta'}" id="cf-ok">${esc(ok)}</button>`,
     mount(el,m){$('#cf-ok',el).onclick=()=>{m.close();run()}}})});
@@ -1580,7 +1580,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v16 · 14.10.2026';
+const PROTO_VER='v17 · 14.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id));const cn=isAdmin()?{}:counts();
@@ -1761,7 +1761,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('.tipi');if(!b)re
 /* ═════════════ Начало работы: чек-лист ═════════════ */
 // Item: {id,t,w,star,learn,done(),at:['mod.tab'],hit,go(),hl,mhl,perm,feat(),staff,mob,user}
 // Action items are organization-wide and are marked by fact; «Изучить» and personal items are per user.
-const CKS={org:{done:{},skip:{}},u:{}};const CK={active:null,bar:false,barOff:false,shown:{}};
+const CKS={org:{done:{},skip:{}},u:{}};const CK={active:null,bar:false,barOff:false,shown:{},q:[],quiet:0};
 const ckU=()=>CKS.u[S.me]=CKS.u[S.me]||{done:{},skip:{}};
 const ckReset=()=>{CKS.org={done:{},skip:{}};CKS.u={};CK.active=null;CK.bar=false;CK.shown={};CK.congrats=0};
 // G(): where «Перейти» leads; mod/tab/hl are reused by «Показать как». after() opens a form right away.
@@ -1769,15 +1769,15 @@ const G=(mod,tab,hl,mhl,after)=>{const f=()=>{if(mod)go(mod,tab);if(after)setTim
 const hasLog=(ent,id,re)=>HIST.some(h=>h.ent===ent&&(id==null||h.id===id)&&(!re||re.test(h.what||'')));
 const CKG=[
  {id:'org',t:'Моя организация',items:[
-  {id:'profile',star:1,t:'Заполнить профиль организации',w:'Название, ИНН, адрес, руководитель и логотип попадают в документы и реквизиты.',perm:'org',done:()=>!!(ORG.name&&ORG.inn&&ORG.head),go:G('org','main','#og')},
-  {id:'accs',t:'Добавить реквизиты для приёма денег',w:'Счета организации видны в реквизитах для контрагентов.',perm:'org',done:()=>ORG.accounts.length>0,go:G('org','main','#og-addacc')},
+  {id:'profile',star:1,t:'Заполнить профиль организации',w:'Название, ИНН, адрес, руководитель и логотип попадают в документы и реквизиты.',perm:'org',done:()=>!!(ORG.name&&ORG.inn&&(ORG.head||hasLog('org','main'))),go:G('org','main','#og')},
+  {id:'accs',t:'Добавить реквизиты для приёма денег',w:'Счета организации видны в реквизитах для контрагентов.',perm:'org',done:()=>ORG.accounts.length>0,go:G('org','main','#og-addacc',null,()=>{const b=$('#og-addacc');if(b)b.click()})},
   {id:'policy',star:1,t:'Настроить учётную политику',w:'Включите нужные функции и отключите лишние: интерфейс сразу станет проще.',perm:'org',hit:'policy',done:()=>hasLog('org','policy'),go:G('org','policy','#mbody .box')},
   {id:'remind',t:'Настроить дни напоминаний до срока',w:'За сколько дней до срока напоминать по умолчанию.',perm:'org',hit:'remind',go:G('org','policy','#rd-add')},
   {id:'settings',t:'Проверить часовой пояс и время еженедельной сводки',w:'«Сегодня» и сводка по понедельникам считаются по этим настройкам.',perm:'org',done:()=>hasLog('org','settings'),go:G('org','settings','#st-save')},
   {id:'storage',learn:1,t:'Посмотреть занятый объём хранилища',w:'Сколько места занимают файлы организации.',perm:'org',at:['org.settings'],go:G('org','settings','#org-storage')}]},
  {id:'me',t:'Мой профиль',items:[
   {id:'tg',star:1,user:1,staff:1,t:'Привязать Telegram',w:'Без него не придут напоминания и не работает сброс пароля.',done:()=>!!me().tg,go:G(null,null,'#me-open','#burger',()=>{profileDlg();ckFlash('#pf-tglink')})},
-  {id:'nmode',user:1,staff:1,t:'Выбрать режим уведомлений',w:'«Все», «Только просрочки и сводка» или «Только ручные задачи».',done:()=>hasLog('emp',S.me,/^Уведомления/),go:G(null,null,'#me-open','#burger',()=>{profileDlg();ckFlash('[name=pf-nm]')})},
+  {id:'nmode',user:1,staff:1,t:'Выбрать режим и виды уведомлений',w:'Режим «Все», «Только просрочки и сводка» или «Только ручные задачи» и переключатели по видам.',done:()=>hasLog('emp',S.me,/^Уведомления/),go:G(null,null,'#me-open','#burger',()=>{profileDlg();ckFlash('[name=pf-nm]')})},
   {id:'theme',learn:1,t:'Выбрать тему оформления',w:'Светлая или тёмная — кнопка в верхней панели.',hit:'theme',go:G(null,null,'#theme')}]},
  {id:'dicts',t:'Справочники',items:[
   {id:'types',star:1,t:'Подключить виды отчётов из каталога платформы',w:'По подключённым видам создаются отчёты и напоминания.',perm:'dicts',done:()=>Object.values(ORG.types).some(t=>t.on),go:G('dicts','types','#dt-first, #dg')},
@@ -1794,7 +1794,7 @@ const CKG=[
   {id:'resp',star:1,t:'Закрепить за контрагентами ответственных',w:'Ответственный получает напоминания и видит отчёты контрагента.',perm:'assign',done:()=>{const a=CPS.filter(c=>!c.archived);return a.length>0&&a.every(c=>c.resp)},go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'tariff',t:'Указать стоимость обслуживания',w:'Журнал тарифов: ежемесячно или ежегодно, изменения — с 1-го числа.',perm:'fee',feat:()=>feat('fee'),done:()=>CPS.some(c=>c.tariffs&&c.tariffs.length),go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'flags',learn:1,t:'Отметки «Платит одной суммой» и «Обязательно требовать прикрепления при поступлении»',w:'Они в карточке контрагента на вкладке «Основное».',hit:'cp.main',go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
-  {id:'oneoff',t:'Добавить разового контрагента',w:'Для клиентов на одну работу: без отчётов и абонентской платы.',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','oneoff','#add-btn','#fab',()=>addCpDlg())},
+  {id:'oneoff',t:'Добавить разового контрагента',w:'Для клиентов на одну работу: без отчётов и абонентской платы.',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','oneoff','#add-btn','#fab',()=>addCpDlg('oneoff'))},
   {id:'pause',learn:1,t:'Приостановить и возобновить обслуживание, отменить запланированную приостановку',w:'На время паузы отчёты не создаются.',at:['cps.paused'],go:G('cps','paused','#mbody')},
   {id:'archive',learn:1,t:'Отправить в архив и вернуть из архива',w:'Архивный контрагент не мешает в списках, история сохраняется.',at:['cps.archive'],go:G('cps','archive','#mbody')},
   {id:'balance',learn:1,staff:1,t:'Баланс контрагента и история в карточке',w:'Свои контрагенты — вкладка «Мои контрагенты»; в карточке видны деньги и вся история.',hit:'cp.hist',go:G('cps','mine','#mbody .gscroll, #mbody .gcards')}]},
@@ -1831,7 +1831,7 @@ const CKG=[
   {id:'pstat',learn:1,t:'Статусы проекта и откат',w:'Шкала статусов, как у отчётов.',at:['projects.all'],go:G('projects','all','#mbody')}]},
  {id:'kpi',t:'Показатели контрагентов',feat:()=>feat('indicators'),items:[
   {id:'kset',t:'Настроить показатели',w:'Изменить примеры «Выручка» и «Количество сотрудников» или создать свои.',perm:'indSetup',done:()=>hasLog('kind'),go:G('kpi','setup','.kset')},
-  {id:'kval',staff:1,t:'Внести показатели за прошлый месяц',w:'Вкладка «Ввод за месяц»: как в Excel, можно вставить блок.',done:()=>IVALS.length>0,go:G('kpi','month','.kt, #mbody')},
+  {id:'kval',staff:1,soft:1,t:'Внести показатели за месяц',w:'Обычно за прошлый месяц; у новых контрагентов — с месяца начала обслуживания. Как в Excel, можно вставить блок.',done:()=>IVALS.length>0,go:G('kpi','month','.kt, #mbody',null,()=>{const p=kPrev();const m=kCps(p).length||!kCps(ym(TODAY)).length?p:ym(TODAY);if(S.kpiM!==m){S.kpiM=m;renderPage()}})},
   {id:'kper',learn:1,staff:1,t:'Посмотреть итоги за период: сумма, среднее, максимум, минимум',w:'Пустой месяц не считается нулём.',at:['kpi.period'],go:G('kpi','period','#mbody')},
   {id:'kchk',t:'Проверить месяц',w:'Статус «Проверено» ставит проверяющий.',perm:'indCheck',done:()=>KMS.some(k=>k.status==='Проверено'),go:G('kpi','period','#mbody')},
   {id:'kcard',learn:1,t:'Вкладка «Показатели» в карточке контрагента',w:'Итоги и график по одному контрагенту.',hit:'cp.kpi',go:G('cps','all','#mbody .gscroll, #mbody .gcards')}]},
@@ -1870,13 +1870,18 @@ function ckNext(after){const l=ckAll();const k=after?l.findIndex(i=>i.id===after
 function ckStats(){const l=ckAll();const st=l.filter(i=>i.star);return {n:l.length,d:l.filter(ckRes).length,sn:st.length,sd:st.filter(ckRes).length}}
 // Called after saves, visits and first-use events.
 let ckT=null;function ckSoon(){clearTimeout(ckT);ckT=setTimeout(ckEval,250)}
-function ckEval(){const fresh=[];
+function ckEval(){const fresh=CK.q.splice(0);
   ckAll().forEach(i=>{if(ckDone(i))return;let ok=false;try{ok=i.done?!!i.done():false}catch(e){ok=false}if(ok&&ckMark(i))fresh.push(i)});
-  const a=CK.active&&ckFind(CK.active);
-  if(a&&fresh.includes(a)&&!a.at)ckDoneDlg(a);
-  const st=ckStats();if(fresh.length&&st.sn&&st.sd===st.sn&&!CK.congrats){CK.congrats=1;setTimeout(()=>toast('Поздравляем: основная настройка пройдена, организация готова к работе','ok'),900)}
+  // Feedback right at the moment of the action: active item first, then other actions; «Изучить»-hits only toast.
+  const a=CK.active&&ckFind(CK.active);const act=fresh.filter(i=>!i.at);
+  const pick=act.find(i=>i===a&&!i.soft)||act.find(i=>!i.learn&&!i.soft);
+  if(pick&&CK.active){CK.active=pick.id;CK.bar=true;setTimeout(()=>ckDoneDlg(pick),MODALS.length?250:50)}
+  act.filter(i=>!(CK.active&&i===pick)).forEach(i=>{CK.quiet++;toast(`Начало работы: пункт «${i.t}» выполнен`,'list');CK.quiet--});
+  const st=ckStats();if(fresh.length&&st.sn&&st.sd===st.sn&&!CK.congrats){CK.congrats=1;setTimeout(()=>{CK.quiet++;toast('Поздравляем: основная настройка пройдена, организация готова к работе','ok');CK.quiet--},900)}
   ckBar()}
-function ckHit(name){let hit=null;ckAll().forEach(i=>{if(i.hit===name&&ckMark(i)){if(CK.active===i.id)hit=i}});if(hit)setTimeout(()=>ckDoneDlg(hit),300);ckSoon()}
+// Silent baseline: what is already true by data (demo data, another user, a feature switched on) is not «just done».
+function ckBase(){ckAll().forEach(i=>{if(!ckDone(i)&&i.done){let ok=false;try{ok=!!i.done()}catch(e){}if(ok)ckMark(i,'data')}})}
+function ckHit(name){ckAll().forEach(i=>{if(i.hit===name&&ckMark(i))CK.q.push(i)});ckSoon()}
 function ckVisit(){const k=S.mod+(S.tab?'.'+S.tab:'');ckAll().forEach(i=>{if(i.at&&(i.at.includes(k)||i.at.includes(S.mod)))ckMark(i,'visit')});ckSoon()}
 function ckFlash(sel,msel){setTimeout(()=>{const s=isMobile()&&msel?msel:sel;if(!s)return;const el=[...document.querySelectorAll(s)].find(x=>x.getClientRects().length);if(!el)return;
   el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('ck-flash');void el.offsetWidth;el.classList.add('ck-flash');setTimeout(()=>el.classList.remove('ck-flash'),2800)},380)}
@@ -1978,7 +1983,7 @@ function tourPlace(){const s=TOUR.steps[TOUR.i];if(!s)return;const mob=isMobile(
   bub.style.left=x+'px';bub.style.top=y+'px'}
 const env=()=>0;
 
-function switchUser(id){S.me=id;CK.active=null;CK.bar=false;ckBar();MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');toast(`Вы вошли как: ${me().fio}`,'user')}
+function switchUser(id){S.me=id;CK.active=null;CK.bar=false;ckBar();ckBase();MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');toast(`Вы вошли как: ${me().fio}`,'user')}
 
 /* ═════════════ Login & password recovery ═════════════ */
 function logoutDlg(){
@@ -2046,7 +2051,7 @@ function notifyBox(u){const n=notifyOf(u);const boss=u.role==='owner'||u.role===
   <span class="hint">В день срока напоминание по вашим собственным отчётам приходит всегда. Отключённый переключатель — это то, что не входит в выбранный режим.</span></div>`}
 function bindNotify(el,u,m){const n=notifyOf(u);
   $$('[name="pf-nm"]',el).forEach(r=>r.onchange=()=>{n.mode=r.value;n.off={};log('emp',u.id,'Уведомления: '+NMODES.find(x=>x[0]===r.value)[1]);m.draw();toast('Режим уведомлений сохранён','bell')});
-  $$('[data-nk]',el).forEach(x=>x.onchange=()=>{if(x.checked)delete n.off[x.dataset.nk];else n.off[x.dataset.nk]=true;toast(x.checked?'Включено':'Отключено','bell')})}
+  $$('[data-nk]',el).forEach(x=>x.onchange=()=>{if(x.checked)delete n.off[x.dataset.nk];else n.off[x.dataset.nk]=true;log('emp',u.id,'Уведомления: «'+NKINDS.find(k=>k[0]===x.dataset.nk)[1]+'» '+(x.checked?'включено':'отключено'));toast(x.checked?'Включено':'Отключено','bell')})}
 function walletDlg(u,done){
   openModal({form:true,render:()=>({title:'Новый реквизит',sub:'Куда контрагенты переводят деньги на налоги',body:`<div class="form">${fld('Банковский провайдер',sel('w-prov',DICT.banks.items.filter(x=>x.active).map(x=>x.name),''),{req:true,id:'w-prov'})}${fld('Номер счёта или кошелька',inp('w-num','','class="inp mono" inputmode="numeric"'),{req:true,id:'w-num'})}${fld('Имя получателя',inp('w-name',''),{id:'w-name',hint:'Необязательно'})}<div class="fld"><label class="lbl">&nbsp;</label><label class="row"><input type="checkbox" id="w-main" ${(u.wallets||[]).length?'':'checked'}> Основной</label></div></div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="w-ok">Добавить</button>',
@@ -2056,7 +2061,7 @@ function orgProfileDlg(){
   openModal({size:'mid',render:()=>({title:esc(ORG.name),sub:'Профиль организации · только просмотр',body:orgMainView(),foot:`${can('org')?`<button class="btn" id="op-edit">${ic('edit','sm')}Редактировать</button>`:''}<button class="btn cta" data-close>Закрыть</button>`,mount(el,m){const b=$('#op-edit',el);if(b)b.onclick=()=>{m.close();go('org','main')}}})});
 }
 function orgMainView(){return `<div class="box"><h3>Основное</h3><div class="kv"><div><span class="k">Название</span><span class="v">${esc(ORG.name)}</span></div><div><span class="k">ИНН</span><span class="v mono">${ORG.inn}</span></div><div><span class="k">Адрес</span><span class="v">${esc(ORG.address)}</span></div><div><span class="k">Телефон</span><span class="v">${esc(fmtPhone(ORG.phone))}</span></div><div><span class="k">Руководитель</span><span class="v">${esc(ORG.head)}</span></div><div><span class="k">На платформе с</span><span class="v">${fmtD(ORG.created)}</span></div></div></div>
-  <div class="box"><h3>Реквизиты для приёма денег от контрагентов</h3><table class="mini"><thead><tr><th>Банк</th><th>Расчётный счёт</th><th>БИК</th><th></th></tr></thead><tbody>${ORG.accounts.map(a=>`<tr><td>${esc(a.bank)}</td><td class="mono">${esc(a.acc)}</td><td class="mono">${esc(a.bik)}</td><td>${a.main?pill('Основной',{Основной:['green','star']}):''}</td></tr>`).join('')}</tbody></table></div>`}
+  <div class="box"><h3>Реквизиты для приёма денег от контрагентов</h3><table class="mini"><thead><tr><th>Банк</th><th>Расчётный счёт</th><th>БИК</th><th></th></tr></thead><tbody id="og-accs">${orgAccRows()}</tbody></table></div>`}
 
 /* ═════════════ Главная ═════════════ */
 function plate({icon,color,label,value,unit,sub,on,id}){return `<button class="plate ${on?'on':''}" data-plate="${id}"><span class="pl-top"><span class="pl-dot ${color}">${ic(icon)}</span>${esc(label)}</span><span class="pl-val">${value}${unit?`<small>${unit}</small>`:''}</span>${sub?`<span class="pl-sub">${sub}</span>`:''}</button>`}
@@ -2754,8 +2759,8 @@ function bindInt(el,cfgOf,m){
 function rateRows(chosen,rates,fixed){const ids=[...chosen].filter(id=>T[id].rates&&T[id].rates.length);if(!ids.length)return '';
   return `<div class="tbl-wrap"><table class="mini"><thead><tr><th>Вид отчёта</th><th>Ставка</th>${fixed?'<th class="num">Повторяющаяся сумма, сом</th>':''}</tr></thead><tbody>${ids.map(id=>{const t=T[id];return `<tr><td><b>${esc(t.short)}</b> <span class="faint">${esc(t.name)}</span></td><td>${t.rates.length>1?sel('rt-'+id,t.rates,rates[id]||t.rates[Math.min(1,t.rates.length-1)],`data-rate="${id}" style="min-height:30px;padding:3px 8px;width:auto"`):esc(t.rates[0])}</td>${fixed?`<td class="num">${t.sum?`<input class="inp tnum" data-fix="${id}" value="${fixed[id]??''}" inputmode="decimal" placeholder="нет" style="max-width:120px;margin-left:auto;text-align:right;min-height:30px;padding:3px 8px" aria-label="Повторяющаяся сумма ${esc(t.short)}">`:'<span class="faint">—</span>'}</td>`:''}</tr>`}).join('')}</tbody></table></div>`}
 const bindRates=(el,rates,fixed)=>{$$('[data-rate]',el).forEach(s=>s.onchange=()=>rates[s.dataset.rate]=s.value);if(fixed)$$('[data-fix]',el).forEach(i=>i.oninput=()=>{const n=parseNum(i.value);if(isNaN(n))delete fixed[i.dataset.fix];else fixed[i.dataset.fix]=n})};
-function addCpDlg(){
-  const st={regime:'Единый налог',form:'ОсОО',kind:'regular',per:'M',sel:new Set(),rates:{}};
+function addCpDlg(kind){
+  const st={regime:'Единый налог',form:'ОсОО',kind:kind||(S.mod==='cps'&&S.tab==='oneoff'?'oneoff':'regular'),per:'M',sel:new Set(),rates:{}};
   openModal({form:true,size:'mid',render:m=>{const fake={regime:st.regime,form:st.form};const d=st.d||{};const reg=st.kind==='regular';const feeOn=feat('fee')&&can('fee')&&reg;
     return {title:'Новый контрагент',sub:'Обязательные поля отмечены звёздочкой, остальные можно заполнить позже',body:`<div class="form">
     <div class="fld full"><label>Тип обслуживания</label><div class="seg" role="group" aria-label="Тип обслуживания" id="nc-kind" style="align-self:flex-start;width:max-content">${[['regular','Постоянное обслуживание'],['oneoff','Разовое']].map(([k,l])=>`<button type="button" data-k="${k}" class="${st.kind===k?'on':''}">${l}</button>`).join('')}</div><div class="hint">${reg?'Сдаёт отчёты, платит за обслуживание по тарифу.':'Отчётов и тарифа нет: только разовые услуги и проекты. Потом можно перевести в постоянное.'}</div></div>
@@ -2811,6 +2816,12 @@ function addCpDlg(){
 /* ── Import by paste ── */
 const IMP_COLS=[['name','Название',['название','наименование','контрагент','компания']],['inn','ИНН',['инн']],['phone','Телефон',['телефон','тел','номер']],['types','Виды отчётов',['отчёты','отчеты','виды отчётов','виды отчетов','отчет']],['fee','Стоимость обслуживания',['стоимость','обслуживание','тариф','ставка']],['resp','Ответственный',['ответственный','бухгалтер','сотрудник']],['form','Форма собственности',['форма','форма собственности']],['regime','Режим налогообложения',['режим','режим налогообложения']],['ugns','УГНС (код)',['угнс','налоговый орган','код угнс','гнс']],['head','Руководитель',['руководитель','директор']],['contact','Контактное лицо',['контакт','контактное лицо']],['note','Примечание',['примечание','комментарий']],['skip','— не загружать —',[]]];
 const IMP_SAMPLE=['Название\tИНН\tТелефон\tВиды отчётов\tСтоимость обслуживания\tОтветственный\tФорма собственности\tРежим налогообложения','ОсОО «Жашыл Талаа»\t01504202010077\t+996 555 404 404\tЕН кв., Соцфонд, ЕНД орг.\t15000\tАлишер Т.\tОсОО\tЕдиный налог','ИП Бектурова Ж. А.\t21002199001234\t0700 112 233\tЕНД ИП\t6000\taigerim\tИП\tПатент','ОсОО «Азия Кофе»\t0160320181\t555 778 900\tНДС, Соцфонд\t25000\tНурлан Б.\tОсОО\tОНР','ОсОО «Ала-Тоо Трейд»\t'+'{dupinn}'+'\t772 100 200\tНДС\t20000\tМээрим К.\tОсОО\tОНР','ОсОО «Байтик Строй»\t02208201910555\t+7 701 555 44 33\tНДС, ЕН кв.\t18000\tАйгерим С.\tОсОО\tОНР'].join('\n');
+// The sample adapts to the organization: its employees and connected report types; rows 3–4 keep the demo errors (short and duplicate INN).
+function impSample(){const em=EMP.filter(e=>e.active!==false).map(e=>e.short);const ty=RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on).map(t=>t.short);
+  return IMP_SAMPLE.replace('{dupinn}',CPS[0]?CPS[0].inn:'02105199910024').split('\n').map((r,k)=>{if(!k)return r;const c=r.split('\t');
+    if(em.length&&!EMP.some(e=>[e.short,e.fio,e.login].includes(c[5])))c[5]=em[(k-1)%em.length];
+    if(ty.length&&c[3].split(',').some(x=>!RT.some(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(t.short===x.trim()||t.name===x.trim()))))c[3]=ty.slice((k-1)%ty.length,(k-1)%ty.length+2).join(', ')||ty[0];
+    return c.join('\t')}).join('\n')}
 function impTemplate(){const req=new Set(['name','inn','phone','types','resp'].concat(feat('fee')&&can('fee')?['fee']:[]));const cols=IMP_COLS.filter(c=>c[0]!=='fee'||(feat('fee')&&can('fee')));
   const ex={name:'ОсОО «Пример»',inn:'01234567890123',phone:'+996 555 123 456',types:'НДС, Соцфонд',fee:'15000',resp:EMP.find(e=>e.active&&e.role==='acc').login};
   const hint={inn:'14 цифр',phone:'с кодом страны; без кода — +996',types:'через запятую, краткие названия из справочника',fee:'сом в месяц, числом',resp:'логин или ФИО сотрудника',ugns:'код из справочника, например 002',regime:'из справочника режимов',form:'из справочника форм'};
@@ -2850,7 +2861,7 @@ function importDlg(){
     mount(el){const q=s=>el.querySelector(s);
       if(q('#im-ta')){const ta=q('#im-ta');ta.oninput=()=>st.text=ta.value}
       if(q('#im-tpl'))q('#im-tpl').onclick=impTemplate;
-      if(q('#im-sample'))q('#im-sample').onclick=()=>{st.text=IMP_SAMPLE.replace('{dupinn}',CPS[0].inn);m.draw()};
+      if(q('#im-sample'))q('#im-sample').onclick=()=>{st.text=impSample();m.draw()};
       if(q('#im-parse'))q('#im-parse').onclick=()=>{if(!st.text.trim()){setErr(el,'im-ta','Вставьте хотя бы одну строку');return}parse();m.draw()};
       if(q('#im-back'))q('#im-back').onclick=()=>{st.rows=null;m.draw()};
       $$('[data-col]',el).forEach(s=>s.onchange=()=>{st.map[+s.dataset.col]=s.value;st.rows.forEach(r=>r.errs=null);m.draw()});
@@ -3422,16 +3433,17 @@ function requestDlg(){openModal({form:true,render:()=>({title:'Попросит�
 const REQUESTS=[{at:addDays(TODAY,-3),org:'ОсОО «Финконсалт Ош»',what:'Форма 1-ИП (Нацстатком)',dict:'Виды отчётов',status:'Новый'}];
 
 /* ═════════════ Моя организация ═════════════ */
+const orgAccRows=()=>ORG.accounts.map(a=>`<tr><td>${esc(a.bank)}</td><td class="mono">${esc(a.acc)}</td><td class="mono">${esc(a.bik)}</td><td>${a.main?pill('Основной',{Основной:['green','star']}):''}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Счетов пока нет</td></tr>';
 function renderOrg(body,tab){
   const ro=!can('org');
   if(tab==='main'){
     if(ro){body.innerHTML=`<div class="note">${ic('lock')}<span>Редактировать может только владелец организации. Вы видите профиль только для просмотра.</span></div>${orgMainView()}`;return}
     body.innerHTML=`<div class="box"><h3>Основное</h3><div class="form">${fld('Название',inp('og-name',ORG.name),{req:true,full:true,id:'og-name'})}${fld('ИНН',inp('og-inn',ORG.inn,'class="inp mono" maxlength="14"'),{req:true,id:'og-inn'})}${fld('Телефон',phoneInput('og-ph',ORG.phone),{id:'og-ph'})}${fld('Адрес',inp('og-addr',ORG.address),{full:true,id:'og-addr'})}${fld('Руководитель',inp('og-head',ORG.head),{id:'og-head'})}${fld('Логотип',`<input class="inp" type="file" id="og-logo" accept="image/*">`,{id:'og-logo'})}</div><div class="row"><div class="grow"></div><button class="btn cta" id="og-save">Сохранить</button></div></div>
-    <div class="box"><h3>Реквизиты для приёма денег от контрагентов<span class="grow"></span><button class="btn sm" id="og-addacc">${ic('plus','sm')}Добавить счёт</button></h3><table class="mini"><thead><tr><th>Банк</th><th>Расчётный счёт</th><th>БИК</th><th></th></tr></thead><tbody>${ORG.accounts.map(a=>`<tr><td>${esc(a.bank)}</td><td class="mono">${esc(a.acc)}</td><td class="mono">${esc(a.bik)}</td><td>${a.main?pill('Основной',{Основной:['green','star']}):''}</td></tr>`).join('')}</tbody></table><span class="hint">Юрлица часто не могут переводить на карты физлиц — тогда контрагент переводит деньги на налоги сюда. Это выбирается в карточке контрагента.</span></div>`;
+    <div class="box"><h3>Реквизиты для приёма денег от контрагентов<span class="grow"></span><button class="btn sm" id="og-addacc">${ic('plus','sm')}Добавить счёт</button></h3><table class="mini"><thead><tr><th>Банк</th><th>Расчётный счёт</th><th>БИК</th><th></th></tr></thead><tbody id="og-accs">${orgAccRows()}</tbody></table><span class="hint">Юрлица часто не могут переводить на карты физлиц — тогда контрагент переводит деньги на налоги сюда. Это выбирается в карточке контрагента.</span></div>`;
     bindPhone(body,'og-ph');
     $('#og-save').onclick=()=>{const ok=[setErr(body,'og-name',val(body,'og-name')?'':'Введите название'),setErr(body,'og-inn',/^\d{14}$/.test(val(body,'og-inn'))?'':'ИНН — 14 цифр')].every(Boolean);if(!ok)return;ORG.name=val(body,'og-name');ORG.inn=val(body,'og-inn');ORG.address=val(body,'og-addr');ORG.head=val(body,'og-head');const p=readPhone(body,'og-ph');if(p.ok)ORG.phone=p.ph;log('org','main','Изменены основные сведения');renderSide();toast('Сохранено')};
     $('#og-addacc').onclick=()=>openModal({form:true,render:()=>({title:'Счёт организации',body:`<div class="form">${fld('Банк',sel('oa-b',DICT.banks.items.map(x=>x.name),'M-Bank'),{req:true,id:'oa-b'})}${fld('БИК',inp('oa-bik','','class="inp mono" inputmode="numeric"'),{req:true,id:'oa-bik'})}${fld('Расчётный счёт',inp('oa-acc','','class="inp mono" inputmode="numeric"'),{req:true,full:true,id:'oa-acc'})}</div>`,foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="oa-ok">Добавить</button>',
-      mount(el,m){$('#oa-ok',el).onclick=()=>{const ok=[setErr(el,'oa-acc',val(el,'oa-acc').replace(/\D/g,'').length>=16?'':'Счёт — 16 цифр'),setErr(el,'oa-bik',/^\d{6}$/.test(val(el,'oa-bik'))?'':'БИК — 6 цифр')].every(Boolean);if(!ok)return;ORG.accounts.push({bank:val(el,'oa-b'),acc:val(el,'oa-acc'),bik:val(el,'oa-bik'),main:false});m.close();renderPage();toast('Счёт добавлен')}}})});
+      mount(el,m){$('#oa-ok',el).onclick=()=>{const ok=[setErr(el,'oa-acc',val(el,'oa-acc').replace(/\D/g,'').length>=16?'':'Счёт — 16 цифр'),setErr(el,'oa-bik',/^\d{6}$/.test(val(el,'oa-bik'))?'':'БИК — 6 цифр')].every(Boolean);if(!ok)return;const a={bank:val(el,'oa-b'),acc:val(el,'oa-acc'),bik:val(el,'oa-bik'),main:!ORG.accounts.length};ORG.accounts.push(a);log('org','accounts',`Добавлен счёт ${a.bank} ${a.acc}`);const tb=$('#og-accs');if(tb)tb.innerHTML=orgAccRows();m.close();toast('Счёт добавлен')}}})});
     return}
   if(tab==='policy'){
     body.innerHTML=`${ro?`<div class="note">${ic('lock')}<span>Менять учётную политику может только владелец. Изменения записываются в историю.</span></div>`:''}
@@ -3440,8 +3452,8 @@ function renderOrg(body,tab){
     body.onchange=e=>{const x=e.target;if(!x.dataset.feat)return;const k=x.dataset.feat;
       if(!x.checked){const need=FEATURES.filter(f=>f[3]&&f[3].includes(k)&&feat(f[0]));if(need.length){x.checked=true;toast(`Сначала отключите «${need[0][1]}» — она работает только вместе с этой функцией`,'alert',true);return}}
       else{const f=FEATURES.find(f=>f[0]===k);if(f[3]){const off=f[3].filter(d=>!feat(d));if(off.length){x.checked=false;toast(`Сначала включите «${FEATURES.find(z=>z[0]===off[0])[1]}»`,'alert',true);return}}}
-      ORG.features[k]=x.checked;log('org','policy',`${x.checked?'Включена':'Отключена'} функция «${FEATURES.find(f=>f[0]===k)[1]}»`);refreshAll();toast(`${FEATURES.find(f=>f[0]===k)[1]}: ${x.checked?'включено':'отключено'}`)};
-    $$('[data-rd]',body).forEach(b=>b.onclick=()=>{ORG.remind.splice(+b.dataset.rd,1);renderPage();ckHit('remind')});const ra=$('#rd-add',body);if(ra)ra.onkeydown=e=>{if(e.key==='Enter'){const n=+ra.value;if(n>0&&n<=60&&!ORG.remind.includes(n)){ORG.remind.push(n);ORG.remind.sort((a,b)=>b-a);renderPage();ckHit('remind');toast('Набор дней сохранён')}}};
+      ORG.features[k]=x.checked;ckBase();log('org','policy',`${x.checked?'Включена':'Отключена'} функция «${FEATURES.find(f=>f[0]===k)[1]}»`);refreshAll();toast(`${FEATURES.find(f=>f[0]===k)[1]}: ${x.checked?'включено':'отключено'}`)};
+    $$('[data-rd]',body).forEach(b=>b.onclick=()=>{ORG.remind.splice(+b.dataset.rd,1);log('org','policy','Дни напоминаний: за '+(ORG.remind.join(', ')||'—')+' дн.');renderPage();ckHit('remind')});const ra=$('#rd-add',body);if(ra)ra.onkeydown=e=>{if(e.key==='Enter'){const n=+ra.value;if(n>0&&n<=60&&!ORG.remind.includes(n)){ORG.remind.push(n);ORG.remind.sort((a,b)=>b-a);log('org','policy','Дни напоминаний: за '+ORG.remind.join(', ')+' дн.');renderPage();ckHit('remind');toast('Набор дней сохранён')}}};
     return}
   const fs=allFiles();const used=fs.reduce((a,f)=>a+(f.size||0),0);
   body.innerHTML=`<div class="box" id="org-storage"><h3>Хранилище файлов</h3><div class="row"><span class="grow">Занято <b>${fmtSize(used)}</b> · файлов: ${fs.length}</span><span class="hint">Ограничение на один файл — 20 МБ</span></div></div><div class="box"><h3>Общие</h3><div class="form">${fld('Часовой пояс',sel('st-tz',['Asia/Bishkek (UTC+6)'],ORG.tz,ro?'disabled':''),{id:'st-tz',hint:'«Сегодня» и «эта неделя» считаются по нему'})}${fld('Роль по умолчанию для новых сотрудников',sel('st-role',ROLES.filter(r=>r.id!=='owner').map(r=>[r.id,r.name]),ORG.defaultRole,ro?'disabled':''),{id:'st-role'})}</div></div>
@@ -3946,7 +3958,7 @@ function setDataMode(v){DATA_MODE=v;store.set('data',v);
   Object.entries(DATA_KEYS).forEach(([k,a])=>{a.length=0;a.push(...structuredClone(SNAP[k]))});
   Object.keys(CPM).forEach(k=>delete CPM[k]);CPS.forEach(c=>CPM[c.id]=c);Object.keys(EM).forEach(k=>delete EM[k]);EMP.forEach(e=>EM[e.id]=e);
   Object.keys(ORG).forEach(k=>delete ORG[k]);Object.assign(ORG,structuredClone(SNAP.ORG));
-  ckReset();if(v==='empty'){emptyOrg();store.set('tour.e1',null);store.set('chk.hidden',false)}
+  ckReset();if(v==='empty'){emptyOrg();store.set('tour.e1',null);store.set('chk.hidden',false)}derive();ckBase();
   MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
   Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
   if(location.hash==='#home.today')route();else location.hash='#home.today';
@@ -3954,7 +3966,7 @@ function setDataMode(v){DATA_MODE=v;store.set('data',v);
   if(v==='empty')setTimeout(()=>tourStart('full',0),600)}
 seed();seedKpi();seedAudit();SNAP=structuredClone({...DATA_KEYS,ORG});if(DATA_MODE==='empty')emptyOrg();derive();initTop();
 if(!location.hash||location.hash==='#')history.replaceState(null,'','#home');
-route();ckEval();
+route();ckBase();ckBar();
 if(DATA_MODE==='empty'&&!(store.get('tour.e1',null)||{}).done)setTimeout(()=>tourStart('full',(store.get('tour.e1',null)||{}).i||0),700);
 </script>
 
