@@ -451,6 +451,17 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .modal.wide{width:min(1100px,100%);height:min(860px,calc(100dvh - 48px))}
 .modal.mid{width:min(780px,100%)}
 .mh{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 10px 22px}
+.mh-btns{display:flex;gap:2px;flex:none}
+.cover.max{padding:12px}
+.modal.max,.modal.max.wide,.modal.max.mid{width:100%;height:calc(100dvh - 24px);max-height:none;animation:none}
+.modal.max .mb>*{width:100%;max-width:1600px;margin-inline:auto}
+.modal.max.narrow .mb>*{max-width:980px}
+.modal.max .gscroll{max-height:max(320px,calc(100dvh - 250px))}
+.modal.max .mx{max-height:max(360px,calc(100dvh - 220px))}
+.modal.max .mh,.modal.max .mf{padding-inline:max(22px,calc((100% - 1600px)/2))}
+.modal.max.narrow .mh,.modal.max.narrow .mf{padding-inline:max(22px,calc((100% - 980px)/2))}
+.modal.sizing{transition:width .22s cubic-bezier(.2,.8,.2,1),height .22s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.modal.sizing{transition:none}}
 .mh h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.015em;text-wrap:balance;line-height:1.25}
 .mh .sub{color:var(--muted);font-size:13px;margin-top:3px}
 .mb{padding:6px 22px 18px;overflow:auto;overflow-x:hidden;min-height:0;flex:1;display:flex;flex-direction:column;gap:14px}
@@ -524,6 +535,10 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
   .cover{place-items:end stretch;padding:0}
   .modal,.modal.wide,.modal.mid{width:100%;max-height:92dvh;height:auto;border-radius:var(--r-xl) var(--r-xl) 0 0;padding-bottom:env(safe-area-inset-bottom,0px);border-bottom:0}
   .modal.wide{height:92dvh}
+  .cover.max{padding:0}
+  .modal.max,.modal.max.wide,.modal.max.mid{height:100dvh;max-height:100dvh;border-radius:0;border:0;padding-top:env(safe-area-inset-top,0px)}
+  .modal.max .gscroll{max-height:none}
+  .modal.max .mh,.modal.max .mf,.modal.max.narrow .mh,.modal.max.narrow .mf{padding-inline:16px}
   .grabber{display:block;width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:8px auto 0}
   .mh{padding:12px 14px 8px 16px}.mb{padding:4px 16px 16px}.mf{padding:10px 16px 12px}
 }
@@ -694,6 +709,8 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 'use strict';
 /* ═════════════ Icons (Lucide-style strokes, as in Obsidian) ═════════════ */
 const ICONS={
+maximize:'<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
+minimize:'<path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/>',
 grip:'<circle cx="9" cy="6" r=".9"/><circle cx="15" cy="6" r=".9"/><circle cx="9" cy="12" r=".9"/><circle cx="15" cy="12" r=".9"/><circle cx="9" cy="18" r=".9"/><circle cx="15" cy="18" r=".9"/>',
 layers:'<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/>',
 menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -1175,6 +1192,11 @@ function openModal(o){
   cover.innerHTML=`<div class="modal ${o.size||''}" role="dialog" aria-modal="true"></div>`;
   document.body.appendChild(cover);
   const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1)}};
+  m.canMax=!!(o.size||o.form)&&!o.noMax;m.maxKey='modal.max.'+(o.form?'form':'card');if(o.form&&o.size!=='wide')m.el.classList.add('narrow');
+  m.setMax=(on,save)=>{if(!m.canMax)on=false;m.max=on;const fl=m.el.getBoundingClientRect();cover.classList.toggle('max',on);m.el.classList.toggle('max',on);
+    if(save){store.set(m.maxKey,on);
+      if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!isMobile()){const to=m.el.getBoundingClientRect();m.el.animate([{transform:`translate(${fl.left+fl.width/2-to.left-to.width/2}px,${fl.top+fl.height/2-to.top-to.height/2}px) scale(${fl.width/to.width},${fl.height/to.height})`},{transform:'none'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'})}}
+    if(m.drawn)m.draw()};
   MODALS.push(m);
   formPager(m);
   const mark=e=>{if(e.target.closest&&e.target.closest('.form,.fld'))m.dirty=true};m.el.addEventListener('input',mark);m.el.addEventListener('change',mark);
@@ -1183,19 +1205,20 @@ function openModal(o){
   m.draw=()=>{
     const keep=m.el.querySelector('.mb')?m.el.querySelector('.mb').scrollTop:0;
     const r=o.render(m);
-    m.el.innerHTML=`<div class="grabber"></div><div class="mh"><div style="flex:1;min-width:0"><h2>${r.title}</h2>${r.sub?`<div class="sub">${r.sub}</div>`:''}</div>${r.head||''}<button class="icon-btn" data-x aria-label="Закрыть">${ic('x')}</button></div><div class="mb">${r.body}</div>${r.foot?`<div class="mf">${r.foot}</div>`:''}`;
+    m.el.innerHTML=`<div class="grabber"></div><div class="mh"><div style="flex:1;min-width:0"><h2>${r.title}</h2>${r.sub?`<div class="sub">${r.sub}</div>`:''}</div>${r.head||''}<div class="mh-btns">${m.canMax?`<button class="icon-btn" data-max aria-pressed="${!!m.max}" aria-label="${m.max?'Свернуть окно':'На весь экран'}" title="${m.max?'Свернуть окно':'На весь экран'}${isMobile()?'':' (двойной клик по заголовку)'}">${ic(m.max?'minimize':'maximize')}</button>`:''}<button class="icon-btn" data-x aria-label="Закрыть">${ic('x')}</button></div></div><div class="mb">${r.body}</div>${r.foot?`<div class="mf">${r.foot}</div>`:''}`;
     m.el.querySelector('[data-x]').onclick=m.close;
+    if(m.canMax){m.el.querySelector('[data-max]').onclick=()=>m.setMax(!m.max,true);m.el.querySelector('.mh').ondblclick=e=>{if(!e.target.closest('button,a,input,select'))m.setMax(!m.max,true)}}
     $$('[data-close]',m.el).forEach(b=>b.onclick=m.close);
     r.mount&&r.mount(m.el,m);
     m.el.querySelector('.mb').scrollTop=keep;
   };
-  m.draw();
-  if(!isMobile()){const f=m.el.querySelector('.mb input:not([type=checkbox]):not([readonly]),.mb textarea,.mb select');f&&f.focus()}
+  m.setMax(!!store.get(m.maxKey,false));m.draw();m.drawn=true;
+  if(!isMobile()){const f=m.el.querySelector('.mb .fld input:not([type=checkbox]):not([readonly]),.mb .fld textarea,.mb .fld select');f&&f.focus({preventScroll:true})}
   return m;
 }
 function toast(msg,icon='check',bad=false){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.innerHTML=ic(icon)+`<span>${esc(msg)}</span>`;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320)},3200)}
 function confirmDlg({title,text,ok='Подтвердить',danger=false,run}){
-  openModal({render:()=>({title,body:`<p style="margin:0;color:var(--muted);line-height:1.55">${text}</p>`,foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn ${danger?'danger':'cta'}" id="cf-ok">${esc(ok)}</button>`,
+  openModal({noMax:true,render:()=>({title,body:`<p style="margin:0;color:var(--muted);line-height:1.55">${text}</p>`,foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn ${danger?'danger':'cta'}" id="cf-ok">${esc(ok)}</button>`,
     mount(el,m){$('#cf-ok',el).onclick=()=>{m.close();run()}}})});
 }
 /* Form helpers */
