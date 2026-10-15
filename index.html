@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Прототип Buhuchet.kg v19</title>
+<title>Прототип Buhuchet.kg v20</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -253,6 +253,8 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .pill.yellow{background:var(--yellow-bg);color:var(--yellow)}
 .pill.green{background:var(--green-bg);color:var(--green)}
 .pill.blue{background:var(--blue-bg);color:var(--blue)}
+.pill.actp{gap:3px}.pill.actp .ic{width:13px;height:13px}.pill.act-sub{background:var(--blue-bg);color:var(--blue)}.pill.act-pay{background:var(--green-bg);color:var(--green)}.pill.act-both{background:linear-gradient(90deg,var(--blue-bg),var(--green-bg));color:var(--blue)}
+.actq{margin:2px 0 10px}.actq button .n{opacity:.7;margin-left:4px}
 .pill.purple{background:var(--purple-bg);color:var(--purple)}
 .pill.faint{background:transparent;color:var(--faint);box-shadow:inset 0 0 0 1px var(--border)}
 .pill.sm{font-size:11px;line-height:17px;padding:0 7px 0 6px}
@@ -927,6 +929,18 @@ const RT=[
  {id:'cap',name:'Отчёт об изменениях в капитале',short:'Капитал',code:'—',organ:'Сам контрагент',per:'Y',ym:4,day:1,sum:false,kind:'internal'},
 ].map(t=>Object.assign({shift:true,active:true,who:'all',regimes:[]},t)).map(t=>{t.rates=t.rates||RATES[t.id]||[];return t});
 const T=Object.fromEntries(RT.map(t=>[t.id,t]));
+// «Что нужно сделать»: sub — «Сдача», pay — «Уплата», both — «Сдача + уплата»; sum/payOnly are derived from it.
+const ACT_L={sub:'Сдача',pay:'Уплата',both:'Сдача + уплата'};const ACT_IN={'сдача':'sub','уплата':'pay','сдача + уплата':'both','сдача+уплата':'both'};
+const ACTF={sub:{sum:false,payOnly:false},pay:{sum:true,payOnly:true},both:{sum:true,payOnly:false}};
+const ACT0={zon:'pay',tbo:'pay',imu:'pay',trn:'pay',zem:'pay',sez:'sub'};
+const PAYS0={soc:[['Подоходный налог','ГНС'],['Страховые взносы','Соцфонд']],imp:[['НДС при импорте','ГНС'],['Акциз при импорте','ГНС']],endo:[['Налог на прибыль, доплата по году','ГНС']],endi:[['Доплата по году','ГНС']],pat:[['Стоимость патента','ГНС']]};
+function setAct(t,a){t.act=a;Object.assign(t,ACTF[a]);if(a==='sub')t.pays=[];else if(!t.pays||!t.pays.length)t.pays=[{n:t.name,to:t.organ,kbk:''}];return t}
+RT.forEach(t=>{setAct(t,ACT0[t.id]||(t.payOnly?'pay':t.sum?'both':'sub'));if(PAYS0[t.id])t.pays=PAYS0[t.id].map(([n,to])=>({n,to,kbk:''}))});
+// A report keeps the «Что нужно сделать» it was created with (r.act is stamped when the type changes later).
+function tR(r){return Object.assign(Object.create(T[r.t]),ACTF[r.act||T[r.t].act],{act:r.act||T[r.t].act})}
+const actOf=r=>r.act||T[r.t].act;
+const actPill=(a,sm)=>`<span class="pill actp act-${a}${sm?' sm':''}">${a!=='pay'?ic('file','sm'):''}${a!=='sub'?ic('coins','sm'):''}${ACT_L[a]}</span>`;
+const paysTxt=t=>{const ps=t.pays||[];return ps.map(p=>p.n+(p.to&&(ps.length>1||p.to!==t.organ)?` (${p.to})`:'')).join('; ')};
 const PER_LABEL={M:'Месяц',Q:'Квартал',H:'Полугодие',Y:'Год'};
 const ROM2=['I','II'];
 const ROM=['I','II','III','IV'];
@@ -1038,7 +1052,7 @@ function makeReport(cp,t,p,resp){
 }
 function amountFor(t){const[a,b]=t.range||[2000,20000];if(a===0&&b===0)return 0;return Math.round(rint(a,b)/10)*10}
 function schedule(r){
-  const t=T[r.t];if(!t.sum)return [];
+  const t=tR(r);if(!t.sum)return [];
   const sum=r.sum||0;let dates;
   if(t.inst==='q20')dates=[[2,20],[5,20],[8,20],[11,20]];
   else if(t.inst==='q25')dates=[[3,25],[6,25],[9,25],[12,25]];
@@ -1167,7 +1181,7 @@ function derive(){
   CPS.forEach(c=>{c.overdue=0;c.avail=0;c.free=0;c.status=cpStatus(c);c.paused=c.status==='Приостановлен'});
   const recv={};OPS.forEach(o=>{if(o.kind==='in')(o.alloc||[]).forEach(x=>{recv[x.r]=(recv[x.r]||0)+x.a})});
   const by={};
-  REPORTS.forEach(r=>{const t=T[r.t];
+  REPORTS.forEach(r=>{const t=tR(r);
     const sch=schedule(r);const u=sch.find(x=>x.paid<x.amount);r.payDue=t.sum?(u?u.due:(sch.length?sch[sch.length-1].due:r.due)):null;
     r.payStatus=!t.sum||r.status==='Не требуется'?'Не требуется':r.sum==null?'Не оплачено':r.sum===0?'Не требуется':r.paid>=r.sum?'Оплачено':r.paid>0?'Оплачено частично':'Не оплачено';
     if(t.payOnly&&r.status!=='Не требуется')r.status=r.sum>0&&r.paid>=r.sum?'Принят':'К сдаче';
@@ -1181,7 +1195,7 @@ function derive(){
   CPS.forEach(c=>{
     let av=0;OPS.forEach(o=>{if(o.cp!==c.id)return;av+=(o.kind==='in'||o.kind==='back'||o.kind==='corr')?o.amount:-o.amount});
     c.avail=av;let left=av;
-    (by[c.id]||[]).filter(r=>T[r.t].sum&&r.sum>0&&r.status!=='Не требуется'&&!r.superseded).sort((a,b)=>a.payDue<b.payDue?-1:1).forEach(r=>{
+    (by[c.id]||[]).filter(r=>tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&!r.superseded).sort((a,b)=>a.payDue<b.payDue?-1:1).forEach(r=>{
       if(r.paid>=r.sum){r.money={s:'paid'};return}
       const need=r.sum-r.paid;if(left>=need){r.money={s:'ok',need};left-=need}else{r.money={s:'short',n:need-left,need};left=0}
     });
@@ -1271,10 +1285,10 @@ const COLL=new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
 function gst(cfg){let s=GS[cfg.id];if(!s){const sv=store.get('g5.'+cfg.id,{});s=GS[cfg.id]={view:sv.view||null,density:sv.density||'normal',width:sv.width||'full',hidden:new Set(sv.hidden||defHidden(cfg)),order:sv.order||null,widths:sv.widths||{},sort:sv.sort!==undefined?sv.sort:defSort(cfg),group:sv.group||[],agg:sv.agg||{},closed:new Set(),filters:{},page:0,size:sv.size||25,sel:new Set()}}return s}
 /* Сортировка по умолчанию во всех списках — от новых к старым по «Создано» */
 /* Видимые по умолчанию столбцы по спискам (ТЗ, «Столбцы, видимые по умолчанию»); остальные — в меню «Столбцы» */
-const SHOW={'cp-rep':['type','period','due','status','sum','paystatus','resp'],'rep-':['cp','type','period','due','status','wait','sum','paystatus','resp'],
+const SHOW={'cp-rep':['type','act','period','due','status','sum','paystatus','resp'],'rep-':['cp','type','act','period','due','status','wait','sum','paystatus','resp'],
  'cps-':['name','inn','regime','resp','over','svc'],'tasks-':['title','cp','exec','date','status'],'staff':['fio','role','phone','cps','over','active'],
  'fin-journal':['date','cp','total','tax','adv','files'],'cp-fin':['date','cat','what','amount','acc'],'fin-svc':null,'fin-':['date','cp','cat','what','amount','acc'],
- 'proj-':['name','cp','from','to','resps','status','paid'],'files':['name','cp','src','by','date'],'dict-types':['on','name','organ','per','rule','file','rcpt','used'],
+ 'proj-':['name','cp','from','to','resps','status','paid'],'files':['name','cp','src','by','date'],'dict-types':['on','name','act','pays','organ','per','rule','file','rcpt','used'],
  'bonus':['month','emp','cp','sum'],'an-cps':['cp','feeCh','fee','debt','total'],'adm-users':['login','fio','org','role','last','active'],'adm-orgs':['name','inn','owner','cps','staff','active']};
 function defHidden(cfg){const k=Object.keys(SHOW).find(k=>cfg.id===k)||Object.keys(SHOW).find(k=>k.endsWith('-')&&cfg.id.startsWith(k));const sh=k&&SHOW[k];
   if(!sh)return cfg.cols.filter(c=>c.hide).map(c=>c.key);const keys=cfg.cols.map(c=>c.key);if(!sh.some(x=>keys.includes(x)))return cfg.cols.filter(c=>c.hide).map(c=>c.key);
@@ -1317,7 +1331,7 @@ function grid(host,cfg){
   if(cfg.preset){s.filters=JSON.parse(JSON.stringify(cfg.preset));s.page=0}
   const rid=r=>String(cfg.rid?cfg.rid(r):r.id);
   const cols=()=>{const keys=cfg.cols.map(c=>c.key);const ord=(s.order||[]).filter(k=>keys.includes(k));keys.forEach(k=>{if(!ord.includes(k))ord.splice(keys.indexOf(k),0,k)});return ord.map(k=>cfg.cols.find(c=>c.key===k))};
-  const vis=()=>{const v=cols().filter(c=>!s.hidden.has(c.key));return v.length?v:[cols()[0]]};
+  const vis=()=>{const v=cols().filter(c=>!s.hidden.has(c.key)&&!(c.deskOnly&&isMobile()));return v.length?v:[cols()[0]]};
   let byId={};
   const gcols=()=>(s.group||[]).map(k=>cols().find(c=>c.key===k)).filter(Boolean);
   function groupTree(rows,lv,path){const gc=gcols();if(lv>=gc.length)return null;const c=gc[lv];const m=new Map();
@@ -1564,7 +1578,7 @@ function counts(){const vr=visReports();const[w0,w1]=weekRange();
   const week=vr.filter(r=>inWeek(r,w0,w1)).length;
   const waiting=vr.filter(r=>r.status==='Сдан').length;
   return {overdue,week,waiting}}
-function inWeek(r,w0,w1){if(CPM[r.cp].paused)return false;return (OPEN.has(r.status)&&!T[r.t].payOnly&&r.due>=w0&&r.due<=w1)||(feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue>=w0&&r.payDue<=w1)}
+function inWeek(r,w0,w1){if(CPM[r.cp].paused)return false;return (OPEN.has(r.status)&&!tR(r).payOnly&&r.due>=w0&&r.due<=w1)||(feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue>=w0&&r.payDue<=w1)}
 function renderSide(){
   const l=mods();const u=me();
   let h=`<div class="brand"><div class="logo" aria-hidden="true"><i></i><i></i><i></i></div><div><div class="brand-name">Buhuchet.kg</div><div class="mode">${isAdmin()?'Admin':'Business'}</div></div></div><nav class="tree">`;
@@ -1580,7 +1594,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v19 · 15.10.2026';
+const PROTO_VER='v20 · 15.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id));const cn=isAdmin()?{}:counts();
@@ -1750,7 +1764,7 @@ function firstEmpty(){const needCp=f=>()=>CPS.length?f():(toast('Сначала 
 function feHtml(e){return `<div class="state fe">${ic(e.icon,'lg')}<b>${esc(e.title)}</b>${e.text?`<span>${esc(e.text)}</span>`:''}<div class="row" style="justify-content:center">${e.btns.filter(Boolean).map((b,i)=>`<button class="btn ${b[3]?'cta':''}" data-a="fe" data-i="${i}">${ic(b[1])}${esc(b[0])}</button>`).join('')}</div></div>`}
 function connectTypesDlg(){const st=new Set(RT.filter(t=>t.active&&t.common).map(t=>t.id));
   openModal({form:true,size:'mid',render:m=>({title:'Подключить виды отчётов',sub:'Каталог платформы. Подключите то, что сдают ваши контрагенты; позже можно поменять.',
-    body:`<div class="fl-list" style="max-height:none">${RT.filter(t=>t.active).map(t=>`<label><input type="checkbox" data-ct="${t.id}" ${st.has(t.id)?'checked':''}><span><b>${esc(t.name)}</b><span class="sub" style="display:block;font-size:11.5px;color:var(--faint)">${esc(t.organ)} · ${esc(PER_LABEL[t.per]||'')}</span></span></label>`).join('')}</div>`,
+    body:`<div class="fl-list" style="max-height:none">${RT.filter(t=>t.active).map(t=>`<label><input type="checkbox" data-ct="${t.id}" ${st.has(t.id)?'checked':''}><span><b>${esc(t.name)}</b> ${actPill(t.act,1)}<span class="sub" style="display:block;font-size:11.5px;color:var(--faint)">${esc(t.organ)} · ${esc(PER_LABEL[t.per]||'')}${t.act!=='sub'?' · уплачивается: '+esc(paysTxt(t)):''}</span></span></label>`).join('')}</div>`,
     foot:`<span class="muted">Выбрано: ${st.size}</span><div class="grow"></div><button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ct-ok" ${st.size?'':'disabled'}>Подключить</button>`,
     mount(el){$$('[data-ct]',el).forEach(x=>x.onchange=()=>{x.checked?st.add(x.dataset.ct):st.delete(x.dataset.ct);m.draw()});
       $('#ct-ok',el).onclick=()=>{st.forEach(id=>{ORG.types[id]=ORG.types[id]||born({days:[...ORG.remind],needFile:false,needReceipt:false});ORG.types[id].on=true;touch(ORG.types[id]);log('org',id,`Подключён вид отчёта «${T[id].name}»`)});m.close();toast(`Подключено видов отчётов: ${st.size}`);refreshAll()}}})})}
@@ -2126,21 +2140,23 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'cp',label:'Контрагент',type:'text',w:220,val:r=>CPM[r.cp].name,html:r=>`<span class="strong">${esc(CPM[r.cp].name)}</span>`},
  {key:'inn',label:'ИНН',type:'text',w:150,val:r=>CPM[r.cp].inn,cls:'mono',hide:true},
  {key:'ugns',label:'УГНС',type:'enum',w:200,val:r=>ugnsLabel(CPM[r.cp].ugns),hide:true},
- {key:'type',label:'Вид отчёта',type:'enum',w:140,val:r=>T[r.t].short,html:r=>`<span title="${esc(T[r.t].name)}">${esc(T[r.t].short)}</span>${r.ver?` <span class="tag blue">уточн. ${r.ver}</span>`:''}`},
+ {key:'type',label:'Вид отчёта',type:'enum',w:140,val:r=>T[r.t].short,html:r=>`<span title="${esc(T[r.t].name)}">${esc(T[r.t].short)}</span>${r.ver?` <span class="tag blue">уточн. ${r.ver}</span>`:''}${isMobile()?' '+actPill(actOf(r),1):''}`},
+ {key:'act',label:'Что сделать',type:'enum',w:175,deskOnly:true,val:r=>ACT_L[actOf(r)],html:r=>actPill(actOf(r),1)},
  {key:'rate',label:'Ставка',type:'enum',w:90,val:r=>rateOf(r),hide:true},
  {key:'organ',label:'Орган',type:'enum',w:110,val:r=>T[r.t].organ,hide:!!o.compact},
  {key:'period',label:'Период',type:'enum',w:112,val:r=>r.plabel,sortVal:r=>r.pkey},
  {key:'due',label:'Срок сдачи',type:'date',w:176,val:r=>r.due,html:dueHtml},
  {key:'days',label:'Дней до срока',type:'int',w:132,num:true,val:r=>isDone(r)?null:diffDays(r.due,TODAY),html:daysHtml,hide:!!o.compact},
- {key:'status',label:'Статус сдачи',type:'enum',w:175,val:r=>T[r.t].payOnly?'Только оплата':r.status,html:r=>T[r.t].payOnly?`<span class="pill faint" title="Вид без сдачи: достаточно оплатить">${ic('coins')}только оплата</span>`:scaleMini('rep',r.status,r)},
+ {key:'status',label:'Статус сдачи',type:'enum',w:175,val:r=>tR(r).payOnly?'—':r.status,html:r=>tR(r).payOnly?'<span class="faint">—</span>':scaleMini('rep',r.status,r)},
  ...(o.waiting?[{key:'wait',label:'Ждём, дней',type:'int',w:100,num:true,val:r=>r.subDate?diffDays(TODAY,r.subDate):null,html:r=>{const d=diffDays(TODAY,r.subDate);return d>=ORG.waitDays?`<span class="pill orange sm">${d}</span>`:String(d)}}]:[]),
- {key:'sub',label:'Дата сдачи',type:'date',w:108,val:r=>r.subDate,hide:!!o.compact},
- {key:'sum',label:'Сумма к уплате',type:'money',w:140,num:true,total:true,val:r=>T[r.t].sum?r.sum:null,html:r=>!T[r.t].sum?'<span class="faint">без суммы</span>':r.sum==null?'<span class="faint">не указана</span>':fmtM(r.sum)+(r.auto?` <span title="Повторяющаяся сумма из назначения">${ic('repeat','sm')}</span>`:'')},
+ {key:'sub',label:'Дата сдачи',type:'date',w:108,val:r=>tR(r).payOnly?null:r.subDate,html:r=>tR(r).payOnly?'<span class="faint">—</span>':r.subDate?fmtD(r.subDate):'',hide:!!o.compact},
+ {key:'sum',label:'Сумма к уплате',type:'money',w:140,num:true,total:true,val:r=>tR(r).sum?r.sum:null,html:r=>!tR(r).sum?'<span class="faint">—</span>':r.sum==null?'<span class="faint">не указана</span>':fmtM(r.sum)+(r.auto?` <span title="Повторяющаяся сумма из назначения">${ic('repeat','sm')}</span>`:'')},
  ...(tp?[
- {key:'paydue',label:'Срок оплаты',type:'date',w:116,val:r=>T[r.t].sum?r.payDue:null,html:r=>T[r.t].sum?`<span class="${r.payOverdue?'red strong':''}">${fmtD(r.payDue)}</span>`:'<span class="faint">—</span>',hide:true},
- {key:'paystatus',label:'Статус оплаты',type:'enum',w:170,val:r=>r.payStatus,html:r=>scaleMini('pay',r.payStatus,r)+(r.payOverdue?` <span class="pill red sm" title="Срок оплаты прошёл">${ic('alert')}просрочено</span>`:'')},
- {key:'paid',label:'Оплачено',type:'money',w:126,num:true,total:true,val:r=>T[r.t].sum?r.paid:null,html:r=>T[r.t].sum?fmtM(r.paid):'<span class="faint">—</span>',hide:!!o.compact},
+ {key:'paydue',label:'Срок оплаты',type:'date',w:116,val:r=>tR(r).sum?r.payDue:null,html:r=>tR(r).sum?`<span class="${r.payOverdue?'red strong':''}">${fmtD(r.payDue)}</span>`:'<span class="faint">—</span>',hide:true},
+ {key:'paystatus',label:'Статус оплаты',type:'enum',w:170,val:r=>tR(r).sum?r.payStatus:'—',html:r=>!tR(r).sum?'<span class="faint">—</span>':scaleMini('pay',r.payStatus,r)+(r.payOverdue?` <span class="pill red sm" title="Срок оплаты прошёл">${ic('alert')}просрочено</span>`:'')},
+ {key:'paid',label:'Оплачено',type:'money',w:126,num:true,total:true,val:r=>tR(r).sum?r.paid:null,html:r=>tR(r).sum?fmtM(r.paid):'<span class="faint">—</span>',hide:!!o.compact},
  {key:'money',label:'Деньги',type:'enum',w:290,val:moneyTxt,html:moneyHtml}]:[]),
+ {key:'pays',label:'Что уплачивается',type:'text',w:220,val:r=>tR(r).sum?paysTxt(T[r.t]):'',hide:true},
  {key:'resp',label:'Ответственный',type:'enum',w:132,val:r=>empName(r.resp),hide:!!o.compact&&!can('viewAll')},
  {key:'pfull',label:'Период полностью',type:'text',w:170,val:r=>r.phuman,sortVal:r=>r.pkey,hide:true},
  {key:'duebase',label:'Срок по закону',type:'date',w:120,val:r=>r.dueBase,hide:true},
@@ -2154,14 +2170,17 @@ const repRowClass=r=>r.overdue||r.payOverdue?'overdue':r.status==='Не треб
 function repGrid(host,id,rows,extra={}){
   return grid(host,Object.assign({id,cols:reportCols(extra),rows,title:'cp',noun:['отчёт','отчёта','отчётов'],rowClass:repRowClass,actions:reportActions,open:openReport,
     sort:{key:'due',dir:1},preset:S.preset,simulateLoad:extra.load,
-    bulk:can('changeStatus')?[{label:'Отметить сданными',icon:'send',run:(rs,done)=>{const ok=rs.filter(r=>OPEN.has(r.status)&&!T[r.t].payOnly);if(!ok.length){toast('Среди выбранных нет отчётов, которые можно сдать','alert',true);return}submitDlg(ok,done)}}]:null,
+    bulk:can('changeStatus')?[{label:'Отметить сданными',icon:'send',run:(rs,done)=>{const ok=rs.filter(r=>OPEN.has(r.status)&&!tR(r).payOnly);if(!ok.length){toast('Среди выбранных нет отчётов, которые можно сдать','alert',true);return}submitDlg(ok,done)}}]:null,
     empty:{icon:'ok',title:extra.emptyTitle||'Отчётов нет',text:extra.emptyText||''}},extra.cfg||{}));
 }
+// «Сдать» — not yet submitted reports that need submitting; «Уплатить» — not yet paid reports that need paying.
+function actQ(r,q){if(q==='all')return true;const t=tR(r);if(r.status==='Не требуется'||r.superseded)return false;
+  if(q==='sub')return !t.payOnly&&OPEN.has(r.status);return t.sum&&(r.sum==null||r.sum>0&&r.paid<r.sum)}
 function renderReports(body,tab,fresh){
   const vr=visReports();const[w0,w1]=weekRange();const month=ym(TODAY);
   if(['week','overdue','waiting','all'].includes(tab)){
     const c=counts();const accepted=vr.filter(r=>r.accDate&&ym(r.accDate)===month).length;
-    const toPay=vr.filter(r=>T[r.t].sum&&r.sum>0&&r.payDue&&ym(r.payDue)===month);
+    const toPay=vr.filter(r=>tR(r).sum&&r.sum>0&&r.payDue&&ym(r.payDue)===month);
     body.innerHTML=`<div class="plates">
       ${plate({id:'overdue',icon:'alert',color:c.overdue?'red':'green',label:'Просрочено',value:c.overdue,sub:'сдача или оплата',on:tab==='overdue'})}
       ${plate({id:'week',icon:'calendar',color:'yellow',label:'На этой неделе',value:c.week,sub:`${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}`,on:tab==='week'})}
@@ -2178,6 +2197,9 @@ function renderReports(body,tab,fresh){
     if(tab==='overdue'){rows=()=>visReports().filter(r=>r.overdue||r.payOverdue);extra.emptyTitle='Просрочек нет';extra.emptyText='Все отчёты сданы и оплачены в срок.'}
     if(tab==='waiting'){rows=()=>visReports().filter(r=>r.status==='Сдан');extra.waiting=true;extra.emptyTitle='Нет отчётов, ожидающих подтверждения'}
     if(tab==='all'){rows=()=>visReports()}
+    const base=rows;const q=S.repAct||'all';rows=()=>base().filter(r=>actQ(r,q));
+    $('#rg',body).insertAdjacentHTML('beforebegin',`<div class="chipsel actq" id="actq" role="group" aria-label="Что нужно сделать">${[['all','Все'],['sub','Сдать'],['pay','Уплатить']].map(([k,l])=>`<button type="button" data-aq="${k}" class="${q===k?'on':''}">${l}<span class="n">${base().filter(r=>actQ(r,k)).length}</span></button>`).join('')}</div>`);
+    $('#actq',body).onclick=e=>{const b=e.target.closest('[data-aq]');if(!b)return;S.repAct=b.dataset.aq;renderPage()};
     repGrid($('#rg',body),'rep-'+tab,rows,extra);
     return;
   }
@@ -2200,8 +2222,8 @@ function renderCalendar(body){
   const first=mkDate(y,mo,1);const wd=(D(first).getUTCDay()+6)%7;const start=addDays(first,-wd);
   const vr=visReports().filter(r=>r.status!=='Не требуется');
   const byDue={};vr.forEach(r=>{(byDue[r.due]=byDue[r.due]||[]).push(r)});
-  const byPay={};if(feat('taxpay'))vr.forEach(r=>{if(T[r.t].sum&&r.sum>0&&r.paid<r.sum){(byPay[r.payDue]=byPay[r.payDue]||[]).push(r)}});
-  let cells='';for(let i=0;i<42;i++){const d=addDays(start,i);const inM=d.slice(0,7)===m;const list=byDue[d]||[];const todo=list.filter(r=>OPEN.has(r.status)&&!T[r.t].payOnly).length;const done=list.length-todo;const pay=(byPay[d]||[]).length;const hol=holidayName(d);
+  const byPay={};if(feat('taxpay'))vr.forEach(r=>{if(tR(r).sum&&r.sum>0&&r.paid<r.sum){(byPay[r.payDue]=byPay[r.payDue]||[]).push(r)}});
+  let cells='';for(let i=0;i<42;i++){const d=addDays(start,i);const inM=d.slice(0,7)===m;const list=byDue[d]||[];const todo=list.filter(r=>OPEN.has(r.status)&&!tR(r).payOnly).length;const done=list.length-todo;const pay=(byPay[d]||[]).length;const hol=holidayName(d);
     cells+=`<button class="cday ${isWorking(d)?'':'off'} ${inM?'':'other'} ${d===TODAY?'today':''} ${S.calSel===d?'sel':''}" data-day="${d}" aria-label="${fmtD(d)}: ${list.length} отчётов"><span class="dn"><span>${+d.slice(8)}</span>${!isWorking(d)&&inM?'<span class="faint" style="font-weight:450;font-size:11px">вых.</span>':''}</span>${hol&&inM?`<span class="hol" title="${esc(hol)}">${esc(hol)}</span>`:''}<span class="cnts">${todo?`<span class="pill sm ${d<TODAY?'red':'yellow'}">${ic('send')}${todo} к сдаче</span>`:''}${done?`<span class="pill sm green">${ic('check')}${done} сдано</span>`:''}${pay?`<span class="pill sm purple">${ic('coins')}${pay} оплат</span>`:''}</span></button>`}
   body.innerHTML=`<div class="calhead"><button class="icon-btn raised" data-cm="-1" aria-label="Предыдущий месяц">${ic('left')}</button><h3>${ymLabel(m)}</h3><button class="icon-btn raised" data-cm="1" aria-label="Следующий месяц">${ic('right')}</button><button class="btn sm ghost" data-cm="0">Сегодня</button><div class="grow" style="flex:1"></div><span class="hint">Сроки уже сдвинуты по производственному календарю КР</span></div>
   <div class="cal">${DOW_S.map(d=>`<div class="dow">${d}</div>`).join('')}${cells}</div>${S.calSel?`<div class="sec-h" style="margin-top:6px">Отчёты со сроком ${fmtD(S.calSel)}${holidayName(S.calSel)?' · '+esc(holidayName(S.calSel)):''}</div><div id="cal-grid"></div>`:'<div class="hint">Нажмите на день, чтобы открыть список отчётов на эту дату.</div>'}`;
@@ -2212,7 +2234,7 @@ function renderCalendar(body){
 
 /* ── Report actions ── */
 function reportActions(r){
-  const t=T[r.t],st=t.payOnly?'—':r.status,cs=can('changeStatus');const no='Нет права менять статус';const it=[];
+  const t=tR(r),st=t.payOnly?'—':r.status,cs=can('changeStatus');const no='Нет права менять статус';const it=[];
   it.push({label:'Открыть карточку',icon:'file',run:()=>openReport(r)});
   if(OPEN.has(st))it.push({label:'Отметить сданным',icon:'send',disabled:!cs,reason:!cs&&no,run:()=>submitDlg([r])});
   if(st==='К сдаче')it.push({label:'Взять в работу',icon:'clock',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'В работе')});
@@ -2229,7 +2251,7 @@ function reportActions(r){
   if(r.status!=='Не требуется'&&r.status!=='Принят')it.push({label:'Не требуется',icon:'ban',disabled:!cs,run:()=>confirmDlg({title:'Отметить «Не требуется»?',text:'Отчёт не нужно сдавать за этот период. Напоминания по нему прекратятся.',ok:'Отметить',run:()=>setStatus(r,'Не требуется')})});
   return it;
 }
-const canRecv=r=>feat('taxpay')&&can('money')&&T[r.t].sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&!r.superseded&&!CPM[r.cp].archived;
+const canRecv=r=>feat('taxpay')&&can('money')&&tR(r).sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&!r.superseded&&!CPM[r.cp].archived;
 function recvDlg(r){const amt=Math.max(0,r.sum-Math.max(r.paid,r.recv||0));inDlg(CPM[r.cp],null,{r:r.id,amt:amt||r.sum-r.paid})}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-recv]');if(!b)return;e.stopPropagation();e.preventDefault();recvDlg(REPORTS.find(r=>r.id===+b.dataset.recv))},true);
 /* ═════════════ Шкала статусов и история статусов ═════════════ */
@@ -2334,15 +2356,15 @@ function setStatus(r,st){const o=r.status;r.status=st;if(st==='К сдаче'||s
 function submitDlg(rows,done){
   const one=rows.length===1;const r0=rows[0];
   openModal({form:true,size:one?'':'mid',render:()=>({title:one?'Отметить отчёт сданным':`Отметить сданными: ${rows.length}`,sub:one?`${esc(T[r0.t].name)} · ${esc(CPM[r0.cp].name)} · ${esc(r0.phuman)}`:'Одна дата сдачи для всех, суммы можно вписать здесь же',
-    body:`<div class="form">${fld('Дата сдачи',inp('sb-date',TODAY,'type="date" max="'+TODAY+'"'),{req:true,id:'sb-date'})}${one&&T[r0.t].sum?fld('Сумма к уплате, сом',inp('sb-sum',r0.sum??'','inputmode="decimal" class="inp tnum" placeholder="0 — нулевой отчёт"'),{id:'sb-sum',hint:headHint(r0)||'0 — допустимо (нулевой отчёт)'})+repeatBox(r0,'sb-rep'):''}${feat('files')?fld('Файлы: отчёт, квитанция',`<input class="inp" type="file" id="sb-file" multiple>`,{full:true,id:'sb-file',hint:one&&ORG.types[r0.t]&&ORG.types[r0.t].needFile?'Для этого вида отчёта файл обязателен':'Необязательно'}):''}</div>
-    ${one?'':`<div class="tbl-wrap"><table class="mini"><thead><tr><th>Контрагент</th><th>Отчёт</th><th>Период</th><th class="num">Сумма к уплате</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(CPM[r.cp].name)}</td><td>${esc(T[r.t].short)}</td><td>${esc(r.plabel)}</td><td class="num">${T[r.t].sum?`<input class="inp tnum" style="max-width:130px;margin-left:auto;text-align:right" data-sum="${r.id}" value="${r.sum??''}" inputmode="decimal" aria-label="Сумма">`:'<span class="faint">без суммы</span>'}</td></tr>`).join('')}</tbody></table></div>`}`,
+    body:`<div class="form">${fld('Дата сдачи',inp('sb-date',TODAY,'type="date" max="'+TODAY+'"'),{req:true,id:'sb-date'})}${one&&tR(r0).sum?partsFld(r0,'sb-sum')+fld((T[r0.t].pays||[]).length>1?'Сумма к уплате, итог, сом':'Сумма к уплате, сом',inp('sb-sum',r0.sum??'','inputmode="decimal" class="inp tnum" placeholder="0 — нулевой отчёт"'),{id:'sb-sum',hint:headHint(r0)||'0 — допустимо (нулевой отчёт)'})+repeatBox(r0,'sb-rep'):''}${feat('files')?fld('Файлы: отчёт, квитанция',`<input class="inp" type="file" id="sb-file" multiple>`,{full:true,id:'sb-file',hint:one&&ORG.types[r0.t]&&ORG.types[r0.t].needFile?'Для этого вида отчёта файл обязателен':'Необязательно'}):''}</div>
+    ${one?'':`<div class="tbl-wrap"><table class="mini"><thead><tr><th>Контрагент</th><th>Отчёт</th><th>Период</th><th class="num">Сумма к уплате</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(CPM[r.cp].name)}</td><td>${esc(T[r.t].short)}</td><td>${esc(r.plabel)}</td><td class="num">${tR(r).sum?`<input class="inp tnum" style="max-width:130px;margin-left:auto;text-align:right" data-sum="${r.id}" value="${r.sum??''}" inputmode="decimal" aria-label="Сумма">`:'<span class="faint">без суммы</span>'}</td></tr>`).join('')}</tbody></table></div>`}`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="sb-ok">${ic('send','sm')}Отметить сданным</button>`,
-    mount(el,m){bindHead(el,'sb-sum');$('#sb-ok',el).onclick=()=>{const d=val(el,'sb-date');if(!setErr(el,'sb-date',d&&d<=TODAY?'':'Укажите дату не позже сегодняшней'))return;
+    mount(el,m){bindHead(el,'sb-sum');if(one)bindParts(el,'sb-sum',r0);$('#sb-ok',el).onclick=()=>{const d=val(el,'sb-date');if(!setErr(el,'sb-date',d&&d<=TODAY?'':'Укажите дату не позже сегодняшней'))return;
       const files=$('#sb-file',el)?[...$('#sb-file',el).files].map(f=>f.name):[];
       if(one&&ORG.types[r0.t]&&ORG.types[r0.t].needFile&&!files.length&&!r0.files.length){setErr(el,'sb-file','Прикрепите файл: так настроен этот вид отчёта');return}
-      if(one&&T[r0.t].sum){const v=val(el,'sb-sum');if(v!==''){const n=parseNum(v);if(!setErr(el,'sb-sum',isNaN(n)||n<0?'Введите сумму числом, например 1 250,50':''))return;r0.sum=n;r0.auto=false;applyRepeat(r0,n,$('#sb-rep',el).checked)}}
+      if(one&&tR(r0).sum){const v=val(el,'sb-sum');if(v!==''){const n=parseNum(v);if(!setErr(el,'sb-sum',isNaN(n)||n<0?'Введите сумму числом, например 1 250,50':''))return;r0.sum=n;r0.auto=false;{const pp=readParts(el,'sb-sum',r0);if(pp)r0.parts=pp}applyRepeat(r0,n,$('#sb-rep',el).checked)}}
       if(!one)$$('[data-sum]',el).forEach(i=>{const n=parseNum(i.value);if(!isNaN(n)&&n>=0)REPORTS.find(r=>r.id===+i.dataset.sum).sum=n});
-      rows.forEach(r=>{const o=r.status;r.status='Сдан';r.subDate=d;r.files.push(...files);log('r',r.id,`Статус: ${o} → Сдан${r.sum!=null&&T[r.t].sum?`, сумма к уплате ${som(r.sum)}`:''}${files.length?`, файлы: ${files.join(', ')}`:''}`,r.cp)});
+      rows.forEach(r=>{const o=r.status;r.status='Сдан';r.subDate=d;r.files.push(...files);log('r',r.id,`Статус: ${o} → Сдан${r.sum!=null&&tR(r).sum?`, сумма к уплате ${som(r.sum)}`:''}${files.length?`, файлы: ${files.join(', ')}`:''}`,r.cp)});
       m.close();done&&done();refreshAll();toast(one?'Отчёт отмечен сданным. Ждём подтверждения от органа.':`Сданными отмечено: ${rows.length}`,'send')}}})});
 }
 function acceptDlg(r){const need=ORG.types[r.t]&&ORG.types[r.t].needReceipt;
@@ -2355,14 +2377,20 @@ function acceptDlg(r){const need=ORG.types[r.t]&&ORG.types[r.t].needReceipt;
       m.close();refreshAll();toast('Отчёт принят','ok')}}})});
 }
 function assignOf(r){const c=CPM[r.cp];return c.assign.find(a=>a.t===r.t&&!a.to)||c.assign.find(a=>a.t===r.t)}
+function partsFld(r,id){const ps=T[r.t].pays||[];if(!tR(r).sum||ps.length<2)return '';const pr=r.parts||[];
+  return ps.map((p,k)=>fld(`${esc(p.n)}${p.to?' · '+esc(p.to):''}, сом`,inp(`${id}-p${k}`,pr[k]??'','inputmode="decimal" class="inp tnum"'),{id:`${id}-p${k}`,hint:p.kbk?'Код платежа: '+esc(p.kbk):''})).join('')}
+function bindParts(el,id,r){const ps=T[r.t].pays||[];const tot=el.querySelector('#'+id);if(!tot||ps.length<2)return;tot.readOnly=true;
+  const f=()=>{const v=ps.map((p,k)=>{const x=val(el,`${id}-p${k}`);return x===''?0:parseNum(x)});tot.value=ps.every((p,k)=>val(el,`${id}-p${k}`)==='')?'':v.some(isNaN)?'':String(Math.round(v.reduce((a,b)=>a+b,0)*100)/100)};
+  ps.forEach((p,k)=>el.querySelector(`#${id}-p${k}`).addEventListener('input',f))}
+function readParts(el,id,r){const ps=T[r.t].pays||[];if(ps.length<2||!el.querySelector(`#${id}-p0`))return null;return ps.map((p,k)=>{const x=val(el,`${id}-p${k}`);return x===''?0:parseNum(x)})}
 function headHint(r){const t=T[r.t];if(t.id==='tbo')return 'Вносится одной общей суммой. Справочно: 100 сом на сотрудника в год.';return '';return c.staff?`Подсказка: ${c.staff} ${plural(c.staff,'сотрудник','сотрудника','сотрудников')} × ${t.perHead} сом = <b>${som(c.staff*t.perHead)}</b> · <button type="button" class="linkbtn" data-head="${c.staff*t.perHead}">подставить</button>`:'Укажите число сотрудников в карточке контрагента — система подскажет сумму (100 сом на сотрудника).'}
 function bindHead(el,id){$$('[data-head]',el).forEach(b=>b.onclick=()=>{el.querySelector('#'+id).value=b.dataset.head})}
 function repeatBox(r,id){const a=assignOf(r);return `<div class="fld full"><label class="row" style="gap:8px;min-height:30px"><input type="checkbox" id="${id}" ${a&&a.fixed!=null?'checked':''}> ${ic('repeat','sm')} Повторять эту сумму в следующих отчётах</label><div class="hint">Сумма сохранится в назначении «${esc(T[r.t].short)}» и будет подставляться во все следующие отчёты этого контрагента, пока её не изменят. В конкретном отчёте её можно поправить, повторяющаяся от этого не меняется.${a&&a.fixed!=null?` Сейчас повторяется: <b>${som(a.fixed)}</b>.`:''}</div></div>`}
 function applyRepeat(r,n,on){const a=assignOf(r);if(!a)return;const was=a.fixed;
   if(on){a.fixed=n;REPORTS.filter(x=>x.cp===r.cp&&x.t===r.t&&x.pkey>r.pkey&&!x.superseded&&OPEN.has(x.status)&&(x.sum==null||x.auto)).forEach(x=>{x.sum=n;x.auto=true});if(was!==n)log('cp',r.cp,`Повторяющаяся сумма «${T[r.t].short}»: ${som(n)}`,r.cp)}
   else if(was!=null){delete a.fixed;REPORTS.filter(x=>x.cp===r.cp&&x.t===r.t&&x.pkey>r.pkey&&OPEN.has(x.status)&&x.auto).forEach(x=>{x.sum=null;x.auto=false});log('cp',r.cp,`Повторяющаяся сумма «${T[r.t].short}» отключена`,r.cp)}}
-function sumDlg(r){openModal({form:true,render:()=>({title:'Сумма к уплате',sub:`${esc(T[r.t].short)} · ${esc(CPM[r.cp].name)} · ${esc(r.phuman)}`,body:`<div class="form">${fld('Сумма налога, сом',inp('sm-v',r.sum??'','inputmode="decimal" class="inp tnum" placeholder="1 250,50"'),{full:true,id:'sm-v',hint:headHint(r)||'Сумму вводят вручную. 0 — нулевой отчёт.'})}${repeatBox(r,'sm-rep')}</div>`,
-  foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="sm-ok">Сохранить</button>',mount(el,m){bindHead(el,'sm-v');const f=()=>{const n=parseNum(val(el,'sm-v'));if(!setErr(el,'sm-v',isNaN(n)||n<0?'Введите сумму числом, например 1 250,50':''))return;const o=r.sum;r.sum=Math.round(n*100)/100;r.auto=false;log('r',r.id,`Сумма к уплате: ${o==null?'не указана':som(o)} → ${som(r.sum)}`,r.cp);applyRepeat(r,r.sum,$('#sm-rep',el).checked);m.close();refreshAll();toast('Сумма сохранена')};$('#sm-ok',el).onclick=f;$('#sm-v',el).onkeydown=e=>{if(e.key==='Enter')f()}}})})}
+function sumDlg(r){openModal({form:true,render:()=>({title:'Сумма к уплате',sub:`${esc(T[r.t].short)} · ${esc(CPM[r.cp].name)} · ${esc(r.phuman)}`,body:`<div class="form">${partsFld(r,'sm-v')}${fld((T[r.t].pays||[]).length>1?'Сумма к уплате, итог, сом':'Сумма налога, сом',inp('sm-v',r.sum??'','inputmode="decimal" class="inp tnum" placeholder="1 250,50"'),{full:true,id:'sm-v',hint:headHint(r)||'Сумму вводят вручную. 0 — нулевой отчёт.'})}${repeatBox(r,'sm-rep')}</div>`,
+  foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="sm-ok">Сохранить</button>',mount(el,m){bindHead(el,'sm-v');bindParts(el,'sm-v',r);const f=()=>{const n=parseNum(val(el,'sm-v'));if(!setErr(el,'sm-v',isNaN(n)||n<0?'Введите сумму числом, например 1 250,50':''))return;const o=r.sum;r.sum=Math.round(n*100)/100;r.auto=false;{const pp=readParts(el,'sm-v',r);if(pp)r.parts=pp}log('r',r.id,`Сумма к уплате: ${o==null?'не указана':som(o)} → ${som(r.sum)}`,r.cp);applyRepeat(r,r.sum,$('#sm-rep',el).checked);m.close();refreshAll();toast('Сумма сохранена')};$('#sm-ok',el).onclick=f;$('#sm-v',el).onkeydown=e=>{if(e.key==='Enter')f()}}})})}
 function payDlg(r){const c=CPM[r.cp];const need=r.sum-r.paid;const sch=schedule(r);const next=sch.find(x=>x.paid<x.amount);const def=next?next.amount-next.paid:need;
   openModal({form:true,render:()=>({title:'Оплата налога в бюджет',sub:`${esc(T[r.t].short)} · ${esc(c.name)} · ${esc(r.phuman)}`,
     body:`<div class="kv"><div><span class="k">К уплате</span><span class="v tnum">${som(r.sum)}</span></div><div><span class="k">Уже оплачено</span><span class="v tnum">${som(r.paid)}</span></div><div><span class="k">Деньги контрагента на счёте</span><span class="v tnum strong">${som(c.avail)}</span></div></div>
@@ -2411,12 +2439,12 @@ const TPL={
 function openReport(r){
   if(!r)return;
   openModal({size:'mid',live:true,render:m=>{
-    r=REPORTS.find(x=>x.id===r.id)||r;const t=T[r.t],c=CPM[r.cp];const sch=schedule(r);
+    r=REPORTS.find(x=>x.id===r.id)||r;const t=tR(r),c=CPM[r.cp];const sch=schedule(r);
     const versions=REPORTS.filter(x=>x.cp===r.cp&&x.t===r.t&&x.pkey===r.pkey).sort((a,b)=>a.ver-b.ver);
     const hist=HIST.filter(h=>h.ent==='r'&&h.id===r.id).sort((a,b)=>a.at<b.at?1:-1);
     const primary=OPEN.has(r.status)&&!t.payOnly?{l:'Отметить сданным',i:'send',f:()=>submitDlg([r]),ok:can('changeStatus')}:r.status==='Сдан'?{l:'Отметить принятым',i:'ok',f:()=>acceptDlg(r),ok:can('changeStatus')}:(feat('taxpay')&&t.sum&&r.sum>0&&r.paid<r.sum&&r.money&&r.money.s==='ok')?{l:'Отметить оплаченным',i:'wallet',f:()=>payDlg(r),ok:can('money')}:null;
-    return {title:`${esc(t.name)}${r.ver?` <span class="tag blue" style="font-size:12px;vertical-align:3px">уточнённый ${r.ver}</span>`:''}`,sub:`${esc(c.name)} · ${esc(r.phuman)} · ${esc(t.organ)}`,
-    body:`<div class="box"><div class="scales">${t.payOnly?`<div class="scf-wrap"><span class="scf-t">Сдача</span><span class="scf-none">${ic('coins','sm')}Только оплата, без сдачи</span></div>`:scaleFull('rep',r.status,r.id)}${t.sum&&feat('taxpay')?scaleFull('pay',r.payStatus,r.id):''}</div></div><div class="row">${r.overdue?`<span class="pill red">${ic('alert')}Просрочен на ${diffDays(TODAY,r.due)} ${plural(diffDays(TODAY,r.due),'день','дня','дней')}</span>`:''}${r.status==='Сдан'?`<span class="pill blue">${ic('hourglass')}Ждём подтверждения ${diffDays(TODAY,r.subDate)} дн.</span>`:''}</div>
+    return {title:`${esc(t.name)} ${actPill(t.act)}${r.ver?` <span class="tag blue" style="font-size:12px;vertical-align:3px">уточнённый ${r.ver}</span>`:''}`,sub:`${esc(c.name)} · ${esc(r.phuman)} · ${esc(t.organ)}${t.sum&&(t.pays||[]).length?`<br>Что уплачивается: ${esc(paysTxt(t))}`:''}`,
+    body:`<div class="box"><div class="scales">${t.payOnly?'':scaleFull('rep',r.status,r.id)}${t.sum&&feat('taxpay')?scaleFull('pay',r.payStatus,r.id):''}</div></div><div class="row">${r.overdue?`<span class="pill red">${ic('alert')}Просрочен на ${diffDays(TODAY,r.due)} ${plural(diffDays(TODAY,r.due),'день','дня','дней')}</span>`:''}${r.status==='Сдан'?`<span class="pill blue">${ic('hourglass')}Ждём подтверждения ${diffDays(TODAY,r.subDate)} дн.</span>`:''}</div>
     <div class="box"><div class="kv">
       ${auditKv(r)}<div><span class="k">Контрагент</span><span class="v"><button class="linkbtn" id="rc-cp">${esc(c.name)}</button></span></div>
       <div><span class="k">ИНН</span><span class="v mono">${c.inn}</span></div>
@@ -2595,7 +2623,7 @@ function inDlg(c0,edit,pre){
   const already=r=>Math.max(r.paid,(r.recv||0)-(own[r.id]||0));
   openModal({form:true,size:'wide',render:m=>{
     const c=CPM[st.cp];
-    const reps=c?REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&T[r.t].sum&&r.sum>0&&r.status!=='Не требуется'&&(r.sum-already(r)>0||st.alloc[r.id]!=null)).sort((a,b)=>a.payDue<b.payDue?-1:1):[];
+    const reps=c?REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&(r.sum-already(r)>0||st.alloc[r.id]!=null)).sort((a,b)=>a.payDue<b.payDue?-1:1):[];
     const feeOk=c&&feat('fee')&&c.kind!=='oneoff'&&can('fee');
     const fGot=mm=>(c.feePaid[mm]||0)-(prevFee[mm]||0);const fLeft=mm=>feeCharge(c,mm)-fGot(mm);
     const fms=feeOk?feeMonths(c).filter(mm=>fLeft(mm)>0||st.fee[mm]!=null):[];
@@ -2677,7 +2705,7 @@ function openCp(c,tab){
     ${feat('taxpay')&&can('money')?`<div class="box flat"><h3>Баланс по контрагенту</h3><div class="kv">${(()=>{const s=k=>OPS.filter(o=>o.cp===c.id&&o.kind===k).reduce((a,o)=>a+o.amount,0);return `<div><span class="k">Получено от контрагента</span><span class="v tnum">${som(s('in')+s('back')+s('corr'))}</span></div><div><span class="k">Оплачено в бюджет</span><span class="v tnum">${som(s('pay'))}</span></div><div><span class="k">Списано в бонус</span><span class="v tnum">${som(s('bonus'))}</span></div><div><span class="k">Остаток на счёте</span><span class="v tnum strong">${som(c.avail)}</span></div>${feat('fee')&&can('fee')?`<div><span class="k">Долг за обслуживание</span><span class="v tnum ${c.feeDebt?'red strong':''}">${som(c.feeDebt)}</span></div>`:''}`})()}</div></div>`:''}`}
     if(st.tab==='reports')b=`<div id="cpr"></div>`;
     if(st.tab==='money'){const months=[-2,-1,0,1].map(k=>addMonths(ym(TODAY),k));const pm=st.period;
-      const need=REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&T[r.t].sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&r.payDue&&r.payDue<=lastDay(pm)).sort((a,b)=>a.payDue<b.payDue?-1:1);
+      const need=REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&r.payDue&&r.payDue<=lastDay(pm)).sort((a,b)=>a.payDue<b.payDue?-1:1);
       const needSum=need.reduce((a,r)=>a+r.sum-r.paid,0);const have=c.avail;const diff=have-needSum;
       const ops=OPS.filter(o=>o.cp===c.id).sort((a,b)=>a.date<b.date?1:-1);
       b=`<div class="row"><span class="muted">Сверка по сроку оплаты до конца месяца:</span>${sel('cp-per',months.map(k=>[k,ymLabel(k)]),pm,'style="width:auto;min-height:30px;padding:3px 8px"')}<div class="grow"></div>
@@ -2881,7 +2909,7 @@ const taskOpen=t=>t.reg?t.status!=='Принят'&&t.status!=='Не требуе
 const taskOver=t=>(t.reg?OPEN.has(t.status):taskOpen(t))&&t.date<TODAY;
 function allTasks(){
   const m=ym(TODAY);
-  const reg=REPORTS.filter(r=>!r.superseded&&r.status!=='Не требуется'&&!CPM[r.cp].archived&&(ym(r.due)===m||(OPEN.has(r.status)&&r.due<TODAY&&r.due>=addDays(TODAY,-75)))).map(r=>({id:'r'+r.id,reg:true,rid:r.id,title:`${T[r.t].payOnly?'Оплатить':'Сдать'} ${T[r.t].payOnly?T[r.t].name.toLowerCase():T[r.t].short} за ${r.phuman} — ${CPM[r.cp].name}`,cat:T[r.t].payOnly?'Оплата':'Сдача отчёта',cp:r.cp,exec:r.resp,by:null,kind:'day',date:r.due,needFile:!!(ORG.types[r.t]&&ORG.types[r.t].needFile),_cb:'system',_ca:r._ca,_ub:r._ub,_ua:r._ua,status:r.status}));
+  const reg=REPORTS.filter(r=>!r.superseded&&r.status!=='Не требуется'&&!CPM[r.cp].archived&&(ym(r.due)===m||(OPEN.has(r.status)&&r.due<TODAY&&r.due>=addDays(TODAY,-75)))).map(r=>({id:'r'+r.id,reg:true,rid:r.id,title:`${tR(r).payOnly?'Оплатить':'Сдать'} ${tR(r).payOnly?T[r.t].name.toLowerCase():T[r.t].short} за ${r.phuman} — ${CPM[r.cp].name}`,cat:tR(r).payOnly?'Оплата':'Сдача отчёта',cp:r.cp,exec:r.resp,by:null,kind:'day',date:r.due,needFile:!!(ORG.types[r.t]&&ORG.types[r.t].needFile),_cb:'system',_ca:r._ca,_ub:r._ub,_ua:r._ua,status:r.status}));
   return TASKS.concat(reg)}
 function taskScope(){return can('tasksAll')?allTasks():allTasks().filter(t=>t.exec===S.me||t.by===S.me)}
 function taskTabs(){const sc=taskScope();return [
@@ -3398,10 +3426,10 @@ function renderDicts(body,tab,fresh){
     grid($('#dg',body),{id:'dict-types',cols:[
       {key:'on',label:'Подключён',type:'enum',w:110,val:t=>ORG.types[t.id]&&ORG.types[t.id].on?'Да':'Нет',html:t=>`<input type="checkbox" class="sw" data-con="${t.id}" ${ORG.types[t.id]&&ORG.types[t.id].on?'checked':''} ${can('dicts')?'':'disabled'} aria-label="Подключить ${esc(t.name)}">`},
       {key:'name',label:'Вид отчёта',type:'text',w:280,val:t=>t.name,html:t=>`<span class="strong">${esc(t.name)}</span>`},
-{key:'file',label:'Файл при сдаче обязателен',type:'enum',w:200,val:t=>ORG.types[t.id]&&ORG.types[t.id].needFile?'Да':'Нет',html:t=>{const o=ORG.types[t.id];return o&&o.on?`<input type="checkbox" class="sw" data-tf="needFile" data-tid="${t.id}" ${o.needFile?'checked':''} ${can('dicts')?'':'disabled'} aria-label="Файл при сдаче обязателен: ${esc(t.short)}">`:'<span class="faint">—</span>'}},{key:'rcpt',label:'Квитанция о приёме обязательна',type:'enum',w:230,val:t=>ORG.types[t.id]&&ORG.types[t.id].needReceipt?'Да':'Нет',html:t=>{const o=ORG.types[t.id];return o&&o.on?`<input type="checkbox" class="sw" data-tf="needReceipt" data-tid="${t.id}" ${o.needReceipt?'checked':''} ${can('dicts')?'':'disabled'} aria-label="Квитанция о приёме обязательна: ${esc(t.short)}">`:'<span class="faint">—</span>'}},{key:'short',label:'Кратко',type:'text',w:100,val:t=>t.short},{key:'code',label:'Код формы',type:'text',w:110,val:t=>t.code,cls:'mono'},
+      {key:'act',label:'Что сделать',type:'enum',w:175,val:t=>ACT_L[t.act],html:t=>actPill(t.act,1)},{key:'pays',label:'Что уплачивается',type:'text',w:220,val:t=>paysTxt(t),html:t=>t.act==='sub'?'<span class="faint">—</span>':esc(paysTxt(t))},
+{key:'file',label:'Файл при сдаче обязателен',type:'enum',w:200,val:t=>ORG.types[t.id]&&ORG.types[t.id].needFile?'Да':'Нет',html:t=>{const o=ORG.types[t.id];return o&&o.on&&t.act!=='pay'?`<input type="checkbox" class="sw" data-tf="needFile" data-tid="${t.id}" ${o.needFile?'checked':''} ${can('dicts')?'':'disabled'} aria-label="Файл при сдаче обязателен: ${esc(t.short)}">`:'<span class="faint">—</span>'}},{key:'rcpt',label:'Квитанция о приёме обязательна',type:'enum',w:230,val:t=>ORG.types[t.id]&&ORG.types[t.id].needReceipt?'Да':'Нет',html:t=>{const o=ORG.types[t.id];return o&&o.on?`<input type="checkbox" class="sw" data-tf="needReceipt" data-tid="${t.id}" ${o.needReceipt?'checked':''} ${can('dicts')?'':'disabled'} aria-label="Квитанция о приёме обязательна: ${esc(t.short)}">`:'<span class="faint">—</span>'}},{key:'short',label:'Кратко',type:'text',w:100,val:t=>t.short},{key:'code',label:'Код формы',type:'text',w:110,val:t=>t.code,cls:'mono'},
       {key:'organ',label:'Орган',type:'enum',w:130,val:t=>t.organ},{key:'per',label:'Периодичность',type:'enum',w:120,val:t=>PER_LABEL[t.per]},{key:'rule',label:'Срок сдачи',type:'text',w:250,val:t=>ruleText(t)},
       {key:'kind',label:'Тип',type:'enum',w:110,val:t=>KIND_L[t.kind]},{key:'rates',label:'Ставки',type:'text',w:130,hide:true,val:t=>(t.rates||[]).join('; ')},{key:'used',label:'Назначено контрагентам',type:'int',w:110,num:true,val:t=>CPS.filter(c=>!c.archived&&c.assign.some(a=>a.t===t.id&&!a.to)).length},{key:'regimes',label:'Режимы',type:'text',w:160,hide:true,val:t=>t.regimes.join(', ')},
-      {key:'sum',label:'Сумма к уплате',type:'enum',w:120,val:t=>t.sum?'Есть':'Нет'},
       {key:'days',label:'Напоминать за, дней',type:'text',w:150,val:t=>ORG.types[t.id]&&ORG.types[t.id].on?ORG.types[t.id].days.join(', ')+' и в день срока':'',html:t=>ORG.types[t.id]&&ORG.types[t.id].on?ORG.types[t.id].days.map(d=>`<span class="tag">${d}</span>`).join(' ')+' <span class="faint">+ в день</span>':'<span class="faint">—</span>'}],
       audit:t=>ORG.types[t.id]||t,rows:()=>RT.filter(t=>t.active),title:'name',noun:['вид','вида','видов'],rowClass:t=>ORG.types[t.id]&&ORG.types[t.id].on?'':'muted',open:typeSettingsDlg,sort:{key:'on',dir:-1},simulateLoad:fresh,
       actions:t=>[{label:'Настройки вида',icon:'sliders',disabled:!(ORG.types[t.id]&&ORG.types[t.id].on),reason:'Сначала подключите вид',run:()=>typeSettingsDlg(t)}]});
@@ -3422,7 +3450,7 @@ function typeSettingsDlg(t){const o=ORG.types[t.id];
   if(!o||!o.on){openModal({render:()=>({title:esc(t.name),sub:`${esc(t.code)} · ${esc(t.organ)}`,body:`<div class="kv"><div><span class="k">Периодичность</span><span class="v">${PER_LABEL[t.per]}</span></div><div><span class="k">Срок сдачи</span><span class="v">${esc(ruleText(t))}</span></div><div><span class="k">Тип</span><span class="v">${t.kind==='regime'?'Режимный: '+esc(t.regimes.join(', ')):KIND_L[t.kind]}</span></div><div><span class="k">Ставки</span><span class="v">${esc((t.rates||[]).join('; ')||'—')}</span></div></div><div class="note">${ic('info')}<span>Вид не подключён. Включите переключатель в списке, чтобы назначать его контрагентам.</span></div>`,foot:'<button class="btn cta" data-close>Закрыть</button>'})});return}
   const st={days:[...o.days]};
   openModal({form:true,render:m=>({title:esc(t.name),sub:`Настройки организации · ${esc(t.code)} · ${esc(ruleText(t))}`,body:`<div class="fld"><span class="lbl">Напоминать до срока, за дней</span><div class="row">${st.days.sort((a,b)=>b-a).map((d,i)=>`<span class="chip"><span>${d} ${plural(d,'день','дня','дней')}</span><button data-rm="${i}" aria-label="Убрать">${ic('x','sm')}</button></span>`).join('')}<input class="inp" id="ts-add" style="width:90px" inputmode="numeric" placeholder="+ день"><span class="pill green">${ic('lock')}в день срока — всегда</span></div><div class="hint">Пустой набор — значит только в день срока.</div></div>
-    <label class="check-row"><input type="checkbox" class="sw" id="ts-file" ${o.needFile?'checked':''}><span class="grow">Файл при сдаче обязателен<div class="hint">Регулярную задачу нельзя закрыть без файла</div></span></label>
+    <label class="check-row" ${t.act==='pay'?'hidden':''}><input type="checkbox" class="sw" id="ts-file" ${o.needFile?'checked':''}><span class="grow">Файл при сдаче обязателен<div class="hint">Регулярную задачу нельзя закрыть без файла</div></span></label>
     <label class="check-row"><input type="checkbox" class="sw" id="ts-rcpt" ${o.needReceipt?'checked':''}><span class="grow">Квитанция о приёме обязательна<div class="hint">При отметке «Принят» нужно приложить подтверждение</div></span></label>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ts-ok" ${can('dicts')?'':'disabled'}>Сохранить</button>`,
     mount(el){$$('[data-rm]',el).forEach(b=>b.onclick=()=>{st.days.splice(+b.dataset.rm,1);m.draw()});const a=$('#ts-add',el);a.onkeydown=e=>{if(e.key==='Enter'){const n=+a.value;if(n>0&&n<=60&&!st.days.includes(n)){st.days.push(n);m.draw()}}};
@@ -3502,7 +3530,7 @@ function renderPDicts(body,tab,fresh){
   const ioBar=k=>`<div class="row"><span class="muted">Выгрузка и загрузка через Excel: сопоставление по коду, перед применением — сравнение.</span><div class="grow"></div><button class="btn sm" data-exp="${k}">${ic('download','sm')}Выгрузить</button><button class="btn sm" data-imp="${k}">${ic('upload','sm')}Загрузить</button></div>`;
   body.onclick=e=>{const b=e.target.closest('[data-exp],[data-imp]');if(!b)return;b.dataset.exp?exportDlg(b.dataset.exp):importDictDlg(b.dataset.imp)};
   if(tab==='types'){body.innerHTML=`<div class="note">${ic('info')}<span>Единый каталог для всех организаций. Вид, назначенный контрагентам, нельзя удалить — только отключить. При изменении правила срока пересчитываются только несданные отчёты. Коды форм, периоды и сроки сверяются с ГНС: у каждого вида видно, когда и кто проверял.</span></div>${ioBar('types')}<div id="pg"></div>`;
-    grid($('#pg',body),{id:'adm-types',cols:[{key:'id',label:'Код',type:'text',w:80,val:t=>t.id,cls:'mono',hide:true},{key:'name',label:'Название',type:'text',w:280,val:t=>t.name,html:t=>`<span class="strong">${esc(t.name)}</span>${t.payOnly?' <span class="tag">только оплата</span>':''}`},{key:'short',label:'Кратко',type:'text',w:100,val:t=>t.short},{key:'code',label:'Код формы',type:'text',w:110,val:t=>t.code,cls:'mono'},{key:'organ',label:'Орган',type:'enum',w:150,val:t=>t.organ},{key:'per',label:'Периодичность',type:'enum',w:120,val:t=>PER_LABEL[t.per]},{key:'rule',label:'Срок сдачи',type:'text',w:250,val:t=>ruleText(t)},{key:'kind',label:'Тип',type:'enum',w:110,val:t=>KIND_L[t.kind]},{key:'rates',label:'Ставки',type:'text',w:150,val:t=>(t.rates||[]).join('; ')},{key:'reg',label:'Режимы',type:'text',w:170,val:t=>t.regimes.join(', ')},{key:'who',label:'Для кого',type:'enum',w:120,val:t=>({all:'Все',org:'Организации',ip:'ИП'})[t.who]},{key:'sum',label:'Сумма',type:'enum',w:90,val:t=>t.sum?'Есть':'Нет'},{key:'used',label:'Назначен',type:'int',w:100,num:true,val:t=>CPS.filter(c=>c.assign.some(a=>a.t===t.id&&!a.to)).length},{key:'gns',label:'Сверено с ГНС',type:'date',w:200,val:t=>t.gnsAt,html:t=>t.gnsAt?`<span class="${diffDays(TODAY,t.gnsAt)>180?'yellow strong':''}">${fmtD(t.gnsAt)}</span> <span class="faint">· ${esc(whoName(t.gnsBy))}</span>`:'<span class="pill orange sm">не сверено</span>'},{key:'active',label:'Статус',type:'enum',w:120,val:t=>t.active?'Активен':'Отключён',html:t=>t.active?pill('Активен',{Активен:['green','check']}):pill('Отключён',{Отключён:['faint','ban']})}],
+    grid($('#pg',body),{id:'adm-types',cols:[{key:'id',label:'Код',type:'text',w:80,val:t=>t.id,cls:'mono',hide:true},{key:'name',label:'Название',type:'text',w:280,val:t=>t.name,html:t=>`<span class="strong">${esc(t.name)}</span>`},{key:'act',label:'Что сделать',type:'enum',w:175,val:t=>ACT_L[t.act],html:t=>actPill(t.act,1)},{key:'pays',label:'Что уплачивается',type:'text',w:220,val:t=>paysTxt(t)},{key:'short',label:'Кратко',type:'text',w:100,val:t=>t.short},{key:'code',label:'Код формы',type:'text',w:110,val:t=>t.code,cls:'mono'},{key:'organ',label:'Орган',type:'enum',w:150,val:t=>t.organ},{key:'per',label:'Периодичность',type:'enum',w:120,val:t=>PER_LABEL[t.per]},{key:'rule',label:'Срок сдачи',type:'text',w:250,val:t=>ruleText(t)},{key:'kind',label:'Тип',type:'enum',w:110,val:t=>KIND_L[t.kind]},{key:'rates',label:'Ставки',type:'text',w:150,val:t=>(t.rates||[]).join('; ')},{key:'reg',label:'Режимы',type:'text',w:170,val:t=>t.regimes.join(', ')},{key:'who',label:'Для кого',type:'enum',w:120,val:t=>({all:'Все',org:'Организации',ip:'ИП'})[t.who]},{key:'used',label:'Назначен',type:'int',w:100,num:true,val:t=>CPS.filter(c=>c.assign.some(a=>a.t===t.id&&!a.to)).length},{key:'gns',label:'Сверено с ГНС',type:'date',w:200,val:t=>t.gnsAt,html:t=>t.gnsAt?`<span class="${diffDays(TODAY,t.gnsAt)>180?'yellow strong':''}">${fmtD(t.gnsAt)}</span> <span class="faint">· ${esc(whoName(t.gnsBy))}</span>`:'<span class="pill orange sm">не сверено</span>'},{key:'active',label:'Статус',type:'enum',w:120,val:t=>t.active?'Активен':'Отключён',html:t=>t.active?pill('Активен',{Активен:['green','check']}):pill('Отключён',{Отключён:['faint','ban']})}],
       rows:()=>RT,title:'name',noun:['вид','вида','видов'],rowClass:t=>t.active?'':'muted',open:typeEditDlg,simulateLoad:fresh,bulk:[{label:'Изменить срок',icon:'calendar',run:bulkDueDlg},{label:'Отметить сверку с ГНС',icon:'ok',run:markGns},bulkActive('types',true),bulkActive('types',false)],actions:t=>[{label:'Изменить',icon:'edit',run:()=>typeEditDlg(t)},{label:'Отметить сверку с ГНС',icon:'ok',sub:t.gnsAt?`Последняя: ${fmtD(t.gnsAt)}, ${whoName(t.gnsBy)}`:'',run:()=>markGns([t])},{sep:true},t.active?{label:'Отключить',icon:'ban',run:()=>{t.active=false;touch(t);renderPage();toast('Вид отключён: в новых назначениях не предлагается')}}:{label:'Включить',icon:'check',run:()=>{t.active=true;touch(t);renderPage()}},{label:'Удалить',icon:'trash',danger:true,disabled:CPS.some(c=>c.assign.some(a=>a.t===t.id)),reason:'Вид назначался контрагентам — его можно только отключить',run:()=>{RT.splice(RT.indexOf(t),1);renderPage();toast('Вид удалён')}}]});return}
   if(['regimes','forms','organs','banks'].includes(tab)){const d=DICT[tab];body.innerHTML=`${ioBar(tab)}<div id="pg"></div>${PD_HIST.length?`<div class="box"><h3>История изменений</h3><ul class="tl">${PD_HIST.slice().reverse().slice(0,8).map(h=>`<li><span class="t">${fmtD(h.at.slice(0,10))}<br>${h.at.slice(11)}</span><span>${esc(h.what)}<br><span class="w">Администратор платформы</span></span></li>`).join('')}</ul></div>`:''}`;
     grid($('#pg',body),{id:'adm-'+tab,rid:x=>x.code||x.name,bulk:[bulkActive(tab,true),bulkActive(tab,false)],cols:[{key:'n',label:'№',type:'int',w:60,num:true,val:x=>d.items.indexOf(x)+1},{key:'code',label:'Код',type:'text',w:100,val:x=>x.code,cls:'mono'},{key:'name',label:'Значение',type:'text',w:300,val:x=>x.name,html:x=>`<span class="strong">${esc(x.name)}</span>`},{key:'used',label:'Используется',type:'int',w:130,num:true,val:x=>usedCount[tab](x.name)},{key:'active',label:'Статус',type:'enum',w:130,val:x=>x.active?'Активно':'Отключено',html:x=>x.active?pill('Активно',{Активно:['green','check']}):pill('Отключено',{Отключено:['faint','ban']})}],
@@ -3560,7 +3588,8 @@ const DX={
     ['day','Срок: число',t=>t.day,intIn(1,31)],['after','Месяцев после периода',t=>t.per==='Y'?'':t.after,intIn(0,6)],['ym','Месяц следующего года',t=>t.per==='Y'?t.ym:'',intIn(1,12)],
     ['kind','Тип',t=>KIND_L[t.kind],v=>KIND_IN[norm(v)]||{err:'тип: режимный, сквозной или внутренний'}],
     ['rates','Ставки',t=>(t.rates||[]).join('; '),v=>v?v.split(';').map(x=>x.trim()).filter(Boolean):[]],
-    ['payOnly','Только оплата',t=>YN(t.payOnly),v=>{const b=parseYN(v);return b===undefined?{err:'«Только оплата»: да или нет'}:!!b}],
+    ['act','Что нужно сделать',t=>ACT_L[t.act],v=>ACT_IN[norm(v)]||{err:'«Что нужно сделать»: Сдача, Уплата или Сдача + уплата'}],
+    ['pays','Что уплачивается',t=>(t.pays||[]).map(p=>[p.n,p.to,p.kbk].filter(Boolean).join(' / ')).join('; '),v=>v?v.split(';').map(x=>x.trim()).filter(Boolean).map(x=>{const[n,to,kbk]=x.split('/').map(y=>y.trim());return {n,to:to||'',kbk:kbk||''}}):[]],
     ['active','Активен',t=>YN(t.active),v=>{const b=parseYN(v);return b===undefined?{err:'«Активен»: да или нет'}:b!==false}]]},
   regimes:{title:'Режимы налогообложения',key:'code',pre:'РЕЖ',items:()=>DICT.regimes.items},
   forms:{title:'Формы собственности',key:'code',pre:'ФОС',items:()=>DICT.forms.items},
@@ -3619,7 +3648,7 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       if(q('#id-ok'))q('#id-ok').onclick=()=>{const df=st.diff;const snap={};[...df.chg,...df.off].forEach(r=>snap[r.code]=JSON.parse(JSON.stringify(r.x)));
         [...df.chg,...df.off].forEach(r=>{const x=r.x;const rule=k==='types'&&['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==x[f]);
           if(k!=='types'&&r.v.name&&r.v.name!==x.name)renameDictValue(k,x.name,r.v.name);
-          Object.keys(r.v).forEach(f=>{if(r.v[f]!=null)x[f]=r.v[f]});if(k==='types'){x.rate=(x.rates||[])[0]||'';if(x.payOnly)x.sum=true}touch(x);
+          Object.keys(r.v).forEach(f=>{if(r.v[f]!=null)x[f]=r.v[f]});if(k==='types'){x.rate=(x.rates||[])[0]||'';const pays=x.pays;setAct(x,x.act||'both');if(x.act!=='sub'&&pays&&pays.length)x.pays=pays}touch(x);
           if(rule)REPORTS.filter(rp=>rp.t===x.id&&OPEN.has(rp.status)).forEach(rp=>{const dd=dueOf(tFor(rp),rp.p);rp.dueBase=dd.base;rp.due=dd.due})});
         df.add.forEach(r=>{let o;if(k==='types'){o=Object.assign({id:r.code,name:'',short:'',code:'—',organ:'ГНС',per:'M',day:20,after:1,ym:4,sum:true,kind:'cross',regimes:[],who:'all',rates:[],shift:true,active:true},r.v);o.after=o.after??1;o.ym=o.ym??4;o.rate=(o.rates||[])[0]||'';born(o);RT.push(o);T[o.id]=o}else{o=born(Object.assign({active:true},r.v));d.items().push(o)}});
         const L={id:'L'+(PD_LOADS.length+1),at:TODAY+' '+bishkekNow().hm,by:S.me,dict:k,rows:df.rows,add:df.add.length,chg:df.chg.length,off:df.off.length,err:df.err.length,snap,added:df.add.map(r=>r.code),rolled:false};PD_LOADS.push(L);
@@ -3661,23 +3690,29 @@ function holidayDlg(){openModal({form:true,render:()=>({title:'Нерабочи�
   mount(el,m){$('#hd-ok',el).onclick=()=>{const d=val(el,'hd-d');if(!setErr(el,'hd-d',d?'':'Укажите дату'))return;if(val(el,'hd-t')==='w')WORK_SAT.add(d);else HOLIDAYS[d]=val(el,'hd-n');HOL_AUD[d]=born({});const n=recalcDues();m.close();refreshAll();toast(`Календарь обновлён, сроки пересчитаны у ${n} несданных отчётов`,'calendar')}}})})}
 function phoneCodeDlg(){openModal({form:true,render:()=>({title:'Новая страна',body:`<div class="form">${fld('Страна',inp('pc-n',''),{req:true,id:'pc-n'})}${fld('Код без +',inp('pc-c','','class="inp mono" inputmode="numeric"'),{req:true,id:'pc-c'})}${fld('Маска (X — цифра)',inp('pc-m','XXX XXX XXX','class="inp mono"'),{req:true,id:'pc-m'})}${fld('Флаг',inp('pc-f','🏳️'),{id:'pc-f'})}</div>`,foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="pc-ok">Добавить</button>',
   mount(el,m){$('#pc-ok',el).onclick=()=>{const ok=[setErr(el,'pc-n',val(el,'pc-n')?'':'Введите название'),setErr(el,'pc-c',/^\d{1,4}$/.test(val(el,'pc-c'))?'':'1–4 цифры'),setErr(el,'pc-m',/^[X ]+$/.test(val(el,'pc-m'))?'':'Только X и пробелы')].every(Boolean);if(!ok)return;const cc='X'+PHONES.length;const p={cc,flag:val(el,'pc-f'),name:val(el,'pc-n'),code:val(el,'pc-c'),mask:val(el,'pc-m')};PHONES.push(born(p));PH[cc]=p;m.close();renderPage();toast('Страна добавлена')}}})})}
-function typeEditDlg(t){const e=t?Object.assign({},t,{regimes:[...t.regimes],rates:[...(t.rates||[])]}):{id:'x'+RT.length,name:'',short:'',code:'',organ:'ГНС',per:'M',day:20,after:1,ym:4,sum:true,kind:'cross',regimes:[],who:'all',rate:'',rates:[],shift:true,active:true};
+function typeEditDlg(t){const e=t?Object.assign({},t,{regimes:[...t.regimes],rates:[...(t.rates||[])],pays:(t.pays||[]).map(x=>Object.assign({},x))}):{id:'x'+RT.length,name:'',short:'',code:'',organ:'ГНС',per:'M',day:20,after:1,ym:4,sum:true,act:'',pays:[],kind:'cross',regimes:[],who:'all',rate:'',rates:[],shift:true,active:true};const actAff=t?REPORTS.filter(r=>r.t===t.id&&!r.act).length:0;
   openModal({form:true,size:'mid',render:m=>{const affected=t?REPORTS.filter(r=>r.t===t.id&&OPEN.has(r.status)).length:0;
     return {title:t?esc(t.name):'Новый вид отчёта',sub:'Единый каталог платформы',body:`<div class="form">${fld('Название',inp('te-name',e.name),{req:true,full:true,id:'te-name'})}${fld('Краткое название',inp('te-short',e.short),{req:true,id:'te-short'})}${fld('Код формы ГНС',inp('te-code',e.code,'class="inp mono"'),{id:'te-code'})}
     ${fld('Орган',sel('te-organ',DICT.organs.items.map(x=>x.name),e.organ),{id:'te-organ'})}${fld('Периодичность',sel('te-per',[['M','Месяц'],['Q','Квартал'],['H','Полугодие'],['Y','Год']],e.per),{id:'te-per'})}
     ${e.per==='Y'?fld('Срок сдачи: день',inp('te-day',e.day,'type="number" min="1" max="31"'),{id:'te-day'})+fld('месяц следующего года',sel('te-ym',MONTHS.map((x,i)=>[i+1,x]),e.ym),{id:'te-ym'}):fld('Срок сдачи: N-е число',inp('te-day',e.day,'type="number" min="1" max="31"'),{id:'te-day'})+fld('M-го месяца после периода',inp('te-after',e.after,'type="number" min="0" max="6"'),{id:'te-after'})}
     ${fld('Тип',sel('te-kind',[['cross','Сквозной'],['regime','Режимный'],['internal','Внутренний (финансовая отчётность контрагента)']],e.kind),{id:'te-kind'})}${fld('Для кого',sel('te-who',[['all','Все'],['org','Организации'],['ip','ИП']],e.who),{id:'te-who'})}
     ${e.kind==='regime'?fld('Применимые режимы',`<div class="chipsel" id="te-reg">${DICT.regimes.items.map(x=>`<button type="button" data-r="${esc(x.name)}" class="${e.regimes.includes(x.name)?'on':''}">${esc(x.name)}</button>`).join('')}</div>`,{full:true,id:'te-reg'}):''}
-    ${fld('Ставки налога',inp('te-rate',(e.rates||[]).join('; '),'placeholder="2 %; 4 %; 6 %"'),{id:'te-rate',hint:'Через точку с запятой. Если ставок несколько, организация выбирает ставку для каждого контрагента'})}<div class="fld"><label class="lbl">&nbsp;</label><label class="row"><input type="checkbox" class="sw" id="te-sum" ${e.sum?'checked':''}> Есть сумма к уплате</label><label class="row"><input type="checkbox" class="sw" id="te-shift" ${e.shift?'checked':''}> Переносить срок с нерабочего дня</label><label class="row" title="Как патент: отчёта в орган нет, нужно только оплатить"><input type="checkbox" class="sw" id="te-po" ${e.payOnly?'checked':''}> Только оплата, без сдачи</label></div></div>
+    ${fld('Ставки налога',inp('te-rate',(e.rates||[]).join('; '),'placeholder="2 %; 4 %; 6 %"'),{id:'te-rate',hint:'Через точку с запятой. Если ставок несколько, организация выбирает ставку для каждого контрагента'})}<div class="fld"><label class="lbl">&nbsp;</label><label class="row"><input type="checkbox" class="sw" id="te-shift" ${e.shift?'checked':''}> Переносить срок с нерабочего дня</label></div>
+    ${fld('Что нужно сделать',`<div class="chipsel" id="te-act">${['sub','pay','both'].map(a=>`<button type="button" data-act="${a}" class="${e.act===a?'on':''}">${ACT_L[a]}</button>`).join('')}</div>`,{req:true,full:true,id:'te-act',hint:e.act==='sub'?'Только сдать отчёт: суммы к уплате и шкалы оплаты нет':e.act==='pay'?'Только заплатить, отчёт не сдаётся: сумма, срок оплаты и шкала оплаты':e.act==='both'?'Сдать отчёт и уплатить налог: обе шкалы, срок сдачи и срок оплаты':''})}
+    ${e.act&&e.act!=='sub'?fld('Что уплачивается',`<div class="tbl-wrap"><table class="mini" id="te-pays"><thead><tr><th>Платёж</th><th>Получатель</th><th>Код платежа</th><th></th></tr></thead><tbody>${e.pays.map((x,k)=>`<tr><td><input class="inp" data-pn="${k}" value="${esc(x.n)}" aria-label="Платёж"></td><td>${sel('',DICT.organs.items.map(o=>o.name),x.to,`data-pt="${k}" aria-label="Получатель"`)}</td><td><input class="inp mono" data-pk="${k}" value="${esc(x.kbk||'')}" placeholder="необязательно" aria-label="Код платежа"></td><td>${e.pays.length>1?`<button type="button" class="icon-btn sm" data-prm="${k}" aria-label="Убрать платёж">${ic('x','sm')}</button>`:''}</td></tr>`).join('')}</tbody></table></div><button type="button" class="btn sm" id="te-padd" style="margin-top:6px">${ic('plus','sm')}Добавить платёж</button>`,{req:true,full:true,id:'te-pays',hint:'Если платежей несколько, сумма к уплате вводится по каждому и складывается'}):''}
+    ${t&&e.act!==t.act&&actAff?`<div class="note warn">${ic('alert')}<span>По этому виду уже создано ${actAff} ${plural(actAff,'отчёт','отчёта','отчётов')}: они не изменятся. Новое значение «${ACT_L[e.act]}» действует для новых периодов.</span></div>`:''}</div>
     ${t?`<div class="hint">Сверено с ГНС: ${t.gnsAt?fmtD(t.gnsAt)+', '+esc(whoName(t.gnsBy)):'ещё не сверялось'}. Отметить сверку можно в списке видов.</div>`:''}
     ${e.kind==='internal'?`<div class="note">${ic('info')}<span>Для внутренней отчётности это значения по умолчанию. Периодичность и срок для каждого контрагента задаются при назначении.</span></div>`:''}
     ${t?`<div class="note warn" id="te-warn" hidden>${ic('alert')}<span>Правило срока изменится: сроки пересчитаются у ${affected} несданных отчётов. Сданные не меняются.</span></div>`:''}`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="te-ok">Сохранить</button>',
-    mount(el){const snap=()=>{e.name=val(el,'te-name');e.short=val(el,'te-short');e.code=val(el,'te-code');e.organ=val(el,'te-organ');e.per=val(el,'te-per');e.day=+val(el,'te-day')||e.day;if($('#te-after',el))e.after=+val(el,'te-after');if($('#te-ym',el))e.ym=+val(el,'te-ym');e.kind=val(el,'te-kind');e.who=val(el,'te-who');e.rates=val(el,'te-rate').split(';').map(x=>x.trim()).filter(Boolean);e.rate=e.rates[0]||'';e.sum=$('#te-sum',el).checked;e.shift=$('#te-shift',el).checked;e.payOnly=$('#te-po',el).checked;if(e.payOnly)e.sum=true};
+    mount(el){const snap=()=>{e.name=val(el,'te-name');e.short=val(el,'te-short');e.code=val(el,'te-code');e.organ=val(el,'te-organ');e.per=val(el,'te-per');e.day=+val(el,'te-day')||e.day;if($('#te-after',el))e.after=+val(el,'te-after');if($('#te-ym',el))e.ym=+val(el,'te-ym');e.kind=val(el,'te-kind');e.who=val(el,'te-who');e.rates=val(el,'te-rate').split(';').map(x=>x.trim()).filter(Boolean);e.rate=e.rates[0]||'';e.shift=$('#te-shift',el).checked;$$('[data-pn]',el).forEach(x=>{e.pays[+x.dataset.pn].n=x.value.trim()});$$('[data-pt]',el).forEach(x=>{e.pays[+x.dataset.pt].to=x.value});$$('[data-pk]',el).forEach(x=>{e.pays[+x.dataset.pk].kbk=x.value.trim()})};
+      $('#te-act',el).onclick=ev=>{const b=ev.target.closest('[data-act]');if(!b)return;snap();e.act=b.dataset.act;if(e.act!=='sub'&&!e.pays.length)e.pays=[{n:e.name||'Налог',to:e.organ,kbk:''}];m.draw()};
+      const pa=$('#te-padd',el);if(pa)pa.onclick=()=>{snap();e.pays.push({n:'',to:e.organ,kbk:''});m.draw()};$$('[data-prm]',el).forEach(b=>b.onclick=()=>{snap();e.pays.splice(+b.dataset.prm,1);m.draw()});
       ['te-per','te-kind'].forEach(i=>$('#'+i,el).onchange=()=>{snap();m.draw()});
       const rg=$('#te-reg',el);if(rg)rg.onclick=ev=>{const b=ev.target.closest('[data-r]');if(!b)return;snap();const r=b.dataset.r;e.regimes=e.regimes.includes(r)?e.regimes.filter(x=>x!==r):[...e.regimes,r];m.draw()};
       const w=$('#te-warn',el);if(w)el.addEventListener('input',()=>{snap();w.hidden=!(e.day!==t.day||e.after!==t.after||e.ym!==t.ym||e.per!==t.per||e.shift!==t.shift)});
-      $('#te-ok',el).onclick=()=>{snap();const ok=[setErr(el,'te-name',e.name?'':'Введите название'),setErr(el,'te-short',e.short?'':'Введите краткое название'),e.kind==='regime'?setErr(el,'te-reg',e.regimes.length?'':'Выберите хотя бы один режим'):true].every(Boolean);if(!ok)return;
+      $('#te-ok',el).onclick=()=>{snap();const ok=[setErr(el,'te-name',e.name?'':'Введите название'),setErr(el,'te-short',e.short?'':'Введите краткое название'),e.kind==='regime'?setErr(el,'te-reg',e.regimes.length?'':'Выберите хотя бы один режим'):true,setErr(el,'te-act',e.act?'':'Выберите, что нужно сделать'),e.act&&e.act!=='sub'?setErr(el,'te-pays',e.pays.length&&e.pays.every(x=>x.n)?'':'Укажите название каждого платежа'):true].every(Boolean);if(!ok)return;
+        if(e.act==='sub')e.pays=[];Object.assign(e,ACTF[e.act]);if(t&&e.act!==t.act)REPORTS.filter(r=>r.t===t.id&&!r.act).forEach(r=>r.act=t.act);
         if(t){const ruleCh=e.day!==t.day||e.after!==t.after||e.ym!==t.ym||e.shift!==t.shift;Object.assign(t,e);touch(t);if(ruleCh)REPORTS.filter(r=>r.t===t.id&&OPEN.has(r.status)).forEach(r=>{const d=dueOf(tFor(r),r.p);r.dueBase=d.base;r.due=d.due});}
         else{RT.push(born(e));T[e.id]=e}m.close();refreshAll();toast(t?'Вид отчёта сохранён':'Вид добавлен в каталог')}}};
   }});
