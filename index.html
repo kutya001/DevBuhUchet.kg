@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Прототип Buhuchet.kg v22</title>
+<title>Прототип Buhuchet.kg v23</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -992,6 +992,9 @@ const PERMS=[
  ['projects','Вести проекты и разовые услуги','Создавать проекты, разовые услуги и принимать по ним оплаты'],['tasksCreate','Ставить задачи',''],['tasksAll','Видеть задачи всех',''],
  ['indSetup','Настраивать показатели','Создавать, менять, упорядочивать и архивировать показатели контрагентов'],['indCheck','Проверять показатели','Ставить месяцу контрагента статус «Проверено» после проверки внесённых значений'],
  ['rollback','Откат статусов','Вернуть запись на предыдущий шаг шкалы статусов: отчёт, оплата, задача, приостановка контрагента, проект'],['staff','Сотрудники и роли',''],['dicts','Вести справочники организации',''],['org','Настройки и учётная политика','']];
+// Кто может менять галочку права в роли: владелец — всё, кроме прав, которые есть только у владельца; остальные (с правом «Сотрудники и роли») — не свою роль и не права, которые выдаёт только владелец
+const OWNER_ONLY=['org'],OWNER_GRANTS=['rollback','archiveRest','staff'];
+function roleLock(r,p){if(r.locked)return 'Права владельца не меняются';if(OWNER_ONLY.includes(p))return 'Это право есть только у владельца организации';if(me().role==='owner')return '';if(myRole()&&myRole().id===r.id)return 'Права своей роли меняет владелец';if(OWNER_GRANTS.includes(p))return 'Это право выдаёт только владелец';return ''}
 const ROLES=[
  {id:'owner',name:'Владелец организации',perms:PERMS.map(p=>p[0]),locked:true},
  {id:'chief',name:'Главный бухгалтер',perms:['indSetup','indCheck','viewAll','changeStatus','changeSum','assign','createCp','money','bonus','fee','projects','tasksCreate','tasksAll','staff']},
@@ -1193,11 +1196,14 @@ function derive(){
     (by[r.cp]=by[r.cp]||[]).push(r);
   });
   CPS.forEach(c=>{
-    let av=0;OPS.forEach(o=>{if(o.cp!==c.id)return;av+=(o.kind==='in'||o.kind==='back'||o.kind==='corr')?o.amount:-o.amount});
+    let av=0;OPS.forEach(o=>{if(o.cp!==c.id||o.kind==='pay_x')return;av+=(o.kind==='in'||o.kind==='back'||o.kind==='corr')?o.amount:-o.amount});
     c.avail=av;let left=av;
-    (by[c.id]||[]).filter(r=>tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&!r.superseded).sort((a,b)=>a.payDue<b.payDue?-1:1).forEach(r=>{
+    const pend=(by[c.id]||[]).filter(r=>tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&!r.superseded).sort((a,b)=>a.payDue<b.payDue?-1:1);
+    // Сначала под каждый отчёт резервируются деньги, принятые именно за него (детализация поступлений), потом свободный остаток идёт по сроку оплаты
+    const ear={};pend.forEach(r=>{if(r.paid>=r.sum)return;const e=Math.max(0,Math.min(r.sum-r.paid,(r.recv||0)-r.paid,left));ear[r.id]=e;left-=e});
+    pend.forEach(r=>{
       if(r.paid>=r.sum){r.money={s:'paid'};return}
-      const need=r.sum-r.paid;if(left>=need){r.money={s:'ok',need};left-=need}else{r.money={s:'short',n:need-left,need};left=0}
+      const need=r.sum-r.paid,rest=need-(ear[r.id]||0);if(left>=rest){r.money={s:'ok',need};left-=rest}else{r.money={s:'short',n:rest-left,need};left=0}
     });
     c.free=left;
     let debt=0;feeMonths(c).forEach(m=>{const due=mkDate(+m.slice(0,4),+m.slice(5,7),c.feeDay);if(due<=TODAY)debt+=Math.max(0,feeCharge(c,m)-(c.feePaid[m]||0))});c.feeDebt=debt;
@@ -1594,7 +1600,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v22 · 15.10.2026';
+const PROTO_VER='v23 · 15.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<span>${DATA_MODE==='empty'?'Организация как сразу после регистрации. Всё, что добавите, сбросится при перезагрузке.':'Данные демонстрационные и сбрасываются при перезагрузке.'}</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id));const cn=isAdmin()?{}:counts();
@@ -2512,6 +2518,7 @@ function cpCols(){const fee=feat('fee')&&can('fee');return [
    {key:'debt',label:'Долг за обслуживание',type:'money',w:165,num:true,total:true,val:c=>c.feeDebt,html:c=>c.feeDebt>0?`<span class="red strong">${fmtM(c.feeDebt)}</span>`:'<span class="faint">0,00</span>'}]:[])]}
 function cpActions(c){const it=[{label:'Открыть карточку',icon:'building',run:()=>openCp(c)}];
   if(!c.archived){
+    if(can('createCp'))it.push({label:'Изменить',icon:'edit',run:()=>editCpDlg(c)});
     if(can('assign')||can('createCp'))it.push({label:'Сменить ответственного',icon:'user',run:()=>respDlg([c])});
     if(can('assign'))it.push({label:'Назначить отчёты',icon:'matrix',run:()=>assignDlg(c)});
     if(feat('taxpay')&&can('money'))it.push({label:'Поступление денег',icon:'wallet',run:()=>inDlg(c)});
@@ -2522,7 +2529,7 @@ function cpActions(c){const it=[{label:'Открыть карточку',icon:'b
       else if(l&&l.to==null){if(l.from>ym(TODAY))it.push({label:`Возобновление с ${ymG(l.from)}`,icon:'play',disabled:true,reason:'Уже запланировано'});else it.push({label:'Приостановить обслуживание',icon:'pause',run:()=>pauseDlg(c)})}
       else{it.push({label:'Возобновить обслуживание',icon:'play',run:()=>resumeDlg(c)});if(l&&l.to>=ym(TODAY))it.push({label:'Отменить приостановку',icon:'refresh',sub:`Запланирована с ${ymG(addMonths(l.to,1))}`,run:()=>unpauseCp(c)})}
       it.push({label:'В архив',icon:'archive',danger:true,run:()=>archiveDlg([c])})}
-  }else if(can('createCp'))it.push({label:'Вернуть из архива',icon:'refresh',run:()=>{c.archived=false;const l=lastPeriod(c);if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else c.periods.push({from:ym(TODAY),to:null});log('cp',c.id,'Возвращён из архива',c.id);refreshAll();toast('Контрагент возвращён из архива')}});
+  }else if(can('createCp'))it.push({label:'Вернуть из архива',icon:'refresh',run:()=>{c.archived=false;const l=lastPeriod(c);if(c.kind!=='oneoff'){if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else c.periods.push({from:ym(TODAY),to:null})}const r=c.kind==='oneoff'?{on:0}:applyService(c);const nw=REPORTS.filter(x=>x.cp===c.id&&OPEN.has(x.status)&&!x.superseded).length;log('cp',c.id,'Возвращён из архива',c.id);refreshAll();toast(c.kind==='oneoff'?'Контрагент возвращён из архива':`Контрагент возвращён из архива, открытых отчётов: ${nw}`)}});
   return it}
 function renderCps(body,tab,fresh){
   const all=visCps(true).filter(c=>!c.archived);
@@ -2695,7 +2702,7 @@ function openCp(c,tab){
       <div><span class="k">Тип обслуживания</span><span class="v">${c.kind==='oneoff'?'Разовое <span class="hint">только разовые услуги и проекты</span>':'Постоянное'}</span></div>
       <div><span class="k">Статус обслуживания</span><span class="v">${pill(c.status,SVST)}<div class="hint">Периоды обслуживания: ${esc(periodsText(c))}</div></span></div>
       <div><span class="k">Руководитель</span><span class="v">${esc(c.head||'—')}</span></div><div><span class="k">Контактное лицо</span><span class="v">${esc(c.contact||'—')}</span></div>
-      <div><span class="k">Начало обслуживания</span><span class="v">${fmtD(c.start)}</span></div><div><span class="k">Договор</span><span class="v">${esc(c.contract)}</span></div>
+      <div><span class="k">Начало обслуживания</span><span class="v">${fmtD(c.start)}</span></div><div><span class="k">Договор</span><span class="v">${esc(c.contract||'—')}</span></div>${feat('fee')&&can('fee')&&c.kind!=='oneoff'?`<div><span class="k">День оплаты обслуживания</span><span class="v">до ${c.feeDay} числа месяца</span></div>`:''}${c.note?`<div><span class="k">Примечание</span><span class="v" style="white-space:pre-wrap">${esc(c.note)}</span></div>`:''}
       <div><span class="k">Ответственный бухгалтер</span><span class="v">${c.resp?esc(EM[c.resp].fio):'<span class="pill orange">'+ic('alert')+'не назначен</span>'}${can('assign')||can('createCp')?` <button class="linkbtn" id="cp-resp" style="font-size:12px">сменить</button>`:''}</span></div>
       ${feat('taxpay')&&feat('fee')&&can('fee')&&c.kind!=='oneoff'?`<div><span class="k">Платит одной суммой${tipI('Контрагент переводит одну сумму сразу на налоги и обслуживание. Система сама делит её: сначала налоги, остаток — в оплату обслуживания.')}</span><span class="v"><label class="row" style="gap:8px"><input type="checkbox" class="sw" id="cp-one" ${c.oneSum?'checked':''} ${can('createCp')&&!c.archived?'':'disabled'}> налоги и обслуживание вместе</label><span class="hint">При поступлении деление на налоги и обслуживание подставится само</span></span></div>`:''}
       ${feat('taxpay')?`<div><span class="k">Файл при поступлении</span><span class="v"><label class="row" style="gap:8px"><input type="checkbox" class="sw" id="cp-needf" ${c.needInFile?'checked':''} ${can('createCp')&&!c.archived?'':'disabled'}> обязательно требовать</label><span class="hint">Поступление от контрагента нельзя сохранить без скрина перевода или квитанции</span></span></div>`:''}
@@ -2707,7 +2714,7 @@ function openCp(c,tab){
     if(st.tab==='money'){const months=[-2,-1,0,1].map(k=>addMonths(ym(TODAY),k));const pm=st.period;
       const need=REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&r.payDue&&r.payDue<=lastDay(pm)).sort((a,b)=>a.payDue<b.payDue?-1:1);
       const needSum=need.reduce((a,r)=>a+r.sum-r.paid,0);const have=c.avail;const diff=have-needSum;
-      const ops=OPS.filter(o=>o.cp===c.id).sort((a,b)=>a.date<b.date?1:-1);
+      const ops=OPS.filter(o=>o.cp===c.id&&OPK[o.kind]).sort((a,b)=>a.date<b.date?1:-1);
       b=`<div class="row"><span class="muted">Сверка по сроку оплаты до конца месяца:</span>${sel('cp-per',months.map(k=>[k,ymLabel(k)]),pm,'style="width:auto;min-height:30px;padding:3px 8px"')}<div class="grow"></div>
         ${c.archived?'':`<button class="btn sm cta" id="cp-in">${ic('plus','sm')}Поступление</button>`}${feat('accounts')&&(c.archived?can('archiveRest'):can('bonus'))&&c.paysTo==='emp'?`<button class="btn sm" id="cp-bonus" ${c.free>0?'':'disabled'}>${ic('gift','sm')}Списать в бонус</button>${tipI('Свободный остаток денег контрагента после оплаты всех налогов можно списать сотруднику как бонус. Списания попадают в ежемесячный отчёт.')}`:''}${!c.archived||can('archiveRest')?`<button class="btn sm" id="cp-refund" ${c.free>0?'':'disabled'}>${ic('refresh','sm')}Вернуть остаток</button>`:''}</div>
       ${c.archived&&c.free>0?`<div class="note warn">${ic('alert')}<span>Контрагент в архиве, остаток ${som(c.free)}. ${can('archiveRest')?'Решите: вернуть контрагенту или списать в бонус.':'Что с ним сделать, решает владелец.'}</span></div>`:''}
@@ -2839,6 +2846,44 @@ function addCpDlg(kind){
         catch(err){m.saving=false;const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];REPORTS.length=nR;HIST.length=nH;console.error(err);toast('Не удалось сохранить контрагента, ничего не создано. Попробуйте ещё раз','alert',true);return}
         m.close();refreshAll();toast(reg?`Контрагент добавлен, отчётов создано: ${REPORTS.filter(r=>r.cp===c.id).length}`:'Разовый контрагент добавлен','building');openCp(c)}}};
   }});
+}
+
+/* ── Edit counterparty: реквизиты (тип обслуживания, отчёты, тариф и дата начала меняются своими действиями) ── */
+function editCpDlg(c){
+  const cm=String(c.contract||'').match(/№\s*(\S+)(?:\s+от\s+(\d\d)\.(\d\d)\.(\d{4}))?/);
+  const st={form:c.form,regime:c.regime||'',d:{name:c.name,inn:c.inn,ph:c.phone,head:c.head||'',contact:c.contact||'',note:c.note||'',cno:cm?cm[1]:'',cdate:cm&&cm[2]?`${cm[4]}-${cm[3]}-${cm[2]}`:'',feeDay:c.feeDay}};
+  const feeOn=feat('fee')&&can('fee')&&c.kind!=='oneoff';
+  openModal({form:true,size:'mid',render:m=>{const d=st.d;const bad=c.assign.filter(a=>!a.to&&compatible(T[a.t],{regime:st.regime,form:st.form}));
+    return {title:'Изменить контрагента',sub:esc(c.name),body:`<div class="form">
+    ${fld('Название',inp('ec-name',d.name,'placeholder="ОсОО «Компания»"'),{req:true,full:true,id:'ec-name'})}
+    ${fld('ИНН',inp('ec-inn',d.inn,'inputmode="numeric" maxlength="14" class="inp mono" placeholder="14 цифр"'),{req:true,id:'ec-inn'})}
+    ${fld('Телефон (звонок и WhatsApp)',phoneInput('ec-ph',d.ph),{req:true,id:'ec-ph'})}
+    ${fld('Форма собственности',sel('ec-form',DICT.forms.items.filter(x=>x.active||x.name===c.form).map(x=>x.name),st.form),{id:'ec-form'})}
+    ${fld('Режим налогообложения',sel('ec-reg',[['','— не указан —'],...DICT.regimes.items.filter(x=>x.active||x.name===c.regime).map(x=>[x.name,REGIME_FULL[x.name]||x.name])],st.regime),{id:'ec-reg'})}
+    ${bad.length?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Назначенные отчёты не меняются сами. Не подходят к новому режиму или форме: ${bad.map(a=>esc(T[a.t].short)).join(', ')}. Проверьте их в «Назначить отчёты».</span></div>`:''}
+    ${fld('Руководитель',inp('ec-head',d.head),{id:'ec-head'})}${fld('Контактное лицо',inp('ec-contact',d.contact),{id:'ec-contact'})}
+    ${fld('Номер договора',inp('ec-cno',d.cno,'placeholder="Например: 45/26"'),{id:'ec-cno'})}${fld('Дата договора',inp('ec-cdate',d.cdate,'type="date"'),{id:'ec-cdate'})}
+    ${feeOn?fld('День оплаты обслуживания',inp('ec-fday',d.feeDay,'type="number" min="1" max="28" class="inp tnum"'),{id:'ec-fday',hint:'Число месяца, до которого контрагент платит за обслуживание (1–28)'}):''}
+    ${fld('Примечание',`<textarea class="inp" id="ec-note" style="min-height:60px">${esc(d.note)}</textarea>`,{full:true,id:'ec-note'})}
+    </div><div class="hint">Тип обслуживания, отчёты, тариф, ответственный и периоды обслуживания меняются своими действиями в карточке.</div>`,
+    foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ec-ok">Сохранить</button>',
+    mount(el){bindPhone(el,'ec-ph');
+      const snap=()=>{st.d={name:val(el,'ec-name'),inn:val(el,'ec-inn'),ph:readPhone(el,'ec-ph').ph||st.d.ph,head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),cno:val(el,'ec-cno'),cdate:val(el,'ec-cdate'),feeDay:$('#ec-fday',el)?val(el,'ec-fday'):st.d.feeDay}};
+      $('#ec-reg',el).onchange=e=>{snap();st.regime=e.target.value;m.draw()};$('#ec-form',el).onchange=e=>{snap();st.form=e.target.value;m.draw()};
+      $('#ec-inn',el).addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,14)});
+      $('#ec-ok',el).onclick=()=>{const name=val(el,'ec-name'),inn=val(el,'ec-inn'),ph=readPhone(el,'ec-ph');const dup=CPS.find(x=>x.inn===inn&&x.id!==c.id);const fd=$('#ec-fday',el)?parseInt(val(el,'ec-fday'),10):c.feeDay;
+        const ok=[setErr(el,'ec-name',name?'':'Введите название'),
+          setErr(el,'ec-inn',!/^\d{14}$/.test(inn)?'ИНН — ровно 14 цифр':!/^[0-2]/.test(inn)?'ИНН в КР начинается с 0, 1 или 2':dup?`Такой ИНН уже есть: ${dup.name}${dup.archived?' (в архиве)':''}`:''),
+          setErr(el,'ec-ph',ph.empty?'Введите номер телефона':!ph.ok?`Номер для этой страны — ${ph.need} цифр`:''),
+          $('#ec-fday',el)?setErr(el,'ec-fday',fd>=1&&fd<=28?'':'Число от 1 до 28'):true].every(Boolean);
+        if(!ok){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
+        const cno=val(el,'ec-cno'),cd=val(el,'ec-cdate');
+        const nv={name,inn,phone:ph.ph,form:st.form,regime:st.regime,head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),contract:cno||cd?`${cno?'№ '+cno:'Без номера'}${cd?' от '+fmtD(cd):''}`:'—',feeDay:fd};
+        const L={name:'название',inn:'ИНН',phone:'телефон',form:'форма собственности',regime:'режим налогообложения',head:'руководитель',contact:'контактное лицо',note:'примечание',contract:'договор',feeDay:'день оплаты обслуживания'};
+        const ch=Object.keys(nv).filter(k=>JSON.stringify(nv[k]??'')!==JSON.stringify(c[k]??''));
+        if(!ch.length){m.close();return toast('Изменений нет')}
+        const was=bad.length;Object.assign(c,nv);touch(c);log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);m.close();refreshAll();
+        toast('Контрагент сохранён');if(was&&(ch.includes('regime')||ch.includes('form')))setTimeout(()=>toast('Проверьте назначенные отчёты: часть не подходит к новому режиму или форме','alert',true),1400)}}}}});
 }
 
 /* ── Import by paste ── */
@@ -3103,7 +3148,7 @@ function serviceCard(s){
 /* Операции контрагента: модуль «Финансы», а если он отключён в учётной политике — карточка контрагента */
 function cpOps(c){if(feat('finops'))go('fin','all',{cp:{type:'enum',vals:[c.name]}});else openCp(c)}
 function finRows(){const out=[];const vc=new Set(visCps(true).map(c=>c.id));const tax=taxVis(),fee=feat('fee')&&can('fee'),pj=moneyVis();
-  if(tax)OPS.forEach(o=>{if(!vc.has(o.cp))return;const k=OPK[o.kind];const fa=o.kind==='in'?(o.feeAlloc||[]).reduce((a,x)=>a+x.a,0):0;const amt=o.kind==='in'?(fee?(o.total??o.amount):o.amount):o.amount;const sign=o.kind==='corr'?(o.amount<0?'−':'+'):k[2];
+  if(tax)OPS.forEach(o=>{if(!vc.has(o.cp)||!OPK[o.kind])return;const k=OPK[o.kind];const fa=o.kind==='in'?(o.feeAlloc||[]).reduce((a,x)=>a+x.a,0):0;const amt=o.kind==='in'?(fee?(o.total??o.amount):o.amount):o.amount;const sign=o.kind==='corr'?(o.amount<0?'−':'+'):k[2];
     out.push({id:'o'+o.id,ref:o,src:'op',grp:['bonus','refund'].includes(o.kind)?'wo':'tax',cp:o.cp,date:o.date,cat:o.kind==='in'&&fa&&fee?'Поступление (налоги и обслуживание)':k[0],color:k[1],sign,amount:Math.abs(amt),what:o.kind==='in'?(fee?allocText(o):allocText(Object.assign({},o,{feeAlloc:[]})))||'Аванс':(o.note||''),by:o.by,files:(o.files||[]).length,acc:o.holder})});
   if(fee)FEEPAYS.forEach(f=>{if(!vc.has(f.cp))return;out.push({id:'f:'+f.id,ref:f,src:'fee',grp:'fee',dup:!!(f.op&&tax),cp:f.cp,date:f.date,cat:'Оплата за обслуживание',color:'purple',sign:'+',amount:f.amount,what:'Обслуживание за '+ymLabel(f.month)+(f.op?' · из общего поступления':''),by:f.by,files:0,acc:'org'})});
   if(pj){SERVICES.forEach(s=>{if(!vc.has(s.cp))return;out.push({id:'s:'+s.id,ref:s,src:'svc',grp:'proj',cp:s.cp,date:s.date,cat:'Разовая услуга',color:'orange',sign:'+',amount:s.amount,paid:svcPaid(s),st:svcStatus(s),what:s.name,by:s.resp,files:s.files.length+s.pays.reduce((a,p)=>a+(p.files||[]).length,0),acc:'org'})});
@@ -3375,9 +3420,9 @@ function renderStaff(body,tab,fresh){
     {key:'cps',label:'Контрагентов',type:'int',w:120,num:true,val:e=>empStats(e).cps},{key:'open',label:'Несданных',type:'int',w:110,num:true,val:e=>empStats(e).open},
     {key:'over',label:'Просрочено',type:'int',w:110,num:true,val:e=>empStats(e).over,html:e=>{const n=empStats(e).over;return n?`<span class="pill red sm">${n}</span>`:'<span class="faint">0</span>'}}],
     rows:()=>EMP,title:'fio',noun:['сотрудник','сотрудника','сотрудников'],rowClass:e=>e.active?'':'muted',actions:empActions,open:e=>empCard(e),sort:{key:'fio',dir:1},simulateLoad:fresh});return}
-  if(tab==='roles'){const perms=PERMS;body.innerHTML=`<div class="note">${ic('info')}<span>Права выдаются через роли: сотрудник → роль → разрешения. Кнопки и вкладки без права не показываются, а сервер всё равно проверяет право при каждом действии. Шаблоны ролей ведёт администратор платформы, здесь — копии организации.</span></div>
-    <div class="mx"><table><thead><tr><th>Разрешение</th>${ROLES.map(r=>`<th style="min-width:130px">${esc(r.name)}<div class="faint" style="font-weight:450">${EMP.filter(e=>e.role===r.id&&e.active).length} чел.</div></th>`).join('')}</tr></thead><tbody>${perms.map(([k,l,h])=>`<tr><th style="white-space:normal;min-width:260px">${esc(l)}${k==='rollback'?tipI('Откат возвращает запись на предыдущий шаг шкалы с обязательной причиной. Отдельное право, чтобы случайно не отменить сданный отчёт или оплату.'):''}${h?`<div class="faint" style="font-weight:450;font-size:11.5px">${esc(h)}</div>`:''}</th>${ROLES.map(r=>`<td><input type="checkbox" data-role="${r.id}" data-p="${k}" ${r.perms.includes(k)?'checked':''} ${r.locked||!can('staff')?'disabled':''} aria-label="${esc(r.name)}: ${esc(l)}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-    body.onchange=e=>{const x=e.target;if(!x.dataset.role)return;const r=ROLES.find(r=>r.id===x.dataset.role);if(x.checked)r.perms.push(x.dataset.p);else r.perms=r.perms.filter(p=>p!==x.dataset.p);log('role',r.id,`${r.name}: ${x.checked?'добавлено':'снято'} право «${PERMS.find(p=>p[0]===x.dataset.p)[1]}»`);toast('Права роли сохранены','shield');renderSide()};return}
+  if(tab==='roles'){const perms=PERMS;body.innerHTML=`<div class="note">${ic('info')}<span>Права выдаются через роли: сотрудник → роль → разрешения. Кнопки и вкладки без права не показываются, а сервер всё равно проверяет право при каждом действии. Шаблоны ролей ведёт администратор платформы, здесь — копии организации. «Настройки и учётная политика» есть только у владельца; «Откат статусов», «Распоряжаться остатком при архивировании» и «Сотрудники и роли» выдаёт только владелец; права своей роли сотрудник не меняет.</span></div>
+    <div class="mx"><table><thead><tr><th>Разрешение</th>${ROLES.map(r=>`<th style="min-width:130px">${esc(r.name)}<div class="faint" style="font-weight:450">${EMP.filter(e=>e.role===r.id&&e.active).length} чел.</div></th>`).join('')}</tr></thead><tbody>${perms.map(([k,l,h])=>`<tr><th style="white-space:normal;min-width:260px">${esc(l)}${k==='rollback'?tipI('Откат возвращает запись на предыдущий шаг шкалы с обязательной причиной. Отдельное право, чтобы случайно не отменить сданный отчёт или оплату.'):''}${h?`<div class="faint" style="font-weight:450;font-size:11.5px">${esc(h)}</div>`:''}</th>${ROLES.map(r=>{const why=roleLock(r,k);return `<td${why&&!r.locked&&can('staff')?` title="${esc(why)}"`:''}><input type="checkbox" data-role="${r.id}" data-p="${k}" ${r.perms.includes(k)||(r.locked)?'checked':''} ${r.locked||!can('staff')||why?'disabled':''} aria-label="${esc(r.name)}: ${esc(l)}"></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+    body.onchange=e=>{const x=e.target;if(!x.dataset.role)return;const r=ROLES.find(r=>r.id===x.dataset.role);const why=roleLock(r,x.dataset.p);if(why){x.checked=!x.checked;return toast(why,'alert',true)}if(x.checked)r.perms.push(x.dataset.p);else r.perms=r.perms.filter(p=>p!==x.dataset.p);log('role',r.id,`${r.name}: ${x.checked?'добавлено':'снято'} право «${PERMS.find(p=>p[0]===x.dataset.p)[1]}»`);toast('Права роли сохранены','shield');renderSide()};return}
   if(tab==='bonus'){body.innerHTML='<div id="bg"></div>';grid($('#bg',body),{id:'bonus',cols:[
     {key:'date',label:'Дата',type:'date',w:110,val:o=>o.date},{key:'month',label:'Месяц',type:'enum',w:130,val:o=>ymLabel(ym(o.date)),sortVal:o=>o.date},
     {key:'emp',label:'Сотрудник',type:'enum',w:150,val:o=>o.holder==='org'?'Счёт организации':empName(o.holder)},{key:'cp',label:'Контрагент',type:'enum',w:220,val:o=>CPM[o.cp].name},
@@ -3403,7 +3448,7 @@ function empCard(e,tab){ckHit('empcard');
       <div class="plates">${plate({id:'a',icon:'building',color:'blue',label:'Контрагентов',value:s.cps})}${plate({id:'b',icon:'file',color:'yellow',label:'Несданных отчётов',value:s.open})}${plate({id:'c',icon:'alert',color:s.over?'red':'green',label:'Просрочено',value:s.over})}${plate({id:'d',icon:'task',color:'purple',label:'Открытых задач',value:s.tasks})}</div>
       <div class="box"><h3>Реквизиты для переводов</h3>${(e.wallets||[]).length?`<table class="mini"><tbody>${e.wallets.map(w=>`<tr><td>${esc(w.prov)}</td><td class="mono">${esc(w.num)}</td><td>${w.main?'<span class="tag">основной</span>':''}</td></tr>`).join('')}</tbody></table>`:'<span class="faint">Реквизитов нет — сотрудник добавляет их в своём профиле</span>'}</div>`;
     if(st.tab==='cps'){const cps=CPS.filter(c=>c.resp===e.id&&!c.archived);b=`<div class="row"><span class="muted">Закреплено контрагентов: ${cps.length}</span><div class="grow"></div>${cps.length&&e.role!=='owner'?`<button class="btn sm cta" id="ec-tr">${ic('refresh','sm')}Передать контрагентов</button>`:''}</div><div class="box"><table class="mini"><thead><tr><th>Контрагент</th><th>Режим</th><th class="num">Несданных</th><th class="num">Просрочено</th></tr></thead><tbody>${cps.map(c=>`<tr class="clk" data-cpid="${c.id}"><td>${esc(c.name)}</td><td>${esc(c.regime)}</td><td class="num">${REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&OPEN.has(r.status)).length}</td><td class="num ${c.overdue?'red strong':''}">${c.overdue}</td></tr>`).join('')||'<tr><td class="faint">Нет закреплённых контрагентов</td></tr>'}</tbody></table></div>`}
-    if(st.tab==='acc'){const ops=OPS.filter(o=>o.holder===e.id);const byCp={};ops.forEach(o=>{const x=byCp[o.cp]=byCp[o.cp]||{in:0,pay:0,bonus:0,out:0};if(o.kind==='in'||o.kind==='back'||o.kind==='corr')x.in+=o.amount;else if(o.kind==='pay')x.pay+=o.amount;else if(o.kind==='bonus')x.bonus+=o.amount;else x.out+=o.amount});
+    if(st.tab==='acc'){const ops=OPS.filter(o=>o.holder===e.id&&OPK[o.kind]);const byCp={};ops.forEach(o=>{const x=byCp[o.cp]=byCp[o.cp]||{in:0,pay:0,bonus:0,out:0};if(o.kind==='in'||o.kind==='back'||o.kind==='corr')x.in+=o.amount;else if(o.kind==='pay')x.pay+=o.amount;else if(o.kind==='bonus')x.bonus+=o.amount;else x.out+=o.amount});
       const tot=k=>Object.values(byCp).reduce((a,x)=>a+x[k],0);const bal=tot('in')-tot('pay')-tot('bonus')-tot('out');
       b=`<div class="plates">${plate({id:'1',icon:'wallet',color:'blue',label:'Баланс счёта',value:fmtM(bal,false),unit:'сом'})}${plate({id:'2',icon:'dn',color:'green',label:'Поступления',value:fmtM(tot('in'),false),unit:'сом'})}${plate({id:'3',icon:'up',color:'yellow',label:'Оплаты налогов',value:fmtM(tot('pay'),false),unit:'сом'})}${plate({id:'4',icon:'gift',color:'purple',label:'Накоплено бонусов',value:fmtM(tot('bonus'),false),unit:'сом'})}</div>
       <div class="box"><h3>В разрезе контрагентов</h3><div class="tbl-wrap"><table class="mini"><thead><tr><th>Контрагент</th><th class="num">Поступило</th><th class="num">Оплачено</th><th class="num">Бонус</th><th class="num">Остаток</th></tr></thead><tbody>${Object.entries(byCp).map(([id,x])=>`<tr class="clk" data-cpid="${id}"><td>${esc(CPM[id].name)}</td><td class="num">${fmtM(x.in)}</td><td class="num">${fmtM(x.pay)}</td><td class="num">${fmtM(x.bonus)}</td><td class="num strong">${fmtM(x.in-x.pay-x.bonus-x.out)}</td></tr>`).join('')||'<tr><td class="faint">Операций нет</td></tr>'}</tbody></table></div><span class="hint">Налог контрагента оплачивается только деньгами этого контрагента; деньги других контрагентов на него не тратятся.</span></div>`}
@@ -3623,13 +3668,15 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       const ch=[];d.cols.forEach((c,ci)=>{if(idx[ci]<0||ci===0)return;const nx=Object.assign({},x,v);if(c[0]==='after'||c[0]==='ym'){if((v.per||x.per)==='Y'?c[0]==='after':c[0]==='ym')return}const a=String(c[2](x)??''),b=String(c[2](nx)??'');if(a!==b)ch.push([c[1],a,b])});
       if(!ch.length){out.same++;return}
       const off=x.active&&v.active===false;(off?out.off:out.chg).push({code,x,v,ch})});
-    if(k==='types'){const ids=new Set([...out.chg,...out.off].filter(r=>['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==r.x[f])).map(r=>r.code));out.dues=REPORTS.filter(r=>ids.has(r.t)&&OPEN.has(r.status)).length}
+    if(k==='types'){const ids=new Set([...out.chg,...out.off].filter(r=>['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==r.x[f])).map(r=>r.code));out.dues=REPORTS.filter(r=>ids.has(r.t)&&OPEN.has(r.status)).length;
+      const ac=new Set([...out.chg,...out.off].filter(r=>r.v.act&&r.v.act!==r.x.act).map(r=>r.code));out.actT=ac.size;out.actR=REPORTS.filter(r=>ac.has(r.t)).length}
     st.diff=out};
   openModal({size:'wide',live:true,render:m=>{const df=st.diff;const ok=df&&!df.fatal;const n=ok?df.add.length+df.chg.length+df.off.length:0;
     const row=(cls,lbl,r,txt)=>`<tr><td><span class="pill sm ${cls}">${lbl}</span></td><td class="mono">${esc(r.code)}</td><td style="white-space:normal">${txt}</td></tr>`;
     return {title:`Загрузка: ${esc(d.title)}`,sub:'Вставьте строки из Excel или выберите файл в формате выгрузки',body:!df||df.fatal?`${fld('Данные',`<textarea class="inp mono" id="id-ta" style="min-height:220px;font-size:12px" placeholder="Вставьте строки с заголовками (Ctrl+V)">${esc(st.text)}</textarea>`,{full:true,id:'id-ta',hint:df&&df.fatal?'':`Колонки: ${d.cols.map(c=>c[1]).join(', ')}. Удаление через загрузку не делается — чтобы убрать значение, поставьте «Нет» в колонке «${d.cols[d.cols.length-1][1]}».`})}
       <div class="row"><label class="btn sm" style="cursor:pointer">${ic('upload','sm')}Файл Excel/CSV<input type="file" id="id-f" accept=".csv,.tsv,.txt" hidden></label><button class="linkbtn" id="id-cur">Подставить текущую выгрузку</button></div>`
       :`<div class="plates">${plate({id:'a',icon:'plus',color:'green',label:'Будет добавлено',value:df.add.length})}${plate({id:'c',icon:'edit',color:'blue',label:'Будет изменено',value:df.chg.length})}${plate({id:'o',icon:'ban',color:'orange',label:'Будет отключено',value:df.off.length})}${plate({id:'e',icon:'alert',color:df.err.length?'red':'green',label:'Строк с ошибками',value:df.err.length,sub:df.err.length?'не загрузятся':'ошибок нет'})}</div>
+      ${df.actR?`<div class="note">${ic('info')}<span>«Что нужно сделать» меняется у ${df.actT} ${plural(df.actT,'вида','видов','видов')}: по ${df.actT>1?'ним':'нему'} уже создано ${df.actR} ${plural(df.actR,'отчёт','отчёта','отчётов')}, они не изменятся. Новое значение действует для новых периодов.</span></div>`:''}
       ${df.dues?`<div class="note warn">${ic('alert')}<span>Изменятся сроки у ${df.dues} несданных ${plural(df.dues,'отчёта','отчётов','отчётов')} в 1 организации. Сданные отчёты не меняются.</span></div>`:''}
       <div class="tbl-wrap" style="max-height:340px;overflow:auto"><table class="mini"><thead><tr><th style="width:130px">Что будет</th><th style="width:110px">Код</th><th>Подробно</th></tr></thead><tbody>
       ${df.err.map(r=>`<tr><td><span class="pill sm red">${ic('alert')}ошибка</span></td><td class="mono">${esc(r.code)}</td><td style="white-space:normal">Строка ${r.n}: ${esc(r.e.join('; '))}</td></tr>`).join('')}
@@ -3648,6 +3695,7 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       if(q('#id-ok'))q('#id-ok').onclick=()=>{const df=st.diff;const snap={};[...df.chg,...df.off].forEach(r=>snap[r.code]=JSON.parse(JSON.stringify(r.x)));
         [...df.chg,...df.off].forEach(r=>{const x=r.x;const rule=k==='types'&&['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==x[f]);
           if(k!=='types'&&r.v.name&&r.v.name!==x.name)renameDictValue(k,x.name,r.v.name);
+          if(k==='types'&&r.v.act&&r.v.act!==x.act)REPORTS.filter(rp=>rp.t===x.id&&!rp.act).forEach(rp=>rp.act=x.act);
           Object.keys(r.v).forEach(f=>{if(r.v[f]!=null)x[f]=r.v[f]});if(k==='types'){x.rate=(x.rates||[])[0]||'';const pays=x.pays;setAct(x,x.act||'both');if(x.act!=='sub'&&pays&&pays.length)x.pays=pays}touch(x);
           if(rule)REPORTS.filter(rp=>rp.t===x.id&&OPEN.has(rp.status)).forEach(rp=>{const dd=dueOf(tFor(rp),rp.p);rp.dueBase=dd.base;rp.due=dd.due})});
         df.add.forEach(r=>{let o;if(k==='types'){o=Object.assign({id:r.code,name:'',short:'',code:'—',organ:'ГНС',per:'M',day:20,after:1,ym:4,sum:true,kind:'cross',regimes:[],who:'all',rates:[],shift:true,active:true},r.v);o.after=o.after??1;o.ym=o.ym??4;o.rate=(o.rates||[])[0]||'';born(o);RT.push(o);T[o.id]=o}else{o=born(Object.assign({active:true},r.v));d.items().push(o)}});
