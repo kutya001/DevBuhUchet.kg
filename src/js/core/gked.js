@@ -48,8 +48,9 @@ const gkEnRow=(code,c)=>gkEnRows(code,c)[0]||null;
 const gkFitType=(t,c)=>{const f=gkFit(t.gked,cpCodes(c),c);return !!(f&&f.length)};
 
 /* Сверка контрагента с ГКЭД: режимы, льготы, ставка ЕН, назначенные отчёты. Ничего не меняет, только предупреждает */
-// Перечень помечен «сверить» — к предупреждению добавляется оговорка
-const gkVer=r=>r&&/сверить/i.test(r.note||'')?' (перечень ещё сверяется)':'';
+// Перечень помечен «сверить» — к предупреждению добавляется оговорка; verify — перечень по документу, сверяются отдельные позиции
+const gkVer=r=>!r?'':r.verify?' (часть перечня ещё сверяется)':/сверить/i.test(r.note||'')?' (перечень ещё сверяется)':'';
+const gkToVerify=r=>!!r&&(!!r.verify||/сверить/i.test(r.note||''));
 function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],ben:[],rate:[],types:[],off:codes.filter(gkOff)};if(!codes.length)return out;
   regsOf(c).forEach(n=>{const r=DICT.regimes.items.find(x=>x.name===n);if(!r||gkEmpty(r.gked))return;const g=r.gked;
     // who:'org' — перечень задан только для организаций (у ИП — по другому перечню), ИП не проверяется

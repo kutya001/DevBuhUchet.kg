@@ -26,7 +26,7 @@ function gkNote(c,sel){if(!c.gked&&!(c.gked2||[]).length)return '';const k=gkChe
 function gkFitHint(c,sel){const codes=cpCodes(c);if(!codes.length)return '';const fit=RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on&&t.active!==false&&gkFitType(t,c));if(!fit.length)return '';
   const miss=fit.filter(t=>!sel.has(t.id));return `<div class="hint">${ic('check','sm')} Подходит по ГКЭД: ${fit.map(t=>esc(t.short)).join(', ')}${miss.length?` · не выбраны: ${miss.map(t=>esc(t.short)).join(', ')}`:''}</div>`}
 // Ввод перечня «Виды деятельности (ГКЭД)» и «Кроме» в формах справочников
-function gkRuleFields(p,r,raw){r=r||{};raw=raw||{};const note=r.note?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'';
+function gkRuleFields(p,r,raw){r=r||{};raw=raw||{};const note=(r.note?`<div class="note ${gkToVerify(r)&&!r.verify?'warn':''} full" style="grid-column:1/-1">${ic(gkToVerify(r)&&!r.verify?'alert':'info')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'')+(r.verify?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Сверить: ${esc(r.verify)}</span></div>`:'');
   return `${note}${fld('Виды деятельности (ГКЭД)',inp(p+'-gin',raw.in!=null?raw.in:(r.in||[]).join(', '),'class="inp mono" placeholder="Например: 47, 56.10, G"'),{full:true,id:p+'-gin',hint:'Коды или начала кодов через запятую; секция — буквой. Пусто — для всех видов деятельности'})}
   ${fld('Кроме (ГКЭД)',inp(p+'-gex',raw.ex!=null?raw.ex:(r.ex||[]).join(', '),'class="inp mono" placeholder="Например: 47.26"'),{full:true,id:p+'-gex',hint:'Виды деятельности, для которых не подходит'})}`}
 // undefined — ошибка в кодах, null — пусто (без ограничения), иначе {in, ex} с прежними признаками правила
