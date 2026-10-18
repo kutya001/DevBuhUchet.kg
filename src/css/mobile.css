@@ -52,3 +52,11 @@
   .md-sw{display:inline-flex}.md-bl{display:none}
   .md-split{grid-template-columns:1fr}.md-split[data-v=text] .md-prev,.md-split[data-v=prev] .md-src{display:none}
 }
+/* Компоновка форм на телефоне: короткие поля по два в строку (src/js/ui/mobile-pack.js) */
+@media (max-width:600px){
+  .form.m-pack,.kv.m-pack{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form.m-pack>*,.kv.m-pack>*{grid-column:1/-1}
+  .form.m-pack>.m-half,.kv.m-pack>.m-half{grid-column:auto}
+  .form.m-pack>div:empty,.form.m-pack>.m-full>.m-sp{display:none}
+  .form.m-pack>.m-half>label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
