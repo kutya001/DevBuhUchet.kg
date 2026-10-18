@@ -3,7 +3,8 @@
 
 Источник — index.html (каркас) + файлы из src/ + данные из data/.
 Результат — один самодостаточный HTML: все стили в одном <style>, все скрипты в одном <script>,
-копия data/demoDB.json, data/TemDB.json, data/refDB.json, data/gkedDB.json во встроенных блоках db-demo, db-tem, db-ref, db-gked.
+копия data/demoDB.json, data/TemDB.json, data/refDB.json, data/gkedDB.json во встроенных блоках db-demo, db-tem, db-ref, db-gked,
+библиотека pdf.js из vendor/pdfjs во встроенных блоках vendor-pdf и vendor-pdf-worker (type="text/plain": запускается только при первой загрузке PDF).
 Такой файл нужен артефакту claude.ai, файлу tz/Прототип Buhuchet.kg vN.html и открытию с диска.
 
 Запуск из корня репозитория:
@@ -16,6 +17,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 CSS_RE = re.compile(r'<link rel="stylesheet" href="(src/[^"]+\.css)">')
 JS_RE = re.compile(r'<script src="(src/[^"]+\.js)"></script>')
 DATA = [('demo', 'demoDB.json'), ('tem', 'TemDB.json'), ('ref', 'refDB.json'), ('gked', 'gkedDB.json')]
+VENDOR = [('vendor-pdf', 'vendor/pdfjs/pdf.min.js'), ('vendor-pdf-worker', 'vendor/pdfjs/pdf.worker.min.js')]
 
 
 def read(rel):
@@ -30,6 +32,15 @@ def data_blocks():
         assert j.get('meta', {}).get('file') == name, f'data/{name}: в meta.file другое имя'
         t = json.dumps(j, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c')
         out += f'<script type="application/json" id="db-{id_}">{t}</script>\n'
+    return out
+
+
+def vendor_blocks():
+    out = ''
+    for id_, rel in VENDOR:
+        s = read(rel)
+        assert '</script' not in s.lower() and '<!--' not in s, f'{rel}: в коде есть </script или <!--, встраивать нельзя'
+        out += f'<script type="text/plain" id="{id_}">{s}</script>\n'
     return out
 
 
@@ -57,7 +68,7 @@ def build():
         if m:
             if js is None:
                 js = len(out); out.append(None)
-                out[js] = data_blocks() + "<script>\n'use strict';\n"
+                out[js] = data_blocks() + vendor_blocks() + "<script>\n'use strict';\n"
             out[js] += js_body(m.group(1))
             continue
         out.append(ln)

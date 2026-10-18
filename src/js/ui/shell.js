@@ -22,7 +22,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v37 · 18.10.2026';
+const PROTO_VER='v38 · 18.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button><button type="button" class="linkbtn" data-db="gked">Экспорт gkedDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id)&&!m.hidden);const cn=isAdmin()?{}:counts();
@@ -44,10 +44,12 @@ function renderPage(fresh){
   const m=curMod();const tabs=modTabs(m);const page=$('#page');const pane=$('#pane');
   const keep=fresh?0:pane.scrollTop;
   ACTIVE=[];closePop();
-  const adds=m.add?m.add().filter(Boolean):[];
+  // Пункт с btn:true — на ПК отдельная кнопка рядом с «+ Добавить», на телефоне — пункт меню «+»
+  const all=m.add?m.add().filter(Boolean):[];const btns=isMobile()?[]:all.filter(a=>a.btn),adds=isMobile()?all:all.filter(a=>!a.btn);
   page.innerHTML=`<div class="tabrow"><span class="tr-l"></span>
-  ${tabs.length?`<div class="tabs" id="tabs" role="tablist">${tabs.map(t=>`<a class="tab ${S.tab===t.id?'on':''}" role="tab" aria-selected="${S.tab===t.id}" href="#${m.id}.${t.id}" title="${esc(t.label)}">${ic(t.icon||'right')}<span class="lbl">${esc(t.label)}</span>${t.count!=null&&t.count!==''?`<span class="badge ${t.red&&t.count?'red':''}">${t.count}</span>`:''}</a>`).join('')}</div>`:''}<div class="tr-r"><button type="button" class="icon-btn stat-btn" id="stat-btn" hidden aria-label="Статистика" title="Скрыть или показать статистику">${ic('chart')}</button>${adds.length?`<button class="btn cta add-btn" id="add-btn" title="Добавить">${ic('plus')}<span class="lbl">Добавить</span>${adds.length>1?ic('down','sm'):''}</button>`:''}</div></div><div id="mbody" style="display:flex;flex-direction:column;gap:14px;min-width:0"></div>`;
-  const runAdd=b=>{if(adds.length===1)adds[0].run();else menu(b,adds.map(a=>a.sep?a:({label:a.label,icon:a.icon,run:a.run})))};
+  ${tabs.length?`<div class="tabs" id="tabs" role="tablist">${tabs.map(t=>`<a class="tab ${S.tab===t.id?'on':''}" role="tab" aria-selected="${S.tab===t.id}" href="#${m.id}.${t.id}" title="${esc(t.label)}">${ic(t.icon||'right')}<span class="lbl">${esc(t.label)}</span>${t.count!=null&&t.count!==''?`<span class="badge ${t.red&&t.count?'red':''}">${t.count}</span>`:''}</a>`).join('')}</div>`:''}<div class="tr-r"><button type="button" class="icon-btn stat-btn" id="stat-btn" hidden aria-label="Статистика" title="Скрыть или показать статистику">${ic('chart')}</button>${btns.map((a,i)=>`<button class="btn add-x" data-addx="${i}" title="${esc(a.label)}">${ic(a.icon)}<span class="lbl">${esc(a.label)}</span>${a.beta?'<span class="pill yellow sm beta-p">Бета</span>':''}</button>`).join('')}${adds.length?`<button class="btn cta add-btn" id="add-btn" title="Добавить">${ic('plus')}<span class="lbl">Добавить</span>${adds.length>1?ic('down','sm'):''}</button>`:''}</div></div><div id="mbody" style="display:flex;flex-direction:column;gap:14px;min-width:0"></div>`;
+  const runAdd=b=>{if(adds.length===1)adds[0].run();else menu(b,adds.map(a=>a.sep?a:({label:a.label,icon:a.icon,run:a.run,sub:a.beta?'Бета-версия':''})))};
+  $$('[data-addx]',page).forEach(b=>b.onclick=()=>btns[+b.dataset.addx].run());
   const ab=$('#add-btn');if(ab)ab.onclick=()=>runAdd(ab);
   const fab=$('#fab');fab.hidden=!adds.length;fab.innerHTML=ic('plus');fab.onclick=()=>runAdd(fab);
   m.render($('#mbody'),S.tab,fresh);
@@ -58,8 +60,8 @@ function renderPage(fresh){
   $('#q-scope').textContent=tabs.length?(tabs.find(t=>t.id===S.tab)||{}).label||'':m.title;
   {const tl=tabs.length?(tabs.find(t=>t.id===S.tab)||{}).label||'':'';$('#tb-mod').textContent=m.title;$('#tb-tab').textContent=tl;$('#tb-tab').hidden=!tl;const tb=$('#tb-title');tb.classList.remove('full');tb.title=m.title+(tl?' · '+tl:'');tb.onclick=()=>tb.classList.toggle('full');const ti=$('#tb-info');ti.innerHTML=ic('info','sm');ti.onclick=()=>openPop(ti,`<h4>${esc(m.title)}</h4><div style="font-size:13px;line-height:1.5;max-width:300px">${esc(m.desc)}</div>`,{cls:'pad'})}
 }
-function fitTabs(){const t=$('#tabs');if(!t)return;const ab=$('#add-btn');const over=()=>t.scrollWidth>t.clientWidth+2;t.classList.remove('compact','tight','tight2');if(ab)ab.classList.remove('slim');
-  if(isMobile()){if(ab&&over())ab.classList.add('slim');if(over())t.classList.add('compact')}else{if(over())t.classList.add('tight');if(over())t.classList.add('tight2')}
+function fitTabs(){const t=$('#tabs');if(!t)return;const ab=$('#add-btn');const ax=$$('.add-x');const over=()=>t.scrollWidth>t.clientWidth+2;t.classList.remove('compact','tight','tight2');if(ab)ab.classList.remove('slim');ax.forEach(x=>x.classList.remove('slim'));
+  if(isMobile()){if(ab&&over())ab.classList.add('slim');if(over())t.classList.add('compact')}else{if(over())ax.forEach(x=>x.classList.add('slim'));if(over())t.classList.add('tight');if(over())t.classList.add('tight2')}
   // центрируем активную вкладку только по горизонтали: scrollIntoView прокрутил бы и страницу
   const on=$('.tab.on',t);if(on&&over())t.scrollLeft=Math.max(0,on.offsetLeft-(t.clientWidth-on.offsetWidth)/2)}
 function renderShell(fresh){$('#app').classList.toggle('nav-hidden',S.navHidden&&!isMobile());renderSide();renderBnav();renderPage(fresh)}

@@ -36,3 +36,16 @@
 .note.bad{background:var(--red-bg);border-color:transparent;color:var(--red)}
 .note .ic{margin-top:1px}
 
+/* Бета-плашка, загрузка PDF, подписи источника у полей формы, заполненной из документов */
+.note.beta{background:var(--yellow-bg);border-color:transparent;color:var(--yellow)}
+.note.beta,.note+.note,.note+.form{margin-bottom:10px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 16px;border:1.5px dashed var(--border);border-radius:var(--r-m);background:var(--pane-alt);cursor:pointer;color:var(--muted)}
+.drop:hover,.drop:focus-visible,.drop.over{border-color:var(--accent,var(--blue));color:var(--text,inherit)}
+.drop .ic{width:26px;height:26px}
+.src-l,.need-l,.alt-l{display:flex;gap:5px;align-items:flex-start;font-size:11.5px;line-height:1.4;margin-top:2px}
+.src-l{color:var(--blue)}.need-l{color:var(--orange);font-weight:600}.alt-l{color:var(--orange)}
+.src-l .ic,.need-l .ic,.alt-l .ic{width:13px;height:13px;flex-shrink:0;margin-top:1px}
+.fld.need:not(.bad) .inp,.fld.need:not(.bad) .gk-main,.fld.need:not(.bad) .chipsel{box-shadow:0 0 0 1.5px var(--orange-bg),inset 0 0 0 1px var(--orange)}
+.reg-h{flex-direction:row!important;align-items:baseline;gap:10px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.reg-h .linkbtn{font-weight:600;display:inline-flex;gap:4px;align-items:center}
+.rd-gk{margin-top:-6px}

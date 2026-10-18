@@ -6,7 +6,7 @@ function cpsTabs(){const v=visCps(true);const a=v.filter(c=>!c.archived);return 
  {id:'mine',label:'Мои контрагенты',icon:'user',count:CPS.filter(c=>!c.archived&&c.resp===S.me).length},
  feat('fee')&&can('fee')?{id:'debtors',label:'Должники',icon:'coins',count:a.filter(c=>c.feeDebt>0).length,red:true}:null,
 ]}
-function cpsAdd(){return can('createCp')?[{label:'Контрагент',icon:'building',run:addCpDlg},{label:'Загрузка из Excel',icon:'paste',run:importDlg}]:[]}
+function cpsAdd(){return can('createCp')?[{label:'Контрагент',icon:'building',run:addCpDlg},{label:'Загрузка из Excel',icon:'paste',run:importDlg},{label:'Из свидетельства и выписки',icon:'upload',run:regDocsDlg,btn:true,beta:true}]:[]}
 function cpCols(){const fee=feat('fee')&&can('fee');return [
  {key:'name',label:'Название',type:'text',w:250,val:c=>c.name,html:c=>`<span class="strong">${esc(c.name)}</span>${!c.resp&&!c.archived?` <span class="pill orange sm">${ic('alert')}нет ответственного</span>`:''}`},
  {key:'inn',label:'ИНН',type:'text',w:150,val:c=>c.inn,cls:'mono'},

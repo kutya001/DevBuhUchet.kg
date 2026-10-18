@@ -134,3 +134,6 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .gk-tree button.tg{border:0;background:none;width:22px;height:22px;display:grid;place-items:center;color:var(--faint);cursor:pointer;flex:none;border-radius:4px}
 .gk-tree button.tg.op .ic{transform:rotate(90deg)}
 .gk-tree .kids{margin-left:18px;border-left:1px solid var(--border);padding-left:6px}
+/* Отдельная кнопка рядом с «+ Добавить» (например, «Из свидетельства и выписки») и метка «Бета» */
+.add-x{margin-right:8px}.add-x .beta-p{margin-left:2px}.add-x.slim .lbl{display:none}
+.pill.beta-p{font-weight:700;letter-spacing:.02em;vertical-align:middle}
