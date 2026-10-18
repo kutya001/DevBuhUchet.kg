@@ -3,7 +3,7 @@
 
 Источник — index.html (каркас) + файлы из src/ + данные из data/.
 Результат — один самодостаточный HTML: все стили в одном <style>, все скрипты в одном <script>,
-копия data/demoDB.json, data/TemDB.json, data/refDB.json во встроенных блоках db-demo, db-tem, db-ref.
+копия data/demoDB.json, data/TemDB.json, data/refDB.json, data/gkedDB.json во встроенных блоках db-demo, db-tem, db-ref, db-gked.
 Такой файл нужен артефакту claude.ai, файлу tz/Прототип Buhuchet.kg vN.html и открытию с диска.
 
 Запуск из корня репозитория:
@@ -15,7 +15,7 @@ import json, os, re, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CSS_RE = re.compile(r'<link rel="stylesheet" href="(src/[^"]+\.css)">')
 JS_RE = re.compile(r'<script src="(src/[^"]+\.js)"></script>')
-DATA = [('demo', 'demoDB.json'), ('tem', 'TemDB.json'), ('ref', 'refDB.json')]
+DATA = [('demo', 'demoDB.json'), ('tem', 'TemDB.json'), ('ref', 'refDB.json'), ('gked', 'gkedDB.json')]
 
 
 def read(rel):

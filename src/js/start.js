@@ -3,7 +3,7 @@
 /* ═════════════ Start ═════════════ */
 // Живые данные ↔ TemDB: снимок для сохранения и выгрузки, замена на месте при загрузке и очистке
 const dbOrg=()=>({organization:ORG,roles:ROLES,employees:EMP,contractors:CPS,reports:REPORTS,moneyOps:OPS,history:HIST,tasks:TASKS,feePayments:FEEPAYS,services:SERVICES,projects:PROJECTS,files:FILES,indicators:IND,indicatorValues:IVALS,indicatorMonths:KMS,indicatorHistory:IHIST,kbProgress:CKS,newsRead:NEWS_READ,platformOrgs:ORGS,platformUsers:OTHER_USERS,dictRequests:REQUESTS,telegramLog:TG_LOG});
-const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD});
+const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD,gked:GK});
 const CP_DERIVED=['overdue','avail','free','status','paused'],KB_FN=['done','go','ev','feat'];
 const dbClean=v=>JSON.parse(JSON.stringify(v,(k,x)=>x instanceof Set?[...x]:typeof x==='function'?undefined:x));
 function dbSnap(){const o=dbClean(dbOrg()),r=dbClean({...dbRef(),kbSteps:KBS.map(i=>Object.fromEntries(Object.entries(i).filter(([k,v])=>typeof v!=='function'&&!KB_FN.includes(k))))});
@@ -12,6 +12,7 @@ function dbPut(t,v){if(t instanceof Set){t.clear();(v||[]).forEach(x=>t.add(x))}
 function dbApply(db){const o=dbOrg(),r=dbRef();
   DB_ORG_KEYS.forEach(k=>{if(k!=='newsRead')dbPut(o[k],db[k])});dbPut(NEWS_READ,dbSets(db.newsRead));
   DB_REF_KEYS.forEach(k=>{if(k==='kbSteps')return;if(k==='statuses'||k==='kbLevels')Object.keys(r[k]).forEach(s=>dbPut(r[k][s],db.ref[k][s]||(k==='kbLevels'?[]:{})));else dbPut(r[k],db.ref[k])});
+  dbPut(GK,db.ref.gked||[]);gkIndex();
   kbBuild(db.ref.kbSteps);ORGS.forEach(orgBind);DB.meta=db.meta;
   dbPut(T,Object.fromEntries(RT.map(t=>[t.id,t])));dbPut(PH,Object.fromEntries(PHONES.map(p=>[p.cc,p])));
   dbPut(CPM,Object.fromEntries(CPS.map(c=>[c.id,c])));dbPut(EM,Object.fromEntries(EMP.map(e=>[e.id,e])));
@@ -35,7 +36,8 @@ function dbDownload(name,obj){const text=JSON.stringify(obj,null,1);
   try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast(`Файл ${name} скачан`,'download')}catch(e){copyText(text,`Скопировано: сохраните как ${name}`)}}
 function dbAct(k){
   if(k==='export'){dbSave();dbDownload('TemDB.json',dbSnap());return}
-  if(k==='ref'){const s=dbSnap();dbDownload('refDB.json',{meta:{file:'refDB.json',version:DB_VER,exported:TODAY+' '+bishkekNow().hm,description:'Справочники платформы с правками администратора из прототипа'},...s.ref});return}
+  if(k==='ref'){const s=dbSnap();delete s.ref.gked;dbDownload('refDB.json',{meta:{file:'refDB.json',version:DB_VER,exported:TODAY+' '+bishkekNow().hm,description:'Справочники платформы с правками администратора из прототипа'},...s.ref});return}
+  if(k==='gked'){dbDownload('gkedDB.json',{meta:{...(DBSRC.gked.db.meta||{}),file:'gkedDB.json',exported:TODAY+' '+bishkekNow().hm},items:dbClean(GK)});return}
   if(k==='clear'){confirmDlg({title:'Очистить рабочие данные?',text:`Всё, что вы ввели и изменили в прототипе, пропадёт, в том числе правки справочников. Данные вернутся к ${DATA_MODE==='empty'?'пустой организации (TemDB.json)':'демо-данным (demoDB.json)'}. Чтобы сохранить изменения, сначала нажмите «Экспорт TemDB.json».`,ok:'Очистить',danger:true,run:()=>setDataMode(DATA_MODE)});return}
   if(k==='load'){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
     inp.onchange=()=>{const f=inp.files[0];if(!f)return;f.text().then(tx=>{let j=null;try{j=JSON.parse(tx)}catch(e){}

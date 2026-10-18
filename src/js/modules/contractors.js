@@ -13,6 +13,9 @@ function cpCols(){const fee=feat('fee')&&can('fee');return [
  {key:'phone',label:'Телефон',type:'text',w:190,val:c=>fmtPhone(c.phone),html:c=>phoneHtml(c.phone),hide:true},
  {key:'form',label:'Форма',type:'enum',w:90,val:c=>c.form,hide:true},
  {key:'regime',label:'Режим налогообложения',type:'enum',w:170,val:c=>c.regime},{key:'regime2',label:'Дополнительный режим',type:'enum',w:170,hide:true,val:c=>c.regime2||''},{key:'ben',label:'Льготы и особые статусы',type:'text',w:220,hide:true,val:c=>(c.ben||[]).join(', ')},
+ {key:'gked',label:'Основной ГКЭД',type:'text',w:280,val:c=>c.gked?gkT(c.gked):'',html:c=>c.gked?`<span class="mono">${esc(c.gked)}</span> ${esc(gkName(c.gked))}`:`<span class="pill yellow sm">${ic('alert')}Без ГКЭД</span>`,match:gkMatch,hide:true},
+ {key:'gked2',label:'Дополнительные ГКЭД',type:'text',w:220,val:c=>(c.gked2||[]).join(', '),cls:'mono',match:gkMatch,hide:true},
+ {key:'gkno',label:'ГКЭД указан',type:'enum',w:120,val:c=>c.gked?'Да':'Нет',hide:true},
  {key:'ugns',label:'Налоговый орган',type:'enum',w:210,val:c=>ugnsLabel(c.ugns),hide:true},
  {key:'kind',label:'Тип обслуживания',type:'enum',w:150,val:c=>c.kind==='oneoff'?'Разовое':'Постоянное',hide:true},
  {key:'svc',label:'Статус обслуживания',type:'enum',w:190,val:c=>c.status,html:c=>scaleMini('svc',c.status,c)},
@@ -55,19 +58,20 @@ function renderCps(body,tab,fresh){
   const all=visCps(true).filter(c=>!c.archived);
   const noResp=all.filter(c=>!c.resp).length,withOver=all.filter(c=>c.overdue>0).length,deb=all.filter(c=>c.feeDebt>0);
   const gid='cps-'+tab;
-  const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length;
+  const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length,nNoGk=all.filter(c=>!c.gked).length;
   body.innerHTML=(tab==='archive'?'':`<div class="plates">
     ${plate({id:'all',icon:'building',color:'blue',label:'На обслуживании',value:all.length,sub:can('viewAll')?'вся организация':'закреплены за вами'})}
     ${plate({id:'noresp',icon:'alert',color:noResp?'orange':'green',label:'Без ответственного',value:noResp,sub:noResp?'владелец получил уведомление':'все закреплены'})}
     ${plate({id:'over',icon:'clock',color:withOver?'red':'green',label:'С просроченными отчётами',value:withOver})}
     ${feat('fee')&&can('fee')?plate({id:'deb',icon:'coins',color:deb.length?'red':'green',label:'Должники',value:deb.length,sub:deb.length?som(deb.reduce((a,c)=>a+c.feeDebt,0)):'долгов нет',on:tab==='debtors'}):''}
+    ${plate({id:'nogk',icon:'alert',color:nNoGk?'yellow':'green',label:'Без ГКЭД',value:nNoGk,sub:nNoGk?'укажите вид деятельности':'у всех указан',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.gkno)})}
     ${plate({id:'pau',icon:'pause',color:'yellow',label:'Приостановлены',value:nPau,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('Приостановлен'))})}
     ${plate({id:'one',icon:'briefcase',color:'purple',label:'Разовые',value:nOne,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.kind)})}
     ${plate({id:'arc',icon:'archive',color:'gray',label:'В архиве',value:nArc,sub:'показать в списке',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('В архиве'))})}
   </div>`)+`<div id="cg"></div>`;
   const pl=body.querySelector('.plates');if(pl)pl.onclick=e=>{const b=e.target.closest('[data-plate]');if(!b)return;const id=b.dataset.plate;const g=GS[gid];
     if(id==='deb'){go('cps','debtors');return}
-    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
+    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='nogk')g.filters.gkno={type:'enum',vals:['Нет']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
   const rows=()=>{const v=visCps(true);const g=GS[gid];const fs=g&&g.filters&&g.filters.svc;if(fs&&fs.vals&&fs.vals.includes('В архиве'))return v;const a=v.filter(c=>!c.archived);if(tab==='mine')return a.filter(c=>c.resp===S.me);if(tab==='debtors')return a.filter(c=>c.feeDebt>0);if(tab==='paused')return a.filter(c=>c.paused);if(tab==='oneoff')return a.filter(c=>c.kind==='oneoff');return a};
   grid($('#cg',body),{id:gid,cols:cpCols(),rows,title:'name',noun:['контрагент','контрагента','контрагентов'],rowClass:c=>!c.resp&&!c.archived?'warn':c.archived||c.paused?'muted':'',
     actions:cpActions,open:openCp,sort:{key:'name',dir:1},preset:S.preset,simulateLoad:fresh,
@@ -136,12 +140,12 @@ function unassignDlg(c,ids,done){
     ids.forEach(id=>{const a=c.assign.find(a=>a.t===id&&!a.to);if(a)a.to=TODAY;REPORTS.filter(r=>r.cp===c.id&&r.t===id&&OPEN.has(r.status)&&r.due>=TODAY).forEach(r=>r.status='Не требуется');log('cp',c.id,`Снято назначение: ${T[id].name}`,c.id)});done&&done();refreshAll();toast('Назначение снято')}});
 }
 function typeChips(id,c,selected){
-  return `<div class="chipsel" id="${id}">${RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(t.active!==false||selected.has(t.id))).map(t=>{const why=compatible(t,c);return `<button type="button" data-t="${t.id}" class="${selected.has(t.id)?'on':''}" ${why&&!selected.has(t.id)?'disabled':''} title="${esc(why||t.name+' · '+t.organ+' · '+ruleText(t))}">${selected.has(t.id)?ic('check','sm'):''}${esc(t.short)}</button>`}).join('')}</div>`}
+  return `<div class="chipsel" id="${id}">${RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(t.active!==false||selected.has(t.id))).map(t=>{const why=compatible(t,c);const fit=!why&&gkFitType(t,c);return `<button type="button" data-t="${t.id}" class="${selected.has(t.id)?'on':''} ${fit?'gkfit':''}" ${why&&!selected.has(t.id)?'disabled':''} title="${esc(why||(fit?'Подходит по ГКЭД · ':'')+t.name+' · '+t.organ+' · '+ruleText(t))}">${selected.has(t.id)?ic('check','sm'):''}${esc(t.short)}${fit?'<i class="gk-dot" aria-label="Подходит по ГКЭД"></i>':''}</button>`}).join('')}</div>`}
 function assignDlg(c){
   const st={sel:new Set(c.assign.filter(a=>!a.to).map(a=>a.t)),rates:{},fixed:{},cfg:{}};const before=new Set(st.sel);c.assign.filter(a=>!a.to).forEach(a=>{if(a.rate)st.rates[a.t]=a.rate;if(a.fixed!=null)st.fixed[a.t]=a.fixed;if(perOwn(T[a.t])){const e=tEff(T[a.t],a);st.cfg[a.t]={per:e.per,day:e.day,mo:e.per==='Y'?e.ym:e.after}}});
   const cfgOf=id=>st.cfg[id]||(st.cfg[id]={per:T[id].per,day:T[id].day,mo:T[id].per==='Y'?T[id].ym:T[id].after});const before0=JSON.stringify(st.cfg);
   openModal({form:true,size:'mid',render:m=>({title:'Какие отчёты сдаёт',sub:`${esc(c.name)} · ${esc(c.regime||'режим не указан')} · ${esc(c.form)}`,
-    body:`${typeChips('as-chips',c,st.sel)}${benHint(c,st.sel)}<div class="hint">Недоступные виды не подходят к режиму налогообложения или форме собственности — наведите, чтобы увидеть причину.${c.regime?'':' Режим не указан, поэтому доступны все виды.'}</div>
+    body:`${typeChips('as-chips',c,st.sel)}${benHint(c,st.sel)}${gkFitHint(c,st.sel)}${gkNote(c,st.sel)}<div class="hint">Недоступные виды не подходят к режиму налогообложения или форме собственности — наведите, чтобы увидеть причину.${c.regime?'':' Режим не указан, поэтому доступны все виды.'}</div>
     ${st.sel.size?`<div class="box flat"><h3>Ставки и повторяющиеся суммы</h3>${rateRows(st.sel,st.rates,st.fixed)||'<span class="faint">Нет видов со ставкой</span>'}<span class="hint">Повторяющаяся сумма сама подставится в каждый новый отчёт этого вида, например фиксированный патент или Соцфонд. Пусто — сумму вносят при сдаче.</span></div>`:''}
     ${[...st.sel].some(id=>perOwn(T[id]))?`<div class="box flat"><h3>Периодичность и срок в назначении</h3><span class="hint" style="margin-top:-4px">Внутренняя финансовая отчётность — по требованию контрагента; патент — по сроку патента.</span>${intRows([...st.sel].filter(id=>perOwn(T[id])),cfgOf)}<span class="hint">У каждого контрагента свои периодичность и срок. В каталоге стоят только значения по умолчанию: раз в год, до 1 апреля. При смене периодичности несданные будущие отчёты пересоздаются.</span></div>`:''}
     <div class="note">${ic('info')}<span>Новые отчёты создадутся сами на текущий период и один вперёд. Снятые виды завершатся сегодняшним днём.</span></div>`,
@@ -163,7 +167,7 @@ function massAssignDlg(){
     return {title:'Назначить отчёт нескольким контрагентам',sub:'Выберите вид отчёта и отметьте компании',body:`${fld('Вид отчёта',sel('ma-t',RT.filter(x=>ORG.types[x.id]&&ORG.types[x.id].on&&x.active!==false).map(x=>[x.id,`${x.name} · ${x.organ}`]),st.t),{id:'ma-t'})}
     ${t.rates&&t.rates.length>1?fld('Ставка для отмеченных',sel('ma-rate',t.rates,st.rate||t.rates[1]),{id:'ma-rate',hint:'Ставку отдельного контрагента потом можно изменить в его карточке'}):''}
     <div class="row"><span class="muted">Срок: ${esc(ruleText(t))}${t.rates&&t.rates.length===1?' · ставка '+esc(t.rates[0]):''}</span><div class="grow"></div><button class="linkbtn" id="ma-all">Отметить все подходящие</button></div>
-    <div class="fl-list" style="max-height:340px">${cps.map(c=>{const has=c.assign.some(a=>a.t===t.id&&!a.to);const why=compatible(t,c);return `<label title="${esc(why)}" style="${why?'opacity:.5':''}"><input type="checkbox" data-c="${c.id}" ${has||st.sel.has(c.id)?'checked':''} ${has||why?'disabled':''}> ${esc(c.name)}<span class="n">${has?'уже сдаёт':why?esc(why):esc(c.regime||'')}</span></label>`}).join('')}</div>`,
+    <div class="fl-list" style="max-height:340px">${cps.map(c=>{const has=c.assign.some(a=>a.t===t.id&&!a.to);const why=compatible(t,c);return `<label title="${esc(why)}" style="${why?'opacity:.5':''}"><input type="checkbox" data-c="${c.id}" ${has||st.sel.has(c.id)?'checked':''} ${has||why?'disabled':''}> ${esc(c.name)}<span class="n">${has?'уже сдаёт':why?esc(why):esc(c.regime||'')}</span>${!has&&!why&&gkFitType(t,c)?'<span class="pill green sm">Подходит по ГКЭД</span>':''}</label>`}).join('')}</div>`,
     foot:`<span class="muted">Выбрано: ${st.sel.size}</span><div class="grow"></div><button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ma-ok" ${st.sel.size?'':'disabled'}>Назначить</button>`,
     mount(el){if(!$('#ma-t',el))return;$('#ma-t',el).onchange=e=>{st.t=e.target.value;st.sel.clear();st.rate=null;m.draw()};if($('#ma-rate',el))$('#ma-rate',el).onchange=e=>st.rate=e.target.value;
       el.querySelector('.fl-list').onchange=e=>{const x=e.target;x.checked?st.sel.add(+x.dataset.c):st.sel.delete(+x.dataset.c);m.draw()};

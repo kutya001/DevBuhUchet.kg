@@ -4,7 +4,7 @@
 /* Прототип — каркас: ни одной записи данных в коде. На GitHub Pages файлы читаются из папки data,
    в артефакте и при открытии с диска — из копии, которую сборка встраивает в страницу (блоки db-*). */
 const DB_VER=1,DB_KEY='bu.temdb';
-const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json'};
+const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json',gked:'gkedDB.json'};
 const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
 const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit'];
 const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit']);
@@ -14,13 +14,18 @@ function dbRead(name,id){
     if(x.status===200){const v=JSON.parse(x.responseText);if(v&&v.meta&&v.meta.file===name)return {db:v,from:'папка data'}}}catch(e){}
   const el=document.getElementById(id);if(el)try{return {db:JSON.parse(el.textContent),from:'встроенная копия'}}catch(e){}
   return {db:{meta:{file:name}},from:'нет файла'}}
-const DBSRC={demo:dbRead(DB_FILES.demo,'db-demo'),empty:dbRead(DB_FILES.empty,'db-tem'),ref:dbRead(DB_FILES.ref,'db-ref')};
+const DBSRC={demo:dbRead(DB_FILES.demo,'db-demo'),empty:dbRead(DB_FILES.empty,'db-tem'),ref:dbRead(DB_FILES.ref,'db-ref'),gked:dbRead(DB_FILES.gked,'db-gked')};
+// Поле «Виды деятельности (ГКЭД)» появилось в v37: у справочников, сохранённых в браузере раньше, его берём из refDB.json
+const DB_GK_REF=[['regimes',r=>r.dictionaries.regimes.items,x=>x.code||x.name],['benefits',r=>r.dictionaries.benefits.items,x=>x.code||x.name],['enRates',r=>r.enRates,x=>x.code],['reportTypes',r=>r.reportTypes,x=>x.id]];
 let DATA_MODE=store.get('data','demo'),DBMISS=[];
 // Недостающие разделы (старый или чужой файл) берутся из пустого шаблона и refDB.json — прототип не ломается, а показывает, чего не хватило
 function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.meta||{};
   DB_ORG_KEYS.forEach(k=>{if(db[k]==null){miss.push(DB_T[k]||k);db[k]=structuredClone(e[k]!=null?e[k]:DB_OBJ.has(k)?{}:[])}});
   const hadRef=!!db.ref;db.ref=db.ref||{};
   DB_REF_KEYS.forEach(k=>{if(db.ref[k]==null){if(hadRef)miss.push('справочник '+k);db.ref[k]=structuredClone(r[k]!=null?r[k]:DB_OBJ.has(k)?{}:[])}});
+  // Справочник ГКЭД — отдельный файл gkedDB.json; правки администратора платформы хранятся в TemDB (ref.gked)
+  if(db.ref.gked==null)db.ref.gked=structuredClone(DBSRC.gked.db.items||[]);
+  DB_GK_REF.forEach(([k,get,key])=>{let a,b;try{a=get(db.ref);b=get(r)}catch(e){return}if(!a||!b)return;const m=Object.fromEntries(b.map(x=>[key(x),x]));a.forEach(x=>{if(!('gked' in x)&&m[key(x)]&&m[key(x)].gked)x.gked=structuredClone(m[key(x)].gked)})});
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}
 function dbFresh(mode){const db=structuredClone(mode==='empty'?DBSRC.empty.db:DBSRC.demo.db);delete db.ref;

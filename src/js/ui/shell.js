@@ -22,8 +22,8 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v36 · 18.10.2026';
-function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
+const PROTO_VER='v37 · 18.10.2026';
+function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button><button type="button" class="linkbtn" data-db="gked">Экспорт gkedDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id)&&!m.hidden);const cn=isAdmin()?{}:counts();
   $('#bnav').innerHTML=l.map(m=>`<a class="bn ${S.mod===m.id?'on':''}" href="#${m.id}" data-go="${m.id}" ${S.mod===m.id?'aria-current="page"':''}>${ic(m.icon)}<span>${esc(m.short)}</span>${m.id==='reports'&&cn.overdue?`<span class="badge red">${cn.overdue}</span>`:''}</a>`).join('');
@@ -63,7 +63,7 @@ function fitTabs(){const t=$('#tabs');if(!t)return;const ab=$('#add-btn');const 
   // центрируем активную вкладку только по горизонтали: scrollIntoView прокрутил бы и страницу
   const on=$('.tab.on',t);if(on&&over())t.scrollLeft=Math.max(0,on.offsetLeft-(t.clientWidth-on.offsetWidth)/2)}
 function renderShell(fresh){$('#app').classList.toggle('nav-hidden',S.navHidden&&!isMobile());renderSide();renderBnav();renderPage(fresh)}
-function refreshAll(){derive();const openForms=MODALS.filter(m=>m.o.live);renderShell();openForms.forEach(m=>m.draw())}
+function refreshAll(){gkIndex();derive();const openForms=MODALS.filter(m=>m.o.live);renderShell();openForms.forEach(m=>m.draw())}
 
 /* ═════════════ Top bar ═════════════ */
 function tick(){const n=bishkekNow();if(n.iso!==TODAY){TODAY=n.iso;derive()}$('#clock').innerHTML=`<span class="d">${fmtD(n.iso)}</span>${n.hm}`;$('#clock').title=`${fmtD(n.iso)} ${n.hm}, Бишкек`}

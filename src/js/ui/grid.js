@@ -22,7 +22,7 @@ const fmtDT=v=>v?fmtD(String(v).slice(0,10))+(String(v).length>10?' '+String(v).
 function colTxt(c,r){if(c.text)return c.text(r);const v=c.val(r);if(v==null||v==='')return '';if(c.type==='date')return fmtD(v);if(c.type==='datetime')return fmtDT(v);if(c.type==='money')return fmtM(v);return String(v)}
 function ftype(c){return c.type==='enum'?'enum':c.type==='date'||c.type==='datetime'?'date':['money','num','int'].includes(c.type)?'num':'text'}
 function passF(c,f,r){const v=c.val(r);
-  if(f.type==='text')return norm(colTxt(c,r)).includes(norm(f.q));
+  if(f.type==='text')return c.match?c.match(r,f.q):norm(colTxt(c,r)).includes(norm(f.q));
   if(f.type==='enum')return f.vals.includes(v==null?'':String(v));
   if(f.type==='num'){if(v==null||v==='')return false;return (f.from==null||v>=f.from)&&(f.to==null||v<=f.to)}
   if(f.type==='date'){if(!v)return false;const d=String(v).slice(0,10);return (!f.from||d>=f.from)&&(!f.to||d<=f.to)}

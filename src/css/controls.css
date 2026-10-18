@@ -108,3 +108,29 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .pl-val small{font-size:13px;font-weight:550;color:var(--faint);letter-spacing:0;margin-left:3px}
 .pl-sub{font-size:12px;color:var(--faint)}
 
+/* ГКЭД: выбор вида деятельности, отметка «Подходит по ГКЭД» */
+.chipsel button.gkfit:not(.on){border-color:color-mix(in srgb,var(--green) 55%,var(--border));color:var(--text)}
+.gk-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-left:2px}
+.chipsel button.on .gk-dot{background:var(--on-accent)}
+.btn.gk-main{justify-content:flex-start;white-space:normal;text-align:left;width:100%;min-height:35px}
+.btn.gk-main span{min-width:0;overflow-wrap:anywhere}
+.btn.gk-empty{color:var(--muted)}
+.gk-x{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gk-chip{max-width:100%}
+.gk-q{width:100%;position:relative}
+.gk-q>span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint);display:flex}
+.gk-q input{width:100%;height:36px;border-radius:999px;border:1px solid var(--border);background:var(--field);padding:0 12px 0 34px;outline:none;font-size:13.5px}
+.gk-q input:focus{border-color:var(--border-strong);box-shadow:0 0 0 3px var(--sel)}
+.gk-list{display:flex;flex-direction:column;gap:2px;max-height:min(460px,calc(100dvh - 300px));overflow:auto;margin-top:6px}
+.gk-i{display:flex;gap:10px;align-items:flex-start;text-align:left;border:0;background:none;padding:7px 9px;border-radius:var(--r-m);cursor:pointer;color:var(--text);font:inherit;font-size:13px;line-height:1.35}
+.gk-i:hover:not(:disabled){background:var(--row-hover)}
+.gk-i.on{background:var(--sel)}
+.gk-i:disabled{opacity:.45;cursor:not-allowed}
+.gk-i .mono{flex:none;min-width:62px}
+.gk-i small{display:block;color:var(--faint);font-size:11.5px}
+.gk-tree .gk-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:var(--r-s);font-size:13px}
+.gk-tree .gk-row:hover{background:var(--row-hover)}
+.gk-tree .gk-row.off{opacity:.55}
+.gk-tree button.tg{border:0;background:none;width:22px;height:22px;display:grid;place-items:center;color:var(--faint);cursor:pointer;flex:none;border-radius:4px}
+.gk-tree button.tg.op .ic{transform:rotate(90deg)}
+.gk-tree .kids{margin-left:18px;border-left:1px solid var(--border);padding-left:6px}

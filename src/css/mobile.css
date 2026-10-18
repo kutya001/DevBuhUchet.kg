@@ -25,6 +25,7 @@
   .search{display:none}
   .tb-mobile{display:inline-grid}
   .topbar.searching .search{display:block;width:100%}
+  .search.gk-q{display:block;width:100%}
   .topbar.searching .tb-other{display:none}
   .clock .d{display:none}
   .bnav{display:flex;grid-row:3;overflow-x:auto;gap:2px;padding:6px;background:var(--pane);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-s);scrollbar-width:none}
