@@ -48,8 +48,29 @@ function packKv(kv){
     if(b&&kvShort(a,colW)&&kvShort(b,colW)){a.classList.add('m-half');a.classList.remove('m-full');b.classList.add('m-half');b.classList.remove('m-full');i++}
     else{a.classList.add('m-full');a.classList.remove('m-half')}}
 }
+/* ═════════════ Таблицы и панели действий в карточках на телефоне ═════════════
+   Правило ТЗ «Карточка записи с вкладками»: таблица с классом m-cards на телефоне (до 767 px) показывается плитками.
+   Первая ячейка строки — заголовок плитки, остальные — пары «подпись — значение» по два в строку (подписи берутся из шапки),
+   длинное значение — на всю ширину, пустые значения («—») скрыты, кнопки строки — в правом верхнем углу плитки.
+   Панель действий .acts стоит одной строкой: если кнопки не помещаются, второстепенные кнопки остаются значками. */
+const MC_LONG=22;
+function mCardsTable(t){const mt=+(t.dataset.mt||0);
+  const hs=[];[...(t.tHead?t.tHead.rows[0].cells:[])].forEach(th=>{for(let k=0;k<(th.colSpan||1);k++)hs.push(th.textContent.trim())});
+  [...t.tBodies].forEach(tb=>[...tb.rows].forEach(tr=>{let col=0;[...tr.cells].forEach((td,i)=>{const l=hs[col]||'';col+=td.colSpan||1;
+    const txt=td.textContent.replace(/\s+/g,' ').trim();const ctl=td.querySelector('button,input,select,a');
+    td.classList.toggle('m-t',i===mt);td.dataset.l=l;
+    td.classList.toggle('m-act',i!==mt&&!l&&!!ctl&&!txt);
+    td.classList.toggle('m-empty',i!==mt&&!ctl&&(txt===''||txt==='—'||txt==='-'));
+    td.classList.toggle('m-wide',i!==mt&&(txt.length>MC_LONG||td.colSpan>1||!!td.querySelector('select,input:not([type=checkbox])')))});
+    tr.classList.toggle('m-has-act',!!tr.querySelector('.m-act'));tr.classList.toggle('m-solo',tr.cells.length===1)}));
+  t.dataset.mc='1'}
+function mActsFit(row){row.classList.remove('icons');if(innerWidth>767)return;if(row.scrollWidth>row.clientWidth+1)row.classList.add('icons')}
+// Ряд вкладок карточки на ПК: если не помещается — сначала меньше отступы, затем без значков, и только потом прокрутка (ТЗ «Вкладки модуля»)
+function ctabsFit(t){t.classList.remove('tight','tight2');if(innerWidth<=767)return;const over=()=>t.scrollWidth>t.clientWidth+1;if(over())t.classList.add('tight');if(over())t.classList.add('tight2');
+  const on=t.querySelector('.tab.on');if(on&&over())t.scrollLeft=on.offsetLeft-t.offsetLeft-(t.clientWidth-on.offsetWidth)/2}
+function mCardsAll(){document.querySelectorAll('.ctabs').forEach(t=>{if(t.offsetParent!==null)ctabsFit(t)});document.querySelectorAll('table.m-cards').forEach(t=>{if(t.offsetParent!==null)mCardsTable(t)});document.querySelectorAll('.acts').forEach(r=>{if(r.offsetParent!==null)mActsFit(r)})}
 let packQ=false,packWas=false;
-function packAll(){packQ=false;const mob=innerWidth<=PACK_W;
+function packAll(){packQ=false;mCardsAll();const mob=innerWidth<=PACK_W;
   if(!mob){if(packWas)document.querySelectorAll('.m-half,.m-full').forEach(x=>x.classList.remove('m-half','m-full'));packWas=false;return}
   packWas=true;
   document.querySelectorAll('.form,.kv').forEach(c=>{if(c.offsetParent===null)return;c.classList.add('m-pack');if(c.classList.contains('form'))packForm(c);else packKv(c)});

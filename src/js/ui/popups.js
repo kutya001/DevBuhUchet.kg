@@ -21,6 +21,13 @@ function menu(anchor,items,pt){
   const list=items.filter(Boolean);
   openPop(anchor,html,{pt,mount(el){el.addEventListener('click',e=>{const b=e.target.closest('.mi');if(!b||b.disabled)return;const it=list[+b.dataset.i];closePop();it.run&&it.run()})}});
 }
+// Ряд вкладок окна-карточки (ТЗ «Карточка записи с вкладками»). tabs: [ключ, название, значок, счётчик?, красный?].
+// ПК: полный ряд со счётчиками. Телефон: видна одна текущая вкладка во всю ширину с «N из M ▾»; нажатие открывает список всех вкладок,
+// свайп влево-вправо листает их как раньше (formPager ищет .tabs прямо в .mb). Ряд закреплён вверху содержимого окна.
+function cardTabs(tabs,cur,attr){return `<div class="tabs sm ctabs" role="tablist" style="margin:0">${tabs.map((t,i)=>`<button type="button" class="tab ${cur===t[0]?'on':''}" role="tab" aria-selected="${cur===t[0]}" data-${attr}="${t[0]}" data-ic="${t[2]}" title="${esc(t[1])}">${ic(t[2])}<span class="lbl">${t[1]}</span>${t[3]?`<span class="badge ${t[4]?'red':''}">${t[3]}</span>`:''}${cur===t[0]?`<span class="ct-pick">${i+1} из ${tabs.length}${ic('down','sm')}</span>`:''}</button>`).join('')}</div>`}
+function bindCardTabs(el,attr,go){const bs=$$(`.ctabs [data-${attr}]`,el);
+  bs.forEach(x=>x.onclick=()=>{if(x.classList.contains('on')&&isMobile())return menu(x,bs.map(b=>({label:b.querySelector('.lbl').textContent,icon:b.dataset.ic,sub:b.querySelector('.badge')?b.querySelector('.badge').textContent:'',on:b===x,run:()=>{if(b!==x)go(b.getAttribute('data-'+attr))}})));
+    if(!x.classList.contains('on'))go(x.getAttribute('data-'+attr))})}
 const MODALS=[];
 function openModal(o){
   const cover=document.createElement('div');cover.className='cover';
