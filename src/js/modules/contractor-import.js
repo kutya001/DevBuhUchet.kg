@@ -1,0 +1,65 @@
+'use strict';
+// Импорт контрагентов вставкой из Excel
+/* ── Import by paste ── */
+const IMP_COLS=[['name','Название',['название','наименование','контрагент','компания']],['inn','ИНН',['инн']],['phone','Телефон',['телефон','тел','номер']],['types','Виды отчётов',['отчёты','отчеты','виды отчётов','виды отчетов','отчет']],['fee','Стоимость обслуживания',['стоимость','обслуживание','тариф','ставка']],['resp','Ответственный',['ответственный','бухгалтер','сотрудник']],['form','Форма собственности',['форма','форма собственности']],['regime','Режим налогообложения',['режим','режим налогообложения']],['ugns','УГНС (код)',['угнс','налоговый орган','код угнс','гнс']],['head','Руководитель',['руководитель','директор']],['contact','Контактное лицо',['контакт','контактное лицо']],['note','Примечание',['примечание','комментарий']],['skip','— не загружать —',[]]];
+const IMP_SAMPLE=['Название\tИНН\tТелефон\tВиды отчётов\tСтоимость обслуживания\tОтветственный\tФорма собственности\tРежим налогообложения','ОсОО «Жашыл Талаа»\t01504202010077\t+996 555 404 404\tЕН кв., Соцфонд, ЕНД орг.\t15000\tАлишер Т.\tОсОО\tЕдиный налог','ИП Бектурова Ж. А.\t21002199001234\t0700 112 233\tЕНД ИП\t6000\taigerim\tИП\tПатент','ОсОО «Азия Кофе»\t0160320181\t555 778 900\tНДС, Соцфонд\t25000\tНурлан Б.\tОсОО\tОНР','ОсОО «Ала-Тоо Трейд»\t'+'{dupinn}'+'\t772 100 200\tНДС\t20000\tМээрим К.\tОсОО\tОНР','ОсОО «Байтик Строй»\t02208201910555\t+7 701 555 44 33\tНДС, ЕН кв.\t18000\tАйгерим С.\tОсОО\tОНР'].join('\n');
+// The sample adapts to the organization: its employees and connected report types; rows 3–4 keep the demo errors (short and duplicate INN).
+function impSample(){const em=EMP.filter(e=>e.active!==false).map(e=>e.short);const ty=RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on).map(t=>t.short);
+  return IMP_SAMPLE.replace('{dupinn}',CPS[0]?CPS[0].inn:'02105199910024').split('\n').map((r,k)=>{if(!k)return r;const c=r.split('\t');
+    if(em.length&&!EMP.some(e=>[e.short,e.fio,e.login].includes(c[5])))c[5]=em[(k-1)%em.length];
+    if(ty.length&&c[3].split(',').some(x=>!RT.some(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(t.short===x.trim()||t.name===x.trim()))))c[3]=ty.slice((k-1)%ty.length,(k-1)%ty.length+2).join(', ')||ty[0];
+    return c.join('\t')}).join('\n')}
+function impTemplate(){const req=new Set(['name','inn','phone','types','resp'].concat(feat('fee')&&can('fee')?['fee']:[]));const cols=IMP_COLS.filter(c=>c[0]!=='fee'||(feat('fee')&&can('fee')));
+  const ex={name:'ОсОО «Пример»',inn:'01234567890123',phone:'+996 555 123 456',types:'НДС, Соцфонд',fee:'15000',resp:EMP.find(e=>e.active&&e.role==='acc').login};
+  const hint={inn:'14 цифр',phone:'с кодом страны; без кода — +996',types:'через запятую, краткие названия из справочника',fee:'сом в месяц, числом',resp:'логин или ФИО сотрудника',ugns:'код из справочника, например 002',regime:'из справочника режимов',form:'из справочника форм'};
+  openModal({size:'wide',render:()=>({title:'Шаблон загрузки контрагентов',sub:'Файл «Шаблон загрузки контрагентов.xlsx»: лист 1 — колонки и строка-пример, лист 2 — подсказки',
+    body:`<div class="sec-h">Лист 1 · Контрагенты</div><div class="tbl-wrap"><table class="mini"><thead><tr>${cols.map(c=>`<th>${esc(c[1])}${req.has(c[0])?' *':''}</th>`).join('')}</tr></thead><tbody><tr>${cols.map(c=>`<td>${esc(ex[c[0]]||'')}</td>`).join('')}</tr></tbody></table></div>
+    <div class="sec-h" style="margin-top:12px">Лист 2 · Подсказки</div><div class="tbl-wrap"><table class="mini"><thead><tr><th>Колонка</th><th>Обязательная</th><th>Формат и допустимые значения</th></tr></thead><tbody>${cols.map(c=>`<tr><td>${esc(c[1])}</td><td>${req.has(c[0])?'да':'нет'}</td><td style="white-space:normal">${esc(hint[c[0]]||'текст')}${c[0]==='types'?': '+esc(RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on).map(t=>t.short).join(', ')):c[0]==='resp'?': '+esc(EMP.filter(e=>e.active).map(e=>e.login).join(', ')):c[0]==='regime'?': '+esc(DICT.regimes.items.filter(x=>x.active).map(x=>x.name).join(', ')):''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="hint">Заполните шаблон, выделите строки вместе с заголовком и вставьте в поле загрузки.</div>`,
+    foot:`<button class="btn ghost" data-close>Закрыть</button><button class="btn cta" id="tp-dl">${ic('download','sm')}Скачать .xlsx</button>`,
+    mount(el,m){$('#tp-dl',el).onclick=()=>{m.close();toast('Шаблон «Шаблон загрузки контрагентов.xlsx» скачан (в прототипе файл не создаётся)','download')}}})})}
+function importDlg(){
+  const st={text:'',rows:null,map:null,hasHead:true};
+  const findEmp=s=>{const q=norm(s).replace(/\./g,'').trim();return EMP.find(e=>e.active&&(e.login===q||norm(e.short).replace(/\./g,'')===q||norm(e.fio)===q||norm(e.fio).startsWith(q)))};
+  const findType=s=>{const q=norm(s).trim().replace(/\.$/,'');return RT.find(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(norm(t.short).replace(/\.$/,'')===q||norm(t.name)===q||norm(t.code)===q))};
+  const parsePh=s=>{let d=String(s).replace(/\D/g,'');if(!d)return null;let cc='KG';if(d.length===9)d='996'+d;else if(d.length===10&&d.startsWith('0'))d='996'+d.slice(1);else if(d.startsWith('996'))cc='KG';else if(d.startsWith('7'))cc='KZ';else{const p=PHONES.find(p=>d.startsWith(p.code));if(p)cc=p.cc}const p=PH[cc];const len=p.mask.split('X').length-1;return d.length===p.code.length+len?{cc,digits:d}:{bad:true}};
+  function parse(){const lines=st.text.split(/\r?\n/).filter(l=>l.trim());if(!lines.length){st.rows=null;return}const delim=lines[0].includes('\t')?'\t':';';const cells=lines.map(l=>l.split(delim).map(x=>x.trim()));
+    const head=cells[0].map(h=>{const n=norm(h);const c=IMP_COLS.find(c=>c[2].some(k=>n===k||n.startsWith(k)));return c?c[0]:null});st.hasHead=head.filter(Boolean).length>=2;
+    st.map=st.hasHead?head.map(h=>h||'skip'):cells[0].map((_,i)=>IMP_COLS[i]?IMP_COLS[i][0]:'skip');st.rows=(st.hasHead?cells.slice(1):cells).slice(0,500).map(c=>({cells:c,errs:null}));st.delim=delim}
+  function check(){const inns=new Set();st.rows.forEach(r=>{const v={};st.map.forEach((k,i)=>{if(k!=='skip')v[k]=r.cells[i]||''});const e=[];
+    if(!v.name)e.push('нет названия');
+    if(!/^\d{14}$/.test(v.inn||''))e.push('ИНН не 14 цифр');else if(!/^[0-2]/.test(v.inn))e.push('ИНН в КР начинается с 0, 1 или 2');else if(CPS.some(c=>c.inn===v.inn))e.push('ИНН уже есть в организации');else if(inns.has(v.inn))e.push('ИНН повторяется в списке');inns.add(v.inn);
+    const ph=parsePh(v.phone||'');if(!ph)e.push('нет телефона');else if(ph.bad)e.push('неверная длина номера');
+    const ts=(v.types||'').split(',').map(x=>x.trim()).filter(Boolean);const tt=ts.map(findType);if(!ts.length)e.push('нет видов отчётов');tt.forEach((t,i)=>{if(!t)e.push(`вид «${ts[i]}» не найден`)});
+    const feeNeed=feat('fee')&&can('fee');const fee=parseNum(v.fee);if(feeNeed&&(isNaN(fee)||fee<0))e.push('стоимость не число');
+    const ug=(v.ugns||'').trim();const ugm=ug?DICT.ugns.items.find(x=>x.code&&x.code===ug.replace(/\D/g,'').padStart(3,'0')||x.id===ug||norm(x.short)===norm(ug)||norm(x.name)===norm(ug)):null;if(ug&&!ugm)e.push(`УГНС «${ug}» нет в справочнике`);r.ugns=ugm?ugK(ugm):null;
+    const emp=findEmp(v.resp||'');if(!emp)e.push(`сотрудник «${v.resp||''}» не найден`);
+    if(v.regime&&!DICT.regimes.items.some(x=>x.name===v.regime))e.push('режима нет в справочнике');if(v.form&&!DICT.forms.items.some(x=>x.name===v.form))e.push('формы нет в справочнике');
+    r.v=v;r.ph=ph;r.types=tt.filter(Boolean);r.emp=emp;r.fee=fee;r.errs=e})}
+  openModal({form:true,size:'wide',render:m=>{
+    const ready=st.rows&&st.rows.every(r=>r.errs)?st.rows.filter(r=>!r.errs.length).length:0;
+    return {title:'Загрузка контрагентов из Excel',sub:'Скопируйте строки в Excel или CSV и вставьте сюда. Файл загружать не нужно.',body:`
+    ${!st.rows?`${fld('Данные',`<textarea class="inp mono" id="im-ta" style="min-height:220px;font-size:12.5px" placeholder="Вставьте строки (Ctrl+V). Первой строкой можно вставить заголовки колонок.">${esc(st.text)}</textarea>`,{full:true,id:'im-ta',hint:'Колонки: название, ИНН, телефон, виды отчётов через запятую, стоимость обслуживания в месяц'+(feat('fee')&&can('fee')?'':' (без права на плату за обслуживание колонка не загружается)')+', ответственный (логин или ФИО); необязательные — форма собственности, режим, УГНС (код, например 002), руководитель, контактное лицо, примечание. Разделитель — табуляция или точка с запятой. До 500 строк.'})}<div class="row"><button class="btn sm" id="im-tpl">${ic('download','sm')}Выгрузить шаблон</button></div>`
+    :`<div class="row"><span class="muted">Разделитель: ${st.delim==='\t'?'табуляция':'точка с запятой'} · строк: ${st.rows.length} · ${st.hasHead?'заголовки найдены':'заголовков нет — укажите колонки'}</span><div class="grow"></div><button class="btn sm ghost" id="im-back">${ic('left','sm')}Вставить заново</button></div>
+    <div class="tbl-wrap" style="border:1px solid var(--border);border-radius:var(--r-l);background:var(--raised)"><table class="mini"><thead><tr><th style="width:110px">Проверка</th>${st.map.map((k,i)=>`<th>${sel('im-c'+i,IMP_COLS.map(c=>[c[0],c[1]]),k,'data-col="'+i+'" style="min-height:28px;padding:2px 6px;font-size:12px;min-width:120px"')}</th>`).join('')}</tr></thead>
+    <tbody>${st.rows.map((r,ri)=>`<tr>${`<td>${!r.errs?'<span class="faint">не проверено</span>':r.errs.length?`<span class="pill red sm" title="${esc(r.errs.join('; '))}">${ic('alert')}${r.errs.length} ${plural(r.errs.length,'ошибка','ошибки','ошибок')}</span><div class="hint red" style="white-space:normal;max-width:220px">${esc(r.errs.join('; '))}</div>`:`<span class="pill green sm">${ic('check')}готова</span>`}</td>`}${r.cells.map((c,ci)=>`<td contenteditable="true" data-r="${ri}" data-ci="${ci}" style="min-width:90px;white-space:nowrap">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="hint">Ячейки можно исправить прямо в таблице, затем снова нажмите «Проверить». «ОК» создаст только готовые строки, строки с ошибками останутся здесь.</div>`}`,
+    foot:st.rows?`<span class="muted">Готово к загрузке: <b>${ready}</b> из ${st.rows.length}</span><div class="grow"></div><button class="btn" id="im-check">${ic('check','sm')}Проверить</button><button class="btn cta" id="im-ok" ${ready?'':'disabled'}>ОК, создать ${ready||''}</button>`:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="im-parse">Показать таблицу</button>`,
+    mount(el){const q=s=>el.querySelector(s);
+      if(q('#im-ta')){const ta=q('#im-ta');ta.oninput=()=>st.text=ta.value}
+      if(q('#im-tpl'))q('#im-tpl').onclick=impTemplate;
+      if(q('#im-sample'))q('#im-sample').onclick=()=>{st.text=impSample();m.draw()};
+      if(q('#im-parse'))q('#im-parse').onclick=()=>{if(!st.text.trim()){setErr(el,'im-ta','Вставьте хотя бы одну строку');return}parse();m.draw()};
+      if(q('#im-back'))q('#im-back').onclick=()=>{st.rows=null;m.draw()};
+      $$('[data-col]',el).forEach(s=>s.onchange=()=>{st.map[+s.dataset.col]=s.value;st.rows.forEach(r=>r.errs=null);m.draw()});
+      $$('td[contenteditable]',el).forEach(td=>td.oninput=()=>{st.rows[+td.dataset.r].cells[+td.dataset.ci]=td.textContent.trim();st.rows[+td.dataset.r].errs=null});
+      if(q('#im-check'))q('#im-check').onclick=()=>{check();m.draw()};
+      if(q('#im-ok'))q('#im-ok').onclick=()=>{check();const good=st.rows.filter(r=>!r.errs.length);let n=0;
+        good.forEach(r=>{const v=r.v;const c={id:CPID++,name:v.name,inn:v.inn,phone:r.ph,form:v.form||(v.name.startsWith('ИП')?'ИП':'ОсОО'),regime:v.regime||'',resp:r.emp.id,head:v.head||'',contact:v.contact||'',start:TODAY.slice(0,8)+'01',contract:'—',note:v.note||'',paysTo:'emp',archived:false,assign:[],tariffs:feat('fee')&&can('fee')&&!isNaN(r.fee)?[{amount:r.fee,per:'M',from:ym(TODAY),by:S.me,at:TODAY,note:'Загрузка из Excel'}]:[],feeDay:10,feePaid:{},first:'full',files:[],kind:'regular',ugns:r.ugns,periods:[{from:ym(TODAY),to:null}]};
+          born(c);CPS.push(c);CPM[c.id]=c;assignTypes(c,r.types.map(t=>t.id),TODAY);log('cp',c.id,'Создан загрузкой из Excel',c.id);n++});
+        st.rows=st.rows.filter(r=>r.errs.length);HIST.push({at:TODAY+' '+bishkekNow().hm,who:S.me,ent:'import',id:0,what:`Загрузка контрагентов: создано ${n}, пропущено ${st.rows.length}`});
+        refreshAll();toast(`Создано контрагентов: ${n}. Пропущено строк: ${st.rows.length}`,'building');if(!st.rows.length)m.close();else m.draw()};
+    }};
+  }});
+}
+
