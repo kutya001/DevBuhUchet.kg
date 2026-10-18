@@ -344,6 +344,19 @@
     "_ca": "2025-02-14 11:20",
     "_ub": "e1",
     "_ua": "2025-02-14 11:20"
+   },
+   "pkid": {
+    "on": true,
+    "days": [
+     7,
+     3
+    ],
+    "needFile": false,
+    "needReceipt": false,
+    "_cb": "admin",
+    "_ca": "2026-10-18 17:30",
+    "_ub": "admin",
+    "_ua": "2026-10-18 17:30"
    }
   }
  },
@@ -697,6 +710,11 @@
    "gked": "46.90.0",
    "gked2": [
     "47.19.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -830,6 +848,11 @@
    "gked": "41.20.0",
    "gked2": [
     "43.39.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -909,7 +932,9 @@
    "_ua": "2025-01-01 11:31",
    "feeDebt": 0,
    "gked": "47.11.0",
-   "gked2": []
+   "gked2": [],
+   "size": "medium",
+   "bases": []
   },
   {
    "id": 4,
@@ -1026,6 +1051,11 @@
    "gked": "49.41.0",
    "gked2": [
     "52.10.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -1124,6 +1154,11 @@
    "gked": "79.12.0",
    "gked2": [
     "55.10.0"
+   ],
+   "size": "small",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -1219,6 +1254,10 @@
    "gked": "10.39.0",
    "gked2": [
     "46.31.0"
+   ],
+   "size": "small",
+   "bases": [
+    "employees"
    ]
   },
   {
@@ -1336,6 +1375,11 @@
    "gked": "46.46.0",
    "gked2": [
     "47.73.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -1411,7 +1455,9 @@
    "_ua": "2025-12-30 14:23",
    "feeDebt": 0,
    "gked": "47.89.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": []
   },
   {
    "id": 9,
@@ -1499,7 +1545,11 @@
    "_ua": "2025-11-02 18:24",
    "feeDebt": 39000,
    "gked": "14.13.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees"
+   ]
   },
   {
    "id": 10,
@@ -1586,7 +1636,11 @@
    "_ua": "2025-03-12 13:29",
    "feeDebt": 0,
    "gked": "86.21.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees"
+   ]
   },
   {
    "id": 11,
@@ -1684,6 +1738,11 @@
    "gked": "62.01.0",
    "gked2": [
     "63.11.0"
+   ],
+   "size": "small",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -1857,6 +1916,14 @@
    "gked": "01.41.0",
    "gked2": [
     "10.51.1"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "property",
+    "land",
+    "foreignPayments",
+    "statSample"
    ]
   },
   {
@@ -1939,7 +2006,9 @@
    "_ua": "2024-12-31 17:23",
    "feeDebt": 0,
    "gked": "45.20.1",
-   "gked2": []
+   "gked2": [],
+   "size": "medium",
+   "bases": []
   },
   {
    "id": 14,
@@ -2095,6 +2164,11 @@
    "gked": "45.11.1",
    "gked2": [
     "45.20.1"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -2216,7 +2290,14 @@
    "_ua": "2024-05-06 09:04",
    "feeDebt": 0,
    "gked": "41.20.0",
-   "gked2": []
+   "gked2": [],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "property",
+    "land",
+    "statSample"
+   ]
   },
   {
    "id": 16,
@@ -2309,7 +2390,12 @@
    "_ua": "2026-03-29 14:52",
    "feeDebt": 0,
    "gked": "01.49.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees",
+    "statSample"
+   ]
   },
   {
    "id": 17,
@@ -2410,7 +2496,11 @@
    "_ua": "2026-09-14 18:25",
    "feeDebt": 0,
    "gked": "13.10.1",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees"
+   ]
   },
   {
    "id": 18,
@@ -2489,7 +2579,9 @@
    "_ua": "2025-10-06 13:16",
    "feeDebt": 0,
    "gked": "47.91.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": []
   },
   {
    "id": 19,
@@ -2577,7 +2669,11 @@
    "_ua": "2025-03-10 17:05",
    "feeDebt": 0,
    "gked": "74.10.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees"
+   ]
   },
   {
    "id": 20,
@@ -2691,7 +2787,14 @@
    "_ua": "2025-08-31 14:39",
    "feeDebt": 40000,
    "gked": "52.29.0",
-   "gked2": []
+   "gked2": [],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "property",
+    "land",
+    "statSample"
+   ]
   },
   {
    "id": 21,
@@ -2812,6 +2915,13 @@
    "gked": "23.51.0",
    "gked2": [
     "46.73.1"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "property",
+    "land",
+    "statSample"
    ]
   },
   {
@@ -2911,7 +3021,12 @@
    "_ua": "2026-07-14 17:39",
    "feeDebt": 0,
    "gked": "22.22.0",
-   "gked2": []
+   "gked2": [],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
+   ]
   },
   {
    "id": 23,
@@ -3030,6 +3145,11 @@
    "gked": "33.14.1",
    "gked2": [
     "63.11.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -3115,6 +3235,10 @@
    "gked": "55.20.0",
    "gked2": [
     "79.90.0"
+   ],
+   "size": "medium",
+   "bases": [
+    "employees"
    ]
   },
   {
@@ -3205,7 +3329,12 @@
    "_ua": "2026-06-04 16:23",
    "feeDebt": 0,
    "gked": "03.22.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees",
+    "statSample"
+   ]
   },
   {
    "id": 26,
@@ -3277,7 +3406,9 @@
    "_ua": "2026-05-14 14:32",
    "feeDebt": 0,
    "gked": "96.02.0",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": []
   },
   {
    "id": 27,
@@ -3378,7 +3509,11 @@
    "_ua": "2026-09-25 15:02",
    "feeDebt": 0,
    "gked": "01.11.1",
-   "gked2": []
+   "gked2": [],
+   "size": "small",
+   "bases": [
+    "employees"
+   ]
   },
   {
    "id": 28,
@@ -3474,6 +3609,11 @@
    "gked": "62.02.0",
    "gked2": [
     "63.11.0"
+   ],
+   "size": "small",
+   "bases": [
+    "employees",
+    "statSample"
    ]
   },
   {
@@ -3574,7 +3714,12 @@
    "_ca": "2026-03-01 12:58",
    "_ub": "e3",
    "_ua": "2026-04-17 17:04",
-   "feeDebt": 0
+   "feeDebt": 0,
+   "size": "small",
+   "bases": [
+    "employees",
+    "foreignPayments"
+   ]
   },
   {
    "id": 30,
@@ -3616,7 +3761,9 @@
    "_ca": "2026-04-12 12:51",
    "_ub": "e2",
    "_ua": "2026-07-04 13:29",
-   "feeDebt": 0
+   "feeDebt": 0,
+   "size": "small",
+   "bases": []
   }
  ],
  "reports": [

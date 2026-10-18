@@ -35,7 +35,7 @@ function cpActions(c){const it=[{label:'Открыть карточку',icon:'b
   if(!c.archived){
     if(can('createCp'))it.push({label:'Изменить',icon:'edit',run:()=>editCpDlg(c)});
     if(can('assign')||can('createCp'))it.push({label:'Сменить ответственного',icon:'user',run:()=>respDlg([c])});
-    if(can('assign'))it.push({label:'Назначить отчёты',icon:'matrix',run:()=>assignDlg(c)});
+    if(can('assign')||can('createCp'))it.push({label:'Подобрать отчёты',icon:'matrix',run:()=>pickForCp(c)});
     if(can('createCp')){const linked=REPORTS.some(r=>r.cp===c.id)?'По контрагенту есть отчёты — его можно только отправить в архив':OPS.some(o=>o.cp===c.id)||FEEPAYS.some(f=>f.cp===c.id)?'По контрагенту есть деньги — его можно только отправить в архив':PROJECTS.some(p=>p.cp===c.id)||SERVICES.some(s=>s.cp===c.id)?'По контрагенту есть проекты или услуги — его можно только отправить в архив':'';
       c._del={label:'Удалить',icon:'trash',danger:true,disabled:!!linked,reason:linked,run:()=>confirmDlg({title:`Удалить ${esc(c.name)}?`,text:'По контрагенту нет отчётов, денег и проектов. Он будет удалён вместе с задачами и файлами карточки; вернуть его нельзя.',ok:'Удалить',danger:true,run:()=>{const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];for(let k=TASKS.length-1;k>=0;k--)if(TASKS[k].cp===c.id)TASKS.splice(k,1);log('org','cps',`Удалён контрагент ${c.name} (ИНН ${c.inn})`);refreshAll();toast('Контрагент удалён','trash')}})}}
     if(feat('taxpay')&&can('money'))it.push({label:'Поступление денег',icon:'wallet',run:()=>inDlg(c)});
@@ -144,13 +144,13 @@ function typeChips(id,c,selected){
 function assignDlg(c){
   const st={sel:new Set(c.assign.filter(a=>!a.to).map(a=>a.t)),rates:{},fixed:{},cfg:{}};const before=new Set(st.sel);c.assign.filter(a=>!a.to).forEach(a=>{if(a.rate)st.rates[a.t]=a.rate;if(a.fixed!=null)st.fixed[a.t]=a.fixed;if(perOwn(T[a.t])){const e=tEff(T[a.t],a);st.cfg[a.t]={per:e.per,day:e.day,mo:e.per==='Y'?e.ym:e.after}}});
   const cfgOf=id=>st.cfg[id]||(st.cfg[id]={per:T[id].per,day:T[id].day,mo:T[id].per==='Y'?T[id].ym:T[id].after});const before0=JSON.stringify(st.cfg);
-  openModal({form:true,size:'mid',render:m=>({title:'Какие отчёты сдаёт',sub:`${esc(c.name)} · ${esc(c.regime||'режим не указан')} · ${esc(c.form)}`,
-    body:`${typeChips('as-chips',c,st.sel)}${benHint(c,st.sel)}${gkFitHint(c,st.sel)}${gkNote(c,st.sel)}<div class="hint">Недоступные виды не подходят к режиму налогообложения или форме собственности — наведите, чтобы увидеть причину.${c.regime?'':' Режим не указан, поэтому доступны все виды.'}</div>
+  openModal({form:true,size:'mid',render:m=>({title:'Ставки и сроки отчётов',sub:`${esc(c.name)} · ${esc(c.regime||'режим не указан')} · ${esc(c.form)}`,
+    body:`<div class="hint">Какие отчёты сдаёт контрагент, меняется кнопкой «Изменить» в блоке «Сдаёт отчёты»: там подбор с описанием каждого отчёта.</div>
     ${st.sel.size?`<div class="box flat"><h3>Ставки и повторяющиеся суммы</h3>${rateRows(st.sel,st.rates,st.fixed)||'<span class="faint">Нет видов со ставкой</span>'}<span class="hint">Повторяющаяся сумма сама подставится в каждый новый отчёт этого вида, например фиксированный патент или Соцфонд. Пусто — сумму вносят при сдаче.</span></div>`:''}
     ${[...st.sel].some(id=>perOwn(T[id]))?`<div class="box flat"><h3>Периодичность и срок в назначении</h3><span class="hint" style="margin-top:-4px">Внутренняя финансовая отчётность — по требованию контрагента; патент — по сроку патента.</span>${intRows([...st.sel].filter(id=>perOwn(T[id])),cfgOf)}<span class="hint">У каждого контрагента свои периодичность и срок. В каталоге стоят только значения по умолчанию: раз в год, до 1 апреля. При смене периодичности несданные будущие отчёты пересоздаются.</span></div>`:''}
-    <div class="note">${ic('info')}<span>Новые отчёты создадутся сами на текущий период и один вперёд. Снятые виды завершатся сегодняшним днём.</span></div>`,
+    `,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="as-ok">Сохранить</button>',
-    mount(el){bindRates(el,st.rates,st.fixed);bindInt(el,cfgOf,m);$('#as-chips',el).onclick=e=>{const b=e.target.closest('[data-t]');if(!b||b.disabled)return;st.sel.has(b.dataset.t)?st.sel.delete(b.dataset.t):st.sel.add(b.dataset.t);m.draw()};
+    mount(el){bindRates(el,st.rates,st.fixed);bindInt(el,cfgOf,m);
       $('#as-ok',el).onclick=()=>{const add=[...st.sel].filter(x=>!before.has(x)),rem=[...before].filter(x=>!st.sel.has(x));if(!st.sel.size){toast('Нужен хотя бы один вид отчёта','alert',true);return}
         c.assign.filter(a=>!a.to&&st.sel.has(a.t)).forEach(a=>{const r0=a.rate,f0=a.fixed;const r1=st.rates[a.t]||a.rate,f1=st.fixed[a.t]??null;if(r1!==r0||f1!==(f0??null)){a.rate=r1;a.fixed=f1;
           if(f1!=null)REPORTS.filter(r=>r.cp===c.id&&r.t===a.t&&OPEN.has(r.status)&&(r.sum==null||r.auto)).forEach(r=>{r.sum=f1;r.auto=true});

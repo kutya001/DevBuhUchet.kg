@@ -42,7 +42,7 @@ function openModal(o){
   MODALS.push(m);
   formPager(m);
   const mark=e=>{if(e.target.closest&&e.target.closest('.form,.fld'))m.dirty=true};m.el.addEventListener('input',mark);m.el.addEventListener('change',mark);
-  swipeDown(m.el,()=>m.el.querySelector('.mb'),{cover,can:()=>{if(m.dirty&&o.form){confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close});return false}return true},close:m.close});
+  swipeDown(m.el,()=>m.el.querySelector('.mb'),{cover,headOnly:!!o.swipeHead,can:()=>{if(m.dirty&&o.form){confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close});return false}return true},close:m.close});
   cover.addEventListener('pointerdown',e=>{if(e.target===cover&&!o.sticky)m.close()});
   m.draw=()=>{
     const keep=m.el.querySelector('.mb')?m.el.querySelector('.mb').scrollTop:0;

@@ -45,7 +45,7 @@ function toRegularDlg(c){const fee=feat('fee')&&can('fee');const st={per:'M'};
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="tr-ok">Дальше: выбрать отчёты</button>',
     mount(el){$('#tr-ok',el).onclick=()=>{const f=val(el,'tr-from');if(!setErr(el,'tr-from',f?'':'Укажите месяц'))return;let n=NaN;if(fee){n=parseNum(val(el,'tr-fee'));if(!setErr(el,'tr-fee',isNaN(n)||n<0?'Введите сумму, 0 — допустимо':''))return}
       c.kind='regular';c.regime=val(el,'tr-reg');{const lp=c.periods[c.periods.length-1];if(lp&&!lp.to){if(lp.from<f)lp.to=addMonths(f,-1);else c.periods.pop()}}c.periods.push({from:f,to:null});if(c.start.slice(0,7)<f)c.start=f+'-01';if(fee)c.tariffs.push({amount:n,per:val(el,'tr-per'),from:f,by:S.me,at:TODAY,note:'Переход на постоянное обслуживание'});
-      log('cp',c.id,`Переведён в постоянное обслуживание с ${ymG(f)}`,c.id);m.close();refreshAll();assignDlg(c)}}})});
+      log('cp',c.id,`Переведён в постоянное обслуживание с ${ymG(f)}`,c.id);m.close();refreshAll();pickForCp(c)}}})});
 }
 
 /* ── Общие блоки: файлы, история, оплата частями ── */

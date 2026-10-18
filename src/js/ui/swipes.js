@@ -14,9 +14,9 @@ const finishMs=(dist,v)=>Math.round(Math.max(120,Math.min(320,Math.abs(v)>.05?Ma
 const afterAnim=(el,ms,fn)=>{let done=false;const f=()=>{if(done)return;done=true;el.removeEventListener('transitionend',f);fn()};el.addEventListener('transitionend',f);setTimeout(f,ms+60)};
 function rgbaA(c,k){const m=c.match(/rgba?\(([^)]+)\)/);if(!m)return c;const p=m[1].split(',').map(x=>x.trim());const a=p.length>3?+p[3]:1;return `rgba(${p[0]},${p[1]},${p[2]},${(a*k).toFixed(3)})`}
 // Swipe down closes a sheet/form/popover: from the grabber or header any time, from the content when it is scrolled to the top.
-function swipeDown(el,scroller,{can,close,cover}){let st=null;const tr=tracker();
+function swipeDown(el,scroller,{can,close,cover,headOnly}){let st=null;const tr=tracker();
   el.addEventListener('touchstart',e=>{st=null;if(e.touches.length>1)return;const t=e.target;const head=t.closest('.grabber,.mh');const sc=scroller();
-    if(!head&&(sc&&sc.scrollTop>0||t.closest('input,textarea,select')||hScroll(t,el)))return;
+    if(!head&&(headOnly||sc&&sc.scrollTop>0||t.closest('input,textarea,select')||hScroll(t,el)))return;
     const p=e.touches[0];st={x0:p.clientX,y0:p.clientY,dy:0,mode:null,bg:cover?getComputedStyle(cover).backgroundColor:null};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
   el.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
     if(!st.mode){if(Math.abs(dy)<SLOP&&Math.abs(dx)<SLOP)return;st.mode=dy>0&&Math.abs(dy)>Math.abs(dx)?'v':'x';if(st.mode!=='v'){st=null;return}st.y0=p.clientY;el.style.transition='none';el.style.animation='none';if(cover)cover.style.transition='none'}

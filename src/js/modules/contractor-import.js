@@ -9,9 +9,9 @@ function impSample(){const em=EMP.filter(e=>e.active!==false).map(e=>e.short);co
     if(em.length&&!EMP.some(e=>[e.short,e.fio,e.login].includes(c[5])))c[5]=em[(k-1)%em.length];
     if(ty.length&&c[3].split(',').some(x=>!RT.some(t=>ORG.types[t.id]&&ORG.types[t.id].on&&(t.short===x.trim()||t.name===x.trim()))))c[3]=ty.slice((k-1)%ty.length,(k-1)%ty.length+2).join(', ')||ty[0];
     return c.join('\t')}).join('\n')}
-function impTemplate(){const req=new Set(['name','inn','phone','types','resp'].concat(feat('fee')&&can('fee')?['fee']:[]));const cols=IMP_COLS.filter(c=>c[0]!=='fee'||(feat('fee')&&can('fee')));
+function impTemplate(){const req=new Set(['name','inn','phone','resp'].concat(feat('fee')&&can('fee')?['fee']:[]));const cols=IMP_COLS.filter(c=>c[0]!=='fee'||(feat('fee')&&can('fee')));
   const ex={name:'ОсОО «Пример»',inn:'01234567890123',phone:'+996 555 123 456',types:'НДС, Соцфонд',fee:'15000',resp:EMP.find(e=>e.active&&e.role==='acc').login,gked:'69.20.0',gked2:'62.01.0, 47.91.0'};
-  const hint={inn:'14 цифр',phone:'с кодом страны; без кода — +996',types:'через запятую, краткие названия из справочника',fee:'сом в месяц, числом',resp:'логин или ФИО сотрудника',ugns:'код из справочника, например 002',regime:'из справочника режимов',form:'из справочника форм',gked:'код подкласса из листа 3, например 69.20.0; без кода строка загрузится с предупреждением «Без ГКЭД»',gked2:'коды подклассов через запятую, сколько угодно'};
+  const hint={inn:'14 цифр',phone:'с кодом страны; без кода — +996',types:'через запятую, краткие названия из справочника; пусто — назначатся обязательные по режиму и «Для всех»',fee:'сом в месяц, числом',resp:'логин или ФИО сотрудника',ugns:'код из справочника, например 002',regime:'из справочника режимов',form:'из справочника форм',gked:'код подкласса из листа 3, например 69.20.0; без кода строка загрузится с предупреждением «Без ГКЭД»',gked2:'коды подклассов через запятую, сколько угодно'};
   openModal({size:'wide',render:()=>({title:'Шаблон загрузки контрагентов',sub:'Файл «Шаблон загрузки контрагентов.xlsx»: лист 1 — колонки и строка-пример, лист 2 — подсказки',
     body:`<div class="sec-h">Лист 1 · Контрагенты</div><div class="tbl-wrap"><table class="mini"><thead><tr>${cols.map(c=>`<th>${esc(c[1])}${req.has(c[0])?' *':''}</th>`).join('')}</tr></thead><tbody><tr>${cols.map(c=>`<td>${esc(ex[c[0]]||'')}</td>`).join('')}</tr></tbody></table></div>
     <div class="sec-h" style="margin-top:12px">Лист 2 · Подсказки</div><div class="tbl-wrap"><table class="mini"><thead><tr><th>Колонка</th><th>Обязательная</th><th>Формат и допустимые значения</th></tr></thead><tbody>${cols.map(c=>`<tr><td>${esc(c[1])}</td><td>${req.has(c[0])?'да':'нет'}</td><td style="white-space:normal">${esc(hint[c[0]]||'текст')}${c[0]==='types'?': '+esc(RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on).map(t=>t.short).join(', ')):c[0]==='resp'?': '+esc(EMP.filter(e=>e.active).map(e=>e.login).join(', ')):c[0]==='regime'?': '+esc(DICT.regimes.items.filter(x=>x.active).map(x=>x.name).join(', ')):''}</td></tr>`).join('')}</tbody></table></div>
@@ -31,13 +31,16 @@ function importDlg(){
     if(!v.name)e.push('нет названия');
     if(!/^\d{14}$/.test(v.inn||''))e.push('ИНН не 14 цифр');else if(!/^[0-2]/.test(v.inn))e.push('ИНН в КР начинается с 0, 1 или 2');else if(CPS.some(c=>c.inn===v.inn))e.push('ИНН уже есть в организации');else if(inns.has(v.inn))e.push('ИНН повторяется в списке');inns.add(v.inn);
     const ph=parsePh(v.phone||'');if(!ph)e.push('нет телефона');else if(ph.bad)e.push('неверная длина номера');
-    const ts=(v.types||'').split(',').map(x=>x.trim()).filter(Boolean);const tt=ts.map(findType);if(!ts.length)e.push('нет видов отчётов');tt.forEach((t,i)=>{if(!t)e.push(`вид «${ts[i]}» не найден`)});
+    const ts=(v.types||'').split(',').map(x=>x.trim()).filter(Boolean);let tt=ts.map(findType);tt.forEach((t,i)=>{if(!t)e.push(`вид «${ts[i]}» не найден`)});r.autoT=false;
     const feeNeed=feat('fee')&&can('fee');const fee=parseNum(v.fee);if(feeNeed&&(isNaN(fee)||fee<0))e.push('стоимость не число');
     const ug=(v.ugns||'').trim();const ugm=ug?DICT.ugns.items.find(x=>x.code&&x.code===ug.replace(/\D/g,'').padStart(3,'0')||x.id===ug||norm(x.short)===norm(ug)||norm(x.name)===norm(ug)):null;if(ug&&!ugm)e.push(`УГНС «${ug}» нет в справочнике`);r.ugns=ugm?ugK(ugm):null;
     const emp=findEmp(v.resp||'');if(!emp)e.push(`сотрудник «${v.resp||''}» не найден`);
     const gk=(v.gked||'').trim();r.gked='';r.warn=[];if(!gk)r.warn.push('без ГКЭД');else if(!GKM[gk])e.push(`ГКЭД «${gk}» нет в справочнике`);else if(!gkLeaf(GKM[gk]))e.push(`ГКЭД «${gk}» — не подкласс, укажите код вида 69.20.0`);else r.gked=gk;
     const g2=(v.gked2||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);g2.forEach(k=>{if(!GKM[k])e.push(`ГКЭД «${k}» нет в справочнике`);else if(!gkLeaf(GKM[k]))e.push(`ГКЭД «${k}» — не подкласс`)});r.gked2=[...new Set(g2.filter(k=>GKM[k]&&gkLeaf(GKM[k])&&k!==r.gked))];
     if(v.regime&&!DICT.regimes.items.some(x=>x.name===v.regime))e.push('режима нет в справочнике');if(v.form&&!DICT.forms.items.some(x=>x.name===v.form))e.push('формы нет в справочнике');
+    // Пустая колонка «Виды отчётов»: назначаются «Обязательно по режиму», «По статусу» и «Для всех» (ТЗ «Подбор отчётов…»)
+    if(!ts.length){const cx={form:v.form||'',regime:v.regime||'',regime2:'',ben:[],bases:[],size:'small',gked:r.gked,gked2:r.gked2,assign:[]};const rec=pkCalc(cx).rec;tt=Object.keys(rec).filter(id=>rec[id].pre&&['regime','status','all'].includes(rec[id].grp)).map(id=>T[id]);
+      if(tt.length){r.autoT=true;r.warn.push('Отчёты подобраны автоматически: '+tt.map(t=>t.short).join(', '))}else e.push('нет видов отчётов: укажите их или режим налогообложения')}
     r.v=v;r.ph=ph;r.types=tt.filter(Boolean);r.emp=emp;r.fee=fee;r.errs=e})}
   openModal({form:true,size:'wide',render:m=>{
     const ready=st.rows&&st.rows.every(r=>r.errs)?st.rows.filter(r=>!r.errs.length).length:0;
