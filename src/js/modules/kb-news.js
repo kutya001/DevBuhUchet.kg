@@ -41,6 +41,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-mdmod],[da
   const art=kbArts().find(x=>x.id===a.dataset.mdart);if(!art)return toast('Статья недоступна','lock');kbArtDlg(art)});
 /* Новости, сохранённые в браузере до версии 33 (текст в html, без markdown), берут подробное описание из refDB.json; недостающие новости добавляются */
 function newsSync(){const fresh=(DBSRC.ref.db.news||[]);
+  // Черновик «Версия N: план», который администратор не менял, заменяется вышедшей записью из refDB.json
+  NEWS.forEach(n=>{const f=n.status==='Черновик'&&/: план$/.test(n.t||'')&&fresh.find(x=>x.id===n.id&&x.status!=='Черновик');if(f)Object.keys(f).forEach(k=>n[k]=structuredClone(f[k]))});
   NEWS.forEach(n=>{if(n.md!=null)return;const f=fresh.find(x=>x.id===n.id)||fresh.find(x=>x.ver&&x.ver===n.ver&&!NEWS.some(y=>y.id===x.id));
     if(f){['t','type','short','md','login','pin','link','status','date'].forEach(k=>{if(f[k]!==undefined)n[k]=structuredClone(f[k])});n.id=f.id}else{n.md=stripTags(n.html||'');n.short=newsShort(n);n.login=n.type==='Обновление'||n.type==='Нововведение'}delete n.html});
   fresh.forEach(f=>{if(!NEWS.some(n=>n.id===f.id))NEWS.push(structuredClone(f))})}

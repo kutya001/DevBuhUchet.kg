@@ -56,6 +56,8 @@
 .toasts{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
 .toast{background:var(--toast-bg);color:var(--toast-fg);padding:10px 16px;border-radius:var(--r-m);box-shadow:var(--shadow-l);font-size:13px;display:flex;gap:9px;align-items:center;animation:slideUp .3s forwards;font-weight:550}
 .toast.bad .ic{color:var(--b-red)}
+.toast{pointer-events:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.toast-x{display:inline-grid;place-items:center;width:24px;height:24px;margin:-4px -8px -4px 2px;border:0;border-radius:var(--r-s,6px);background:transparent;color:inherit;opacity:.7;cursor:pointer;flex:none}.toast-x:hover,.toast-x:focus-visible{opacity:1;background:rgba(127,127,127,.22)}
 
 /* Новости: markdown, редактор с предпросмотром, окно «Что нового» */
 .kb-art.md h4{font-size:16px;margin:16px 0 6px}.kb-art.md h5{font-size:14.5px;margin:14px 0 4px;color:var(--text)}.kb-art.md>:first-child{margin-top:0}

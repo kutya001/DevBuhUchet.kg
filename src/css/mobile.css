@@ -60,3 +60,5 @@
   .form.m-pack>div:empty,.form.m-pack>.m-full>.m-sp{display:none}
   .form.m-pack>.m-half>label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+/* Уведомления на телефоне закрываются свайпом влево или вправо, крестик не показывается */
+@media (max-width:767px){.toast-x{display:none}.toasts{bottom:calc(var(--bnav-h,84px) + env(safe-area-inset-bottom,0px))}}

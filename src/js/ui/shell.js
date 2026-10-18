@@ -22,7 +22,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v34 · 18.10.2026';
+const PROTO_VER='v35 · 18.10.2026';
 function demoBox(){return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
 function renderBnav(){
   const ids=BNAV[isAdmin()?'admin':'business'];const l=mods().filter(m=>ids.includes(m.id)&&!m.hidden);const cn=isAdmin()?{}:counts();
@@ -34,7 +34,7 @@ function renderSheet(){
   ${(()=>{const ids=BNAV[isAdmin()?'admin':'business'];const rest=mods().filter(m=>!ids.includes(m.id)&&!m.hidden);return rest.length?`<div class="sheet-mods" role="navigation" aria-label="Другие модули">${rest.map(m=>`<button data-shmod="${m.id}" class="${S.mod===m.id?'on':''}">${ic(m.icon)}<span>${esc(m.title)}</span>${m.id==='kb'&&newsUnread()?`<span class="badge red" style="margin-left:auto" title="Непрочитанные новости">${newsUnread()}</span>`:m.id==='kb'&&kbDot()?'<span class="kb-dot" title="Начните с Базы знаний"></span>':''}</button>`).join('')}</div>`:''})()}
   ${isAdmin()?'':`<button class="orgbtn" data-sh="org"><span class="av">${ic('landmark','sm')}</span><span><div class="o-n">${esc(ORG.name)}</div><div class="o-s">Профиль организации</div></span></button>`}
   <button class="orgbtn" data-sh="me"><span class="av round">${initials(me().fio)}</span><span><div class="o-n">Мой профиль</div><div class="o-s">${esc(me().fio)}</div></span></button>
-  <button class="orgbtn" data-sh="out"><span class="av">${ic('logout','sm')}</span><span><div class="o-n">Выйти из аккаунта</div></span></button>${demoBox().replace('id="demo-user"','id="demo-user-m"').replace('for="demo-user"','for="demo-user-m"')}`;
+  <button class="orgbtn" data-sh="out"><span class="av">${ic('logout','sm')}</span><span><div class="o-n">Выйти из аккаунта</div></span></button>${demoBox().replace('id="demo-user"','id="demo-user-m"').replace('for="demo-user"','for="demo-user-m"').replace('id="demo-data-x"','id="demo-data-m"')}`;
 }
 function openSheet(){renderSheet();$('#sheet').classList.add('open');$('#sheet-cover').hidden=false;if(!(history.state&&history.state.sheet))history.pushState({sheet:1},'',location.href)}
 function closeSheet(pop){const was=$('#sheet').classList.contains('open');$('#sheet').classList.remove('open');$('#sheet-cover').hidden=true;if(was&&!pop&&history.state&&history.state.sheet)history.replaceState(null,'',location.href)}

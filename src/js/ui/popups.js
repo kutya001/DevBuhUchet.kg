@@ -52,7 +52,11 @@ function openModal(o){
   if(!isMobile()){const f=m.el.querySelector('.mb .fld input:not([type=checkbox]):not([readonly]),.mb .fld textarea,.mb .fld select');f&&f.focus({preventScroll:true})}
   return m;
 }
-function toast(msg,icon='check',bad=false){if(!bad&&typeof ckSoon==='function'&&!CK.quiet)ckSoon();const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.innerHTML=ic(icon)+`<span>${esc(msg)}</span>`;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320)},3200)}
+// Уведомление внизу экрана: исчезает само через 3,2 с; на ПК — крестик «Закрыть», на телефоне — свайп влево или вправо (ТЗ «Уведомления внизу экрана»)
+function toast(msg,icon='check',bad=false){if(!bad&&typeof ckSoon==='function'&&!CK.quiet)ckSoon();const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.setAttribute('role','status');t.innerHTML=ic(icon)+`<span>${esc(msg)}</span><button type="button" class="toast-x" aria-label="Закрыть уведомление" title="Закрыть">${ic('x','sm')}</button>`;$('#toasts').appendChild(t);
+  const gone=()=>{if(t.gone)return;t.gone=true;t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320)};
+  t.querySelector('.toast-x').onclick=()=>{t.gone=true;t.remove()};swipeAway(t,()=>{t.gone=true;t.remove()});
+  setTimeout(()=>{if(t.dragging)t.later=gone;else gone()},3200)}
 function confirmDlg({title,text,ok='Подтвердить',danger=false,run}){
   openModal({noMax:true,render:()=>({title,body:`<p style="margin:0;color:var(--muted);line-height:1.55">${text}</p>`,foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn ${danger?'danger':'cta'}" id="cf-ok">${esc(ok)}</button>`,
     mount(el,m){$('#cf-ok',el).onclick=()=>{m.close();run()}}})});

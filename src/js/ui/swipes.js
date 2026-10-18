@@ -28,6 +28,19 @@ function swipeDown(el,scroller,{can,close,cover}){let st=null;const tr=tracker()
       el.style.transition=`transform ${ms}ms ${EASE}`;el.style.transform=`translateY(${dy+rest}px)`;if(cover){cover.style.transition=`background-color ${ms}ms`;cover.style.backgroundColor=rgbaA(bg,0)}afterAnim(el,ms,()=>{close();if(cover){cover.style.transition='';cover.style.backgroundColor=''}});return}
     el.style.transition=`transform 230ms ${EASE}`;el.style.transform='';if(cover){cover.style.transition='background-color 230ms';cover.style.backgroundColor=''}};
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',()=>{if(st)st.dy=0;end()})}
+// Swipe left/right throws a toast away: same thresholds as the tab pager (1/3 of its width or a flick), otherwise springs back.
+// The toast sits outside the work area, so the tab pager never sees this gesture.
+function swipeAway(el,close){let st=null;const tr=tracker();
+  const put=(x,ms)=>{el.style.animation='none';el.style.transition=ms?`transform ${ms}ms ${EASE},opacity ${ms}ms ${EASE}`:'none';el.style.transform=x?`translateX(${x}px)`:'';el.style.opacity=x?String(Math.max(.2,1-Math.abs(x)/(el.offsetWidth*1.2))):''};
+  el.addEventListener('touchstart',e=>{st=null;if(e.touches.length>1||e.target.closest('.toast-x'))return;const p=e.touches[0];st={x0:p.clientX,y0:p.clientY,dx:0,mode:null};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
+    if(!st.mode){if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;st.mode=Math.abs(dx)>Math.abs(dy)?'x':'y';if(st.mode==='y'){st=null;return}st.x0=p.clientX;el.dragging=true}
+    e.preventDefault();e.stopPropagation();st.dx=p.clientX-st.x0;put(st.dx)},{passive:false});
+  const end=cancel=>{const s0=st;st=null;if(!s0||s0.mode!=='x')return;el.dragging=false;const W=el.offsetWidth,v=tr.v().x,dx=s0.dx;
+    const fire=!cancel&&(Math.abs(dx)>W/3&&v*Math.sign(dx)>-.1||Math.abs(v)>FLICK&&Math.sign(v)===Math.sign(dx)&&Math.abs(dx)>SLOP);
+    if(!fire){put(0,RM()?0:230);if(el.later)setTimeout(el.later,RM()?0:240);return}
+    const ms=RM()?0:finishMs(W+40-Math.abs(dx),v);if(!ms){close();return}put(Math.sign(dx)*(W+40),ms);afterAnim(el,ms,close)};
+  el.addEventListener('touchend',()=>end(false));el.addEventListener('touchcancel',()=>end(true))}
 // Swipe left/right inside a form with tabs (contractor, employee card…): same thresholds and paging as module tabs.
 function formPager(m){const el=m.el;let st=null;const tr=tracker();
   const parts=()=>{const mb=el.querySelector('.mb');const tb=mb&&mb.querySelector(':scope>.tabs');return tb?{mb,tb,kids:[...mb.children].filter(k=>k!==tb)}:null};
