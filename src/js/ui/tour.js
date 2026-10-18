@@ -31,5 +31,5 @@ function tourPlace(){const s=TOUR.steps[TOUR.i];if(!s)return;const mob=isMobile(
   bub.style.left=x+'px';bub.style.top=y+'px'}
 const env=()=>0;
 
-function switchUser(id){Object.keys(GS).forEach(k=>delete GS[k]);if(id!=='admin'){const e=EMP.find(x=>x.id===id);if(e&&e.active===false){toast('Учётная запись заблокирована: войти под ней нельзя','lock');$$('#demo-user,#demo-user-m').forEach(s=>s.value=S.me);return}}S.me=id;CK.active=null;CK.bar=false;ckBar();ckBase();MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');renderSide();renderSheetDot();toast(`Вы вошли как: ${me().fio}`,'user');kbWelcome()}
+function switchUser(id){Object.keys(GS).forEach(k=>delete GS[k]);if(id!=='admin'){const e=EMP.find(x=>x.id===id);if(e&&e.active===false){toast('Учётная запись заблокирована: войти под ней нельзя','lock');$$('#demo-user,#demo-user-m').forEach(s=>s.value=S.me);return}}S.me=id;CK.active=null;CK.bar=false;ckBar();ckBase();MODALS.slice().forEach(m=>m.close());closeSheet();S.mod=null;S.tab=null;derive();location.hash='';go(isAdmin()?'accounts':'home');renderSide();renderSheetDot();toast(`Вы вошли как: ${me().fio}`,'user');whatsNew('login')}
 

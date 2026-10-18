@@ -7,7 +7,6 @@ document.addEventListener('click',e=>{
   if(t.closest('#org-open')||t.closest('[data-sh=org]')){closeSheet();orgProfileDlg();return}
   if(t.closest('#me-open')||t.closest('[data-sh=me]')){closeSheet();profileDlg();return}
   if(t.closest('#logout')||t.closest('[data-sh=out]')){closeSheet();logoutDlg();return}
-  if(t.closest('[data-sh=stats]')){const k='stats.'+S.mod;store.set(k,store.get(k,'off')==='off'?'on':'off');closeSheet();renderPage();ckHit('stats');return}
   if(b=t.closest('[data-shmod]')){closeSheet();go(b.dataset.shmod);return}
   if(b=t.closest('.bn')){/* hash link */}
 });

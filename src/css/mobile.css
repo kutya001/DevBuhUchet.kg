@@ -31,7 +31,8 @@
   .bnav::-webkit-scrollbar{display:none}
   .bn{flex:1 0 auto;min-width:66px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 6px 5px;border-radius:var(--r-m);color:var(--muted);font-size:10.5px;font-weight:600;text-decoration:none;position:relative}
   .bn .ic{width:20px;height:20px}
-  #stat-btn{display:none!important}
+  .gtools .icon-btn.sm{width:36px;height:36px}
+  .gtools .icon-btn.sm .ic{width:17px;height:17px}
   .bn.on{color:var(--text);background:var(--pane-alt);box-shadow:var(--sh-btn)}
   .bn .badge{position:absolute;top:2px;right:8px;font-size:9.5px;line-height:15px;min-width:16px;padding:0 4px}
   .fab{display:grid;position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;place-items:center;background:var(--accent);color:var(--on-accent);border:0;box-shadow:var(--sh-cta),var(--shadow-l);z-index:20;cursor:pointer}
@@ -47,3 +48,7 @@
   .kv{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:420px){.kv{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:767px){
+  .md-sw{display:inline-flex}.md-bl{display:none}
+  .md-split{grid-template-columns:1fr}.md-split[data-v=text] .md-prev,.md-split[data-v=prev] .md-src{display:none}
+}

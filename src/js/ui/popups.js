@@ -26,7 +26,7 @@ function openModal(o){
   const cover=document.createElement('div');cover.className='cover';
   cover.innerHTML=`<div class="modal ${o.size||''}" role="dialog" aria-modal="true"></div>`;
   document.body.appendChild(cover);
-  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1);if(typeof ckSoon==='function')ckSoon()}};
+  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){if(m.closed)return;m.closed=true;cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1);if(typeof ckSoon==='function')ckSoon();if(o.onClose)o.onClose()}};
   m.canMax=!!(o.size||o.form)&&!o.noMax;m.maxKey='modal.max.'+(o.form?'form':'card');if(o.form&&o.size!=='wide')m.el.classList.add('narrow');
   m.setMax=(on,save)=>{if(!m.canMax)on=false;m.max=on;const fl=m.el.getBoundingClientRect();cover.classList.toggle('max',on);m.el.classList.toggle('max',on);
     if(save){store.set(m.maxKey,on);

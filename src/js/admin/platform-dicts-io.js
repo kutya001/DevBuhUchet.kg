@@ -82,7 +82,9 @@ DX.kbnews={title:'Новости',key:'id',items:()=>NEWS,cols:[
  ['date','Дата публикации',n=>fmtD(n.date),v=>{const m=/^(\d\d)\.(\d\d)\.(\d{4})$/.exec(v);return m?`${m[3]}-${m[2]}-${m[1]}`:{err:'дата — ДД.ММ.ГГГГ'}}],
  ['aud','Для кого',n=>NEWS_AUD[n.aud],v=>{const e=Object.entries(NEWS_AUD).find(([k,x])=>norm(x)===norm(v));return e?e[0]:{err:'«Для кого»: Все пользователи или Только режим Админка'}}],
  ['pin','Закрепить вверху',n=>YN(n.pin),ynIn('Закрепить вверху')],
- ['html','Текст',n=>n.html,v=>v||{err:'нет текста'}]],
+ ['login','Показывать при входе',n=>YN(n.login),ynIn('Показывать при входе')],
+ ['short','Краткое описание',n=>n.short||'',v=>v||{err:'нет краткого описания'}],
+ ['md','Подробное описание (markdown)',n=>n.md||'',v=>v||{err:'нет подробного описания'}]],
  upd:(x,v)=>{Object.keys(v).forEach(f=>{if(v[f]!=null)x[f]=v[f]});if(x.status==='Опубликовано')x.edited=TODAY;touch(x)},
  add:v=>{const o=born(Object.assign({status:'Черновик',off:false,link:null,hist:[{at:nowStamp(),to:'Черновик',who:S.me}]},v));NEWS.push(o)}};
 DX.kbarts={title:'Статьи Базы знаний',key:'id',items:()=>KB_ARTS,cols:[
@@ -95,7 +97,18 @@ DX.kbarts={title:'Статьи Базы знаний',key:'id',items:()=>KB_ARTS
 
 function pdLog(what,dict){PD_HIST.push({at:TODAY+' '+bishkekNow().hm,what,dict:dict||S.tab,who:S.me})}
 function pdHistHtml(dict){const h=PD_HIST.filter(x=>x.dict===dict).slice().reverse();if(!h.length)return '';return `<div class="box"><h3>История изменений · ${h.length}</h3><ul class="tl">${h.slice(0,12).map(x=>`<li><span class="t">${fmtD(x.at.slice(0,10))}<br>${x.at.slice(11)}</span><span>${esc(x.what)}<br><span class="w">${esc(whoName(x.who))}</span></span></li>`).join('')}</ul></div>`}
-function dxText(k){const d=DX[k];return [d.cols.map(c=>c[1]).join('\t'),...d.items().map(x=>d.cols.map(c=>String(c[2](x)??'').replace(/[\t\n]/g,' ')).join('\t'))].join('\n')}
+// Ячейка с переводами строк (подробное описание новости в markdown) уходит в кавычках, как её копирует Excel; остальные — одной строкой
+const dxCell=v=>{v=String(v??'');return /\n/.test(v)?'"'+v.replace(/"/g,'""')+'"':v.replace(/\t/g,' ')};
+function dxText(k){const d=DX[k];return [d.cols.map(c=>c[1]).join('\t'),...d.items().map(x=>d.cols.map(c=>dxCell(c[2](x))).join('\t'))].join('\n')}
+// Разбор вставки из Excel: строки и ячейки, ячейка в кавычках может содержать переводы строк
+function dxRows(t,dl){const rows=[];let row=[],c='',i=0,q=false;t=t.replace(/\r\n?/g,'\n');
+  while(i<t.length){const ch=t[i];
+    if(q){if(ch==='"'&&t[i+1]==='"'){c+='"';i+=2;continue}if(ch==='"'){q=false;i++;continue}c+=ch;i++;continue}
+    if(ch==='"'&&!c.trim()){q=true;c='';i++;continue}
+    if(ch===dl){row.push(c);c='';i++;continue}
+    if(ch==='\n'){row.push(c);rows.push(row);row=[];c='';i++;continue}
+    c+=ch;i++}
+  row.push(c);rows.push(row);return rows.filter(r=>r.some(x=>x.trim()))}
 function exportDlg(k){const d=DX[k];const txt=dxText(k);
   openModal({size:'wide',render:()=>({title:`Выгрузка: ${esc(d.title)}`,sub:`${d.items().length} строк · формат как у загрузки`,body:`<div class="note">${ic('info')}<span>Откройте файл в Excel, поправьте и загрузите обратно через «Загрузить из Excel». Колонку «Код» не меняйте: по ней строки сопоставляются. Новую строку добавьте с новым кодом${k==='types'?' (латиницей, без пробелов)':''}.</span></div><textarea class="inp mono" id="ex-ta" readonly style="min-height:260px;font-size:12px;white-space:pre">${esc(txt)}</textarea>`,
     foot:`<button class="btn" id="ex-copy">${ic('paste','sm')}Скопировать</button><div class="grow"></div><button class="btn ghost" data-close>Закрыть</button><button class="btn cta" id="ex-dl">${ic('download','sm')}Скачать для Excel</button>`,
@@ -104,11 +117,11 @@ function exportDlg(k){const d=DX[k];const txt=dxText(k);
 }
 /* Загрузка: вставка или файл → сравнение → «Применить» (со снимком для отката) */
 function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
-  const compare=()=>{const lines=st.text.split(/\r?\n/).filter(l=>l.trim());if(lines.length<2){st.diff={fatal:'Нужна строка заголовков и хотя бы одна строка данных'};return}
-    const dl=lines[0].includes('\t')?'\t':';';const head=lines[0].split(dl).map(h=>norm(h.trim()));const idx=d.cols.map(c=>head.indexOf(norm(c[1])));
+  const compare=()=>{const first=st.text.split(/\r?\n/).find(l=>l.trim())||'';const dl=first.includes('\t')?'\t':';';const lines=dxRows(st.text,dl);if(lines.length<2){st.diff={fatal:'Нужна строка заголовков и хотя бы одна строка данных'};return}
+    const head=lines[0].map(h=>norm(h.trim()));const idx=d.cols.map(c=>head.indexOf(norm(c[1])));
     if(idx[0]<0){st.diff={fatal:`Нет колонки «${d.cols[0][1]}»: без кода строки не сопоставить`};return}
     const seen=new Set();const out={add:[],chg:[],off:[],same:0,err:[],rows:lines.length-1};
-    lines.slice(1).forEach((l,li)=>{const cells=l.split(dl).map(x=>x.trim());const v={},e=[];
+    lines.slice(1).forEach((l,li)=>{const cells=l.map(x=>x.trim());const v={},e=[];
       d.cols.forEach((c,ci)=>{if(idx[ci]<0)return;const r=c[3](cells[idx[ci]]??'');if(r&&typeof r==='object'&&r.err)e.push(r.err);else v[c[0]]=r});
       const code=v[d.cols[0][0]];if(!code)e.push('нет кода');else if(seen.has(code))e.push('код повторяется в файле');seen.add(code);
       if(d.check&&!e.length){const base=d.items().find(i=>i[d.key]===code)||{};const nv=Object.assign({},base);Object.keys(v).forEach(f=>{if(v[f]!=null)nv[f]=v[f]});const ce=d.check(nv);if(ce)e.push(ce)}

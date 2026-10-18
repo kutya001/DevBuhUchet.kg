@@ -15,7 +15,7 @@ function dbApply(db){const o=dbOrg(),r=dbRef();
   kbBuild(db.ref.kbSteps);ORGS.forEach(orgBind);DB.meta=db.meta;
   dbPut(T,Object.fromEntries(RT.map(t=>[t.id,t])));dbPut(PH,Object.fromEntries(PHONES.map(p=>[p.cc,p])));
   dbPut(CPM,Object.fromEntries(CPS.map(c=>[c.id,c])));dbPut(EM,Object.fromEntries(EMP.map(e=>[e.id,e])));
-  CPID=nextNum(CPS);RID=nextNum(REPORTS);OPID=nextNum(OPS);TID=nextNum(TASKS,'t');HIXn=-1;derive()}
+  CPID=nextNum(CPS);RID=nextNum(REPORTS);OPID=nextNum(OPS);TID=nextNum(TASKS,'t');HIXn=-1;newsSync();derive()}
 let dbT=null,dbWarned=false;
 function dbSave(){clearTimeout(dbT);dbT=null;try{localStorage.setItem(DB_KEY,JSON.stringify(dbSnap()))}catch(e){if(!dbWarned&&e&&e.name==='QuotaExceededError'){dbWarned=true;toast('Не удалось сохранить рабочие данные: в браузере не хватает места. Выгрузите TemDB.json','alert')}}}
 const dbSoon=()=>{clearTimeout(dbT);dbT=setTimeout(dbSave,700)};
@@ -23,7 +23,7 @@ const dbSoon=()=>{clearTimeout(dbT);dbT=setTimeout(dbSave,700)};
 function dbAfter(msg){MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
   CK.active=null;CK.bar=false;CK.shown={};KB.memo={};Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
   if(location.hash==='#home.today')route();else location.hash='#home.today';
-  ckBase();renderSide();dbSave();toast(msg,'refresh');if(DATA_MODE==='empty'&&!CPS.length)kbWelcome()}
+  ckBase();renderSide();dbSave();toast(msg,'refresh');whatsNew('login')}
 // Переключатель «Данные» и «Очистить рабочие данные»: TemDB создаётся заново из demoDB.json или из пустого шаблона TemDB.json
 function setDataMode(v){DATA_MODE=v;store.set('data',v);if(v==='empty')EMP.forEach(e=>store.set('kbw.'+e.id,false));
   dbApply(dbFresh(v));dbAfter(v==='empty'?'Пустая организация: как сразу после регистрации':'Включены демо-данные')}
@@ -50,4 +50,4 @@ addEventListener('pagehide',()=>{if(dbT)dbSave()});document.addEventListener('vi
 derive();initTop();dbSave();
 if(DBMISS.length)setTimeout(()=>toast('В сохранённых рабочих данных не хватало разделов: '+DBMISS.join(', ')+'. Они взяты из шаблона','alert'),600);
 if(!location.hash||location.hash==='#')history.replaceState(null,'','#home');
-ckBase();route();ckBar();renderSide();renderSheetDot();kbWelcome();
+ckBase();route();ckBar();renderSide();renderSheetDot();whatsNew('open');
