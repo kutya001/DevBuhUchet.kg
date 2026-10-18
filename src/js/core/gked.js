@@ -37,6 +37,7 @@ function gkSearch(q,o={}){const s=norm(q||'').trim();const words=s.split(/\s+/).
 const GK_EN_SPECIAL=['ЕНС-05','ЕНС-07','ЕНС-14'];
 // Ставки для особого статуса: предлагаются только контрагенту с этим статусом, и тогда — первой
 const GK_EN_BEN={'ЕНС-13':'Резидент ПКИ'};
+const GK_EN_ONE=['ЕНС-01','ЕНС-13','ЕНС-15'];
 // Строки ст. 423 с самым точным совпадением (несколько — если ставка зависит от выручки или признаков контрагента); иначе «Остальные виды деятельности»
 function gkEnRows(code,c){const bens=(c&&c.ben)||[];const sb=(EN_TABLE||[]).filter(x=>GK_EN_BEN[x.code]&&bens.includes(GK_EN_BEN[x.code])&&!gkEmpty(x.gked)&&gkFit(x.gked,[code]).length);if(sb.length)return sb;
   let best=[],bl=-1;(EN_TABLE||[]).forEach(x=>{const r=x.gked;if(GK_EN_BEN[x.code]||gkEmpty(r)||!(r.in||[]).length)return;if(!gkFit(r,[code]).length)return;const l=Math.max(...r.in.filter(p=>gkHit(code,p)).map(p=>/^[A-Z]+$/.test(p)?0:p.length));if(l>bl){bl=l;best=[x]}else if(l===bl)best.push(x)});
@@ -58,7 +59,10 @@ function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],ben
     if(!f.length)out.regime.push(`Режим «${n}» не подходит к видам деятельности контрагента${gkVer(g)}`);else if(bad.length)out.regime.push(`Режим «${n}» не применяется к ГКЭД ${bad.join(', ')}: по этим видам деятельности — другой режим${gkVer(g)}`)});
   benOf(c).forEach(b=>{const f=gkFit(b.gked,codes,c);if(f&&!f.length)out.ben.push(`Виды деятельности контрагента не соответствуют статусу «${b.name}»${gkVer(b.gked)}`)});
   if(regsOf(c).includes('Единый налог')&&c.gked){const ms=gkEnRows(c.gked,c),m=ms[0];if(m)out.rate.push(`Ставка единого налога по основному ГКЭД ${c.gked}: ${ms.map(x=>`${x.rate} (${x.activity})`).join(' или ')}`);
-    (c.gked2||[]).forEach(k=>{const x=gkEnRow(k,c);if(x&&m&&x.rate!==m.rate)out.rate.push(`ГКЭД ${k}: ставка ${x.rate} (${x.activity}) — налог считается отдельно по каждому виду деятельности (ст. 423 ч. 7)`)})}
+    // ЕНС-01, ЕНС-13, ЕНС-15 — одна ставка на всю деятельность: по дополнительным ГКЭД налог отдельно не считается
+    const one=ms.filter(x=>GK_EN_ONE.includes(x.code));
+    if(one.length===ms.length){if((c.gked2||[]).length)out.rate.push(`При этой ставке налог считается по ней со всей деятельности, дополнительные виды отдельно не облагаются (ст. 423 ч. 7)`)}
+    else (c.gked2||[]).forEach(k=>{const x=gkEnRow(k,c);if(x&&m&&x.rate!==m.rate)out.rate.push(`ГКЭД ${k}: ставка ${x.rate} (${x.activity}) — налог считается отдельно по каждому виду деятельности (ст. 423 ч. 7)${one.length?`; при ставке ${one.map(o=>o.rate).join(', ')} — одна ставка на всю деятельность`:''}`)})}
   const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
   return out}
 // Ставка ЕН из каталога видов, которая соответствует основному ГКЭД (если такая есть в списке ставок вида)
