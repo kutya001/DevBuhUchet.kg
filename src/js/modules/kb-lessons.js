@@ -131,7 +131,7 @@ const KB_EV={
  'k.val':['внесено значение показателя',h=>h.ent==='kv'],
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
- 'open':['открыт экран'],'use':['первое использование функции'],'state':['выполнено условие в данных пользователя'],'hand':['только вручную («Отметить как изучено»)']};
+ 'open':['открыт экран'],'use':['первое использование функции'],'state':['выполнено условие в данных пользователя'],'hand':['только вручную («Отметить как просмотрено»)']};
 const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kval:'k.val',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
@@ -181,7 +181,7 @@ function kbCongrats(name){let el=$('#kb-cg');if(!el){el=document.createElement('
 let ckT=null;function ckSoon(){clearTimeout(ckT);ckT=setTimeout(ckEval,250)}
 function ckEval(){const fresh=CK.q.splice(0);
   ckAll().forEach(i=>{if(ckDone(i))return;let ok=false;try{ok=kbOk(i)}catch(e){ok=false}if(ok&&ckMark(i))fresh.push(i)});
-  // Feedback right at the moment of the action: the lesson step first, then other actions; «Изучить»-hits only toast.
+  // Feedback right at the moment of the action: the lesson step first, then other actions; «Посмотреть»-hits only toast.
   const a=CK.active&&ckFind(CK.active);const act=fresh.filter(i=>!i.at);
   const pick=act.find(i=>i===a&&!i.soft&&!i.learn)||act.find(i=>!i.learn&&!i.soft);
   if(pick&&CK.active){CK.active=pick.id;CK.bar=true;setTimeout(()=>ckDoneDlg(pick),MODALS.length?250:50)}

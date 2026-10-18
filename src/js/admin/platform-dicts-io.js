@@ -65,7 +65,7 @@ DX.kbsteps={title:'Шаги уроков',key:'id',items:()=>KBS,cols:[
  ['id','Код',i=>i.id,v=>v],
  ['g','Модуль программы',i=>(KBG.find(g=>g.id===i.g)||{}).t||'',v=>{const g=KBG.find(x=>norm(x.t)===norm(v));return g?g.id:{err:`модуля программы «${v}» нет`}}],
  ['t','Название',i=>i.t,v=>v||{err:'нет названия'}],['w','Зачем это нужно',i=>i.w||'',v=>v],
- ['learn','Тип',i=>i.learn?'Изучить':'Действие',v=>/изуч/i.test(v)?1:/действ/i.test(v)?0:{err:'«Тип»: Действие или Изучить'}],
+ ['learn','Вид шага',i=>i.learn?'Посмотреть':'Сделать',v=>/посмотр|изуч/i.test(v)?1:/сдела|действ/i.test(v)?0:{err:'«Вид шага»: Сделать или Посмотреть'}],
  ['star','Основной',i=>YN(!!i.star),v=>{const b=parseYN(v);return b===undefined?{err:'«Основной»: да или нет'}:b?1:0}],
  ['perm','Необходимое право',i=>i.perm?permT(i.perm):'',permIn],
  ['featk','Функция учётной политики',i=>i.featk?(FEATURES.find(f=>f[0]===i.featk)||[])[1]||'':'',v=>{if(!v||v==='—')return '';const f=FEATURES.find(x=>norm(x[1])===norm(v));return f?f[0]:{err:`функции «${v}» нет`}}],
