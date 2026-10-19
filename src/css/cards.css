@@ -162,3 +162,9 @@
   .modal[data-step="1"] #cf-back,.modal:not([data-step="1"]) .cf-cancel{display:none}
   .modal[data-step="3"] #cf-next,.modal:not([data-step="3"]) #nc-ok{display:none}
 }
+/* Вкладка «Подбор отчётов» карточки контрагента: то же, что окно подбора, и панель «Применить» внизу */
+.pk-tab{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pk-apply{position:sticky;bottom:-6px;z-index:3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;padding:10px 12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-l);box-shadow:var(--shadow-s)}
+.pk-apply.dirty{border-color:var(--accent)}
+.pk-apply .grow,.sh-d>summary .grow{flex:1}
+.modal:not(.pickm) .pk-side{max-height:calc(100dvh - 380px)}

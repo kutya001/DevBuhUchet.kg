@@ -6,6 +6,8 @@
 .btn.cta{background:var(--accent);color:var(--on-accent);box-shadow:var(--sh-cta)}
 .btn.cta:hover{background:var(--accent-hover)}
 .btn.cta:active{box-shadow:var(--sh-btn-a)}
+/* Подпись внутри кнопки берёт цвет и размер кнопки: класс .lbl у полей формы приглушённый, на кнопке он сливался с фоном */
+.btn .lbl,.btn .bl,.tab .lbl,.fab .lbl{color:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit}
 .btn.danger{background:var(--red);color:var(--on-accent);box-shadow:var(--sh-cta)}
 .btn.ok{background:var(--green);color:var(--on-accent);box-shadow:var(--sh-cta)}
 .btn.ghost{background:transparent;box-shadow:none;color:var(--muted)}

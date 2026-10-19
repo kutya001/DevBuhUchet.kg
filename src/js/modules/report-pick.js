@@ -66,10 +66,11 @@ function pkDescHtml(t,cx,o){const en=['enq','enm'].includes(t.id)?gkEnRate(cx,t)
 
 /* ═════════════ Окно «Подбор отчётов» ═════════════
    o: {cx, sel (Set), before (Set назначенных), edit (можно отмечать), single (добавить один отчёт), onApply({sel, bases, forced})} */
-function pickDlg(o){const cx=Object.assign({},o.cx,{bases:[...(o.cx.bases||[])]});const before=o.before||new Set();
-  const st={tab:o.single?'all':'rec',q:'',cur:null,open:null,act:'',kind:'',per:'',sel:new Set(o.sel||[]),forced:{}};
-  const canEdit=o.edit!==false;
-  openModal({size:'wide',swipeHead:true,render:m=>{const calc=pkCalc(cx);const q=norm(st.q).trim();
+// Подбор отчётов: одно содержимое для окна (создание контрагента, «Добавить отчёт») и для вкладки «Подбор отчётов» карточки контрагента.
+// o: {cx, sel, before, single, edit, title, onApply}; st — состояние подбора (pkState), живёт между перерисовками.
+const pkState=o=>({tab:o.single?'all':'rec',q:'',cur:null,open:null,act:'',kind:'',per:'',sel:new Set(o.sel||[]),forced:{},cx:Object.assign({},o.cx,{bases:[...(o.cx.bases||[])]})});
+function pkView(o,st){const cx=st.cx;const before=o.before||new Set();const canEdit=o.edit!==false;
+    const calc=pkCalc(cx);const q=norm(st.q).trim();
     const hit=t=>!q||[t.short,t.name,t.code].some(x=>norm(x||'').includes(q));
     const isOn=id=>st.sel.has(id);
     const stTag=id=>before.has(id)?(isOn(id)?'<span class="tag">Назначен</span>':'<span class="pill red sm">Будет снят</span>'):isOn(id)?'<span class="pill green sm">Будет добавлен</span>':'';
@@ -90,15 +91,17 @@ function pickDlg(o){const cx=Object.assign({},o.cx,{bases:[...(o.cx.bases||[])]}
     const add=[...st.sel].filter(x=>!before.has(x)),rem=[...before].filter(x=>!st.sel.has(x));
     const bases=(DICT.bases?DICT.bases.items:[]).filter(b=>b.active||cx.bases.includes(b.code));
     const cur=st.cur&&T[st.cur];
-    return {title:o.single?'Добавить отчёт':'Подбор отчётов',sub:esc(o.title||''),
+    return {add,rem,
       body:`${pkCtxLine(cx)}
       ${!o.single&&bases.length?`<div class="pk-bases"><span class="muted">Основания:</span><div class="chipsel" id="pk-bases">${bases.map(b=>`<button type="button" data-base="${b.code}" class="${cx.bases.includes(b.code)?'on':''}" title="${esc(b.desc||'')}" ${canEdit?'':'disabled'}>${cx.bases.includes(b.code)?ic('check','sm'):''}${esc(b.name)}</button>`).join('')}</div></div>`:''}
       <div class="pk-bar"><span class="kb-search pk-q">${ic('search','sm')}<input class="inp" id="pk-q" value="${esc(st.q)}" placeholder="Название или код формы, например STI-091" aria-label="Поиск отчёта"></span>
         ${o.single?'':`<div class="seg" role="tablist" id="pk-tab">${[['rec','Рекомендуемые'],['all','Все']].map(([k,l])=>`<button type="button" data-tab="${k}" class="${st.tab===k?'on':''}">${l}</button>`).join('')}</div>`}</div>
       ${st.tab==='all'?`<div class="pk-flt">${sel('pk-act',[['','Сдача и уплата: все'],['sub','Сдача'],['pay','Уплата'],['both','Сдача + уплата']],st.act,'data-pkf="act"')}${sel('pk-kind',[['','Режимные и сквозные'],['regime','Режимные'],['cross','Сквозные']],st.kind,'data-pkf="kind"')}${sel('pk-per',[['','Любая периодичность'],['M','Месяц'],['Q','Квартал'],['H','Полугодие'],['Y','Год'],['own','По назначению']],st.per,'data-pkf="per"')}</div>`:''}
       <div class="pk-split"><div class="pk-list">${list}</div><div class="pk-side">${cur?descOf(cur):`<div class="state">${ic('info','lg')}<b>Описание отчёта</b><span>Нажмите на строку, чтобы увидеть, что это за отчёт, кто его сдаёт, сроки и ставки.</span></div>`}</div></div>`,
-      foot:canEdit?`<span class="muted pk-sum">Выбрано: <b>${st.sel.size}</b>${add.length?` · новых ${add.length}`:''}${rem.length?` · <span class="red">будет снято ${rem.length}</span>`:''}</span><div class="grow"></div><button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="pk-ok" ${o.single&&!add.length?'disabled':''}>${o.single?'Добавить':'Применить'}</button>`:`<span class="muted">Только просмотр: менять отчёты может сотрудник с правом «Создавать и загружать контрагентов»</span><div class="grow"></div><button class="btn cta" data-close>Закрыть</button>`,
-      mount(el){el.classList.add('pickm');
+      sum:`<span class="muted pk-sum">Выбрано: <b>${st.sel.size}</b>${add.length?` · новых ${add.length}`:''}${rem.length?` · <span class="red">будет снято ${rem.length}</span>`:''}</span>`,
+      ro:'<span class="muted">Только просмотр: менять отчёты может сотрудник с правом «Создавать и загружать контрагентов»</span>'}}
+// Обработчики подбора; draw — перерисовка окна или карточки
+function pkMount(el,o,st,draw){const cx=st.cx;const before=o.before||new Set();const m={draw};
         const q=$('#pk-q',el);q.oninput=()=>{st.q=q.value;const p=q.selectionStart;m.draw();const n=$('#pk-q',el);n.focus();n.setSelectionRange(p,p)};
         if($('#pk-tab',el))$('#pk-tab',el).onclick=e=>{const b=e.target.closest('[data-tab]');if(!b)return;st.tab=b.dataset.tab;m.draw()};
         $$('[data-pkf]',el).forEach(s=>s.onchange=()=>{st[s.dataset.pkf]=s.value;m.draw()});
@@ -111,9 +114,29 @@ function pickDlg(o){const cx=Object.assign({},o.cx,{bases:[...(o.cx.bases||[])]}
         el.querySelectorAll('[data-pkall]').forEach(b=>b.onclick=()=>{const c=pkCalc(cx);Object.keys(c.rec).filter(id=>c.rec[id].grp===b.dataset.pkall).forEach(id=>st.sel.add(id));m.draw()});
         if($('#pk-bases',el))$('#pk-bases',el).onclick=e=>{const b=e.target.closest('[data-base]');if(!b||b.disabled)return;const k=b.dataset.base;const on=!cx.bases.includes(k);
           cx.bases=on?[...cx.bases,k]:cx.bases.filter(x=>x!==k);const c=pkCalc(cx);
-          RT.filter(t=>(t.basis||[]).includes(k)&&c.rec[t.id]).forEach(t=>{if(on&&c.rec[t.id].pre)st.sel.add(t.id);if(!on&&!(t.basis||[]).some(x=>cx.bases.includes(x))&&c.rec[t.id].grp==='basis')st.sel.delete(t.id)});m.draw()};
-        if($('#pk-ok',el))$('#pk-ok',el).onclick=()=>{m.close();o.onApply&&o.onApply({sel:st.sel,bases:cx.bases,forced:st.forced})}}}}});
+          RT.filter(t=>(t.basis||[]).includes(k)&&c.rec[t.id]).forEach(t=>{if(on&&c.rec[t.id].pre)st.sel.add(t.id);if(!on&&!(t.basis||[]).some(x=>cx.bases.includes(x))&&c.rec[t.id].grp==='basis')st.sel.delete(t.id)});m.draw()}}
+function pickDlg(o){const st=pkState(o);const canEdit=o.edit!==false;
+  openModal({size:'wide',swipeHead:true,render:m=>{const v=pkView(o,st);
+    return {title:o.single?'Добавить отчёт':'Подбор отчётов',sub:esc(o.title||''),body:v.body,
+      foot:canEdit?`${v.sum}<div class="grow"></div><button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="pk-ok" ${o.single&&!v.add.length?'disabled':''}>${o.single?'Добавить':'Применить'}</button>`:`${v.ro}<div class="grow"></div><button class="btn cta" data-close>Закрыть</button>`,
+      mount(el){el.classList.add('pickm');pkMount(el,o,st,()=>m.draw());
+        if($('#pk-ok',el))$('#pk-ok',el).onclick=()=>{m.close();o.onApply&&o.onApply({sel:st.sel,bases:st.cx.bases,forced:st.forced})}}}}});
 }
+// Вкладка «Подбор отчётов» карточки контрагента: то же содержимое, применяется кнопкой «Применить» внизу вкладки.
+// cs — состояние карточки; несохранённый выбор хранится в cs.pk, пока карточка открыта.
+const pkCpBefore=c=>new Set(c.assign.filter(a=>!a.to).map(a=>a.t));
+const pkSame=(a,b)=>a.size===b.size&&[...a].every(x=>b.has(x));
+function pkCpDirty(c,cs){const p=cs.pk;return !!p&&(!pkSame(p.sel,pkCpBefore(c))||JSON.stringify(p.cx.bases)!==JSON.stringify(c.bases||[]))}
+function pkCpTab(c,cs){const before=pkCpBefore(c);
+  if(!cs.pk||!pkCpDirty(c,cs)){const ui=cs.pk?{tab:cs.pk.tab,q:cs.pk.q,cur:cs.pk.cur,open:cs.pk.open,act:cs.pk.act,kind:cs.pk.kind,per:cs.pk.per}:{};cs.pk=Object.assign(pkState({cx:c,sel:before}),ui)}
+  const o={cx:c,before,edit:pkEdit(c),title:c.name};const v=pkView(o,cs.pk);const dirty=pkCpDirty(c,cs);
+  return `<div class="pk-tab">${v.body}<div class="pk-apply ${dirty?'dirty':''}">${o.edit?`${v.sum}<div class="grow"></div><button type="button" class="btn ghost sm" id="pk-reset" ${dirty?'':'disabled'}>Сбросить</button><button type="button" class="btn cta sm" id="pk-ok" ${dirty?'':'disabled'}>${ic('check','sm')}Применить</button>`:v.ro}</div></div>`}
+function pkCpMount(el,c,cs,draw){const o={cx:c,before:pkCpBefore(c),edit:pkEdit(c),title:c.name};pkMount(el,o,cs.pk,draw);
+  if($('#pk-reset',el))$('#pk-reset',el).onclick=()=>{cs.pk=null;draw()};
+  if($('#pk-ok',el))$('#pk-ok',el).onclick=()=>{const p=cs.pk;const bases=p.cx.bases;const bch=JSON.stringify(bases)!==JSON.stringify(c.bases||[]);
+    const fin=r=>{cs.pk=null;refreshAll();draw();toast(r?`Отчёты изменены: добавлено ${r.add.length}, снято ${r.rem.length}${r.del?`, удалено отчётов ${r.del}`:''}`:bch?'Основания сохранены':'Без изменений')};
+    pkConfirm(c,p.sel,{forced:p.forced},r=>{if(bch){c.bases=[...bases];touch(c);log('cp',c.id,'Основания: '+(bases.map(baseLow).join(', ')||'нет'),c.id)}fin(r)})}}
+
 
 /* ═════════════ Окно «Льготы и особые статусы» ═════════════
    o: {cx, ben (названия), dates ({название: {from, to}}), edit, onApply({ben, dates})} */
@@ -173,12 +196,9 @@ function pkApply(c,sel,{rates,forced}={}){const cur=new Set(c.assign.filter(a=>!
 function pkConfirm(c,sel,opts,done){const cur=new Set(c.assign.filter(a=>!a.to).map(a=>a.t));const add=[...sel].filter(x=>!cur.has(x)),rem=[...cur].filter(x=>!sel.has(x));
   if(!add.length&&!rem.length){done&&done(null);return}
   confirmDlg({title:'Изменить отчёты контрагента?',text:pkChangesHtml(c,add,rem),ok:'Сохранить',danger:rem.length>0,run:()=>{const r=pkApply(c,sel,opts);done&&done(r)}})}
-// Из карточки: «Изменить» в блоке «Сдаёт отчёты» открывает подбор сразу, без всей формы
 const pkEdit=c=>(can('createCp')||can('assign'))&&!c.archived;
-function pickForCp(c,single){const before=new Set(c.assign.filter(a=>!a.to).map(a=>a.t));
-  pickDlg({cx:c,sel:before,before,single,edit:pkEdit(c),title:c.name,onApply:({sel,bases,forced})=>{
-    const bch=JSON.stringify(bases)!==JSON.stringify(c.bases||[]);if(bch){c.bases=[...bases];log('cp',c.id,'Основания: '+(bases.map(baseLow).join(', ')||'нет'),c.id)}
-    pkConfirm(c,sel,{forced},r=>{refreshAll();toast(r?`Отчёты изменены: добавлено ${r.add.length}, снято ${r.rem.length}${r.del?`, удалено отчётов ${r.del}`:''}`:bch?'Основания сохранены':'Без изменений')})}})}
+// «Подобрать отчёты» из списка и меню открывает карточку контрагента на вкладке «Подбор отчётов»
+function pickForCp(c){openCp(c,'pick')}
 // Назначенные отчёты, которые статусы контрагента делают ненужными
 function pkNotNeeded(cx,ids){const out=[];pkBens(cx).forEach(b=>{const x=(b.removes||[]).filter(id=>ids.includes(id)&&T[id]);if(x.length)out.push({b,ids:x})});return out}
 function pkNotNeededNote(cx,ids,btnAttr){const nn=pkNotNeeded(cx,ids);if(!nn.length)return '';

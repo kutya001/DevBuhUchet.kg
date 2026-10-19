@@ -153,9 +153,8 @@ function editCpDlg(c){
     ${fld('Льготы и особые статусы',`<div class="cf-ben">${benLine(fake)}</div><button type="button" class="btn sm" id="ec-benb" style="align-self:flex-start">${ic('star','sm')}Выбрать льготы и статусы</button>`,{full:true,id:'ec-ben'})}
     ${reg?fld('Основания для сквозных отчётов',basesChips('ec-bases',st.bases),{full:true,id:'ec-bases'}):''}
     <div class="full" style="grid-column:1/-1">${gkNote(fake)}</div>
-    ${reg?`<div class="fld full" data-f="ec-types"><label>Сдаёт отчёты</label>${cfTypes('ec',fake,st.sel,false,before)}<div class="err" hidden></div></div>
-    <div class="full" style="grid-column:1/-1">${pkNotNeededNote(fake,[...st.sel],'data-nnrm')}${cfMissing(fake,st.sel,'data-addmiss')}</div>`:''}
-    ${bad.length?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Назначенные отчёты не меняются сами. Не подходят к новому режиму или форме: ${bad.map(a=>esc(T[a.t].short)).join(', ')}. Уберите их в блоке «Сдаёт отчёты».</span></div>`:''}
+    ${reg?`<div class="note full" style="grid-column:1/-1">${ic('list')}<span>Отчёты здесь не выбираются: их подбор с описаниями — на вкладке «Подбор отчётов» карточки контрагента. После смены режима, статусов, оснований или видов деятельности проверьте отчёты там.</span></div>`:''}
+    ${bad.length?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Назначенные отчёты не меняются сами. Не подходят к новому режиму или форме: ${bad.map(a=>esc(T[a.t].short)).join(', ')}. После сохранения уберите их на вкладке «Подбор отчётов».</span></div>`:''}
     ${fld('Руководитель',inp('ec-head',d.head),{id:'ec-head'})}${fld('Контактное лицо',inp('ec-contact',d.contact),{id:'ec-contact'})}
     ${fld('Номер договора',inp('ec-cno',d.cno,'placeholder="Например: 45/26"'),{id:'ec-cno'})}${fld('Дата договора',inp('ec-cdate',d.cdate,'type="date"'),{id:'ec-cdate'})}
     ${feeOn?fld('День оплаты обслуживания',inp('ec-fday',d.feeDay,'type="number" min="1" max="28" class="inp tnum"'),{id:'ec-fday',hint:'Число месяца, до которого контрагент платит за обслуживание (1–28)'}):''}
@@ -171,30 +170,22 @@ function editCpDlg(c){
       $('#ec-size',el).onclick=e=>{const b=e.target.closest('[data-sz]');if(!b)return;snap();st.size=b.dataset.sz;m.draw()};
       $('#ec-benb',el).onclick=()=>{snap();benPickDlg({cx:fake,ben:st.ben,dates:st.benD,edit:can('createCp'),title:c.name,onApply:({ben,dates})=>{st.ben=ben;st.benD=dates;m.draw()}})};
       if($('#ec-bases',el))$('#ec-bases',el).onclick=e=>{const b=e.target.closest('[data-base]');if(!b)return;snap();const k=b.dataset.base;st.bases=st.bases.includes(k)?st.bases.filter(x=>x!==k):[...st.bases,k];m.draw()};
-      const openPick=single=>{snap();pickDlg({cx:fake,sel:st.sel,before,single,title:c.name,onApply:({sel,bases,forced})=>{st.sel=new Set(sel);st.bases=[...bases];Object.assign(st.forced,forced);m.draw()}})};
-      if($('#ec-pick',el))$('#ec-pick',el).onclick=()=>openPick(false);if($('#ec-one',el))$('#ec-one',el).onclick=()=>openPick(true);
-      $$('[data-unsel]',el).forEach(b=>b.onclick=()=>{const id=b.dataset.unsel;const r=pkCalc(fake).rec[id];const go=()=>{snap();st.sel.delete(id);if(r&&r.pre)st.forced[id]=pkMustWhy(r);m.draw()};
-        if(r&&r.pre&&PK_MUST.has(r.grp))confirmDlg({title:'Снять обязательный отчёт?',text:`Этот отчёт ${esc(pkMustWhy(r))}. Точно снять «${esc(T[id].short)}»?`,ok:'Снять',danger:true,run:go});else go()});
-      $$('[data-nnrm]',el).forEach(b=>b.onclick=()=>{snap();b.dataset.nnrm.split(',').forEach(id=>st.sel.delete(id));m.draw()});
-      $$('[data-addmiss]',el).forEach(b=>b.onclick=()=>{snap();b.dataset.addmiss.split(',').forEach(id=>st.sel.add(id));m.draw()});
       $('#ec-inn',el).addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,14)});
       $('#ec-ok',el).onclick=()=>{const name=val(el,'ec-name'),inn=val(el,'ec-inn'),ph=readPhone(el,'ec-ph');const dup=CPS.find(x=>x.inn===inn&&x.id!==c.id);const fd=$('#ec-fday',el)?parseInt(val(el,'ec-fday'),10):c.feeDay;
         const ok=[setErr(el,'ec-name',name?'':'Введите название'),
           setErr(el,'ec-inn',!/^\d{14}$/.test(inn)?'ИНН — ровно 14 цифр':!/^[0-2]/.test(inn)?'ИНН в КР начинается с 0, 1 или 2':dup?`Такой ИНН уже есть: ${dup.name}${dup.archived?' (в архиве)':''}`:''),
           setErr(el,'ec-ph',ph.empty?'Введите номер телефона':!ph.ok?`Номер для этой страны — ${ph.need} цифр`:''),
           $('#ec-fday',el)?setErr(el,'ec-fday',fd>=1&&fd<=28?'':'Число от 1 до 28'):true,
-          setErr(el,'ec-gk',st.gked?'':'Укажите основной вид деятельности (ГКЭД)'),setErr(el,'ec-reg',gkCheck(Object.assign({},c,st)).block[0]||''),regCheck(el,'ec'),reg?setErr(el,'ec-types',st.sel.size?'':'Нужен хотя бы один отчёт'):true].every(Boolean);
+          setErr(el,'ec-gk',st.gked?'':'Укажите основной вид деятельности (ГКЭД)'),setErr(el,'ec-reg',gkCheck(Object.assign({},c,st)).block[0]||''),regCheck(el,'ec')].every(Boolean);
         if(!ok){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
         if(!gkBenOk(Object.assign({},c,st),st,()=>$('#ec-ok',el).click()))return;
         const cno=val(el,'ec-cno'),cd=val(el,'ec-cdate');
         const nv={name,inn,phone:ph.ph,form:st.form,regime:st.regime,regime2:st.regime2,ben:[...st.ben],benDates:Object.keys(st.benD).length?JSON.parse(JSON.stringify(st.benD)):undefined,bases:[...st.bases],size:st.size,gked:st.gked,gked2:[...st.gked2],head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),contract:cno||cd?`${cno?'№ '+cno:'Без номера'}${cd?' от '+fmtD(cd):''}`:'—',feeDay:fd,reg:(r=>regEmpty(r)?undefined:r)(regRead(el,'ec'))};
         const L={name:'название',inn:'ИНН',phone:'телефон',form:'форма собственности',regime:'режим налогообложения',regime2:'дополнительный режим',ben:'льготы и особые статусы',benDates:'сроки льгот',bases:'основания для отчётов',size:'размер бизнеса',gked:'основной ГКЭД',gked2:'дополнительные ГКЭД',head:'руководитель',contact:'контактное лицо',note:'примечание',contract:'договор',feeDay:'день оплаты обслуживания',reg:'регистрационные данные'};
         const ch=Object.keys(nv).filter(k=>JSON.stringify(nv[k]??(k==='bases'?[]:k==='size'?'small':''))!==JSON.stringify(c[k]??(k==='bases'?[]:k==='size'?'small':'')));
-        const add=[...st.sel].filter(x=>!before.has(x)),rem=[...before].filter(x=>!st.sel.has(x));const selCh=reg&&(add.length||rem.length);
-        if(!ch.length&&!selCh){m.close();return toast('Изменений нет')}
-        if(selCh&&!st.selOk)return confirmDlg({title:'Изменить отчёты контрагента?',text:pkChangesHtml(c,add,rem),ok:'Сохранить',danger:rem.length>0,run:()=>{st.selOk=true;$('#ec-ok',el).click()}});
-        const was=bad.length;Object.assign(c,nv);if(!c.benDates)delete c.benDates;touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);const pr=selCh?pkApply(c,st.sel,{forced:st.forced}):null;m.close();refreshAll();
-        toast(pr?`Контрагент сохранён: отчётов добавлено ${pr.add.length}, снято ${pr.rem.length}${pr.del?`, удалено ${pr.del}`:''}`:'Контрагент сохранён');if(ch.includes('gked')||ch.includes('gked2')){const k=gkCheck(c);const n=k.regime.length+k.ben.length+k.types.length;if(n)setTimeout(()=>toast(`Виды деятельности изменились: проверьте режим, льготы и отчёты в карточке (замечаний: ${n})`,'alert',true),1400)}
+        if(!ch.length){m.close();return toast('Изменений нет')}
+        const was=bad.length;Object.assign(c,nv);if(!c.benDates)delete c.benDates;touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
+        toast(miss.length?`Контрагент сохранён. Обязательны, но не назначены: ${miss.map(id=>T[id].short).join(', ')} — добавьте на вкладке «Подбор отчётов»`:'Контрагент сохранён',miss.length?'alert':undefined,!!miss.length);if(ch.includes('gked')||ch.includes('gked2')){const k=gkCheck(c);const n=k.regime.length+k.ben.length+k.types.length;if(n)setTimeout(()=>toast(`Виды деятельности изменились: проверьте режим, льготы и отчёты в карточке (замечаний: ${n})`,'alert',true),1400)}
         if(was&&(ch.includes('regime')||ch.includes('regime2')||ch.includes('form')))setTimeout(()=>toast('Проверьте назначенные отчёты: часть не подходит к новому режиму или форме','alert',true),1400)}}}}});
 }
 
