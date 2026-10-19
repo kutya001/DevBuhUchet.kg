@@ -29,6 +29,11 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   DB_GK_REF.forEach(([k,get,key])=>{let a,b;try{a=get(db.ref);b=get(r)}catch(e){return}if(!a||!b)return;const m=Object.fromEntries(b.map(x=>[key(x),x]));a.forEach(x=>{if(!('gked' in x)&&m[key(x)]&&m[key(x)].gked)x.gked=structuredClone(m[key(x)].gked)})});
   // Пояснения справочников (v43) — содержимое платформы: у справочников, сохранённых в браузере раньше, берутся из refDB.json
   DB_TXT_REF.forEach(([get,key,fs])=>{let a,b;try{a=get(db.ref);b=get(r)}catch(e){return}if(!a||!b)return;const m=Object.fromEntries(b.map(x=>[key(x),x]));a.forEach(x=>{const f=m[key(x)];if(f)fs.forEach(k=>{if(!(k in x)&&f[k]!=null)x[k]=structuredClone(f[k])})})});
+  // Тарифы Соцфонда (v45): у данных, сохранённых в браузере раньше, ПЛТ-01, вид отчёта soc и орган ОРГ-02 обновляются из refDB.json, пока администратор их не менял
+  {const pick=(a,k,v)=>(a||[]).find(x=>x[k]===v);const tx=pick(db.ref.taxes,'code','ПЛТ-01'),ftx=pick(r.taxes,'code','ПЛТ-01');
+    if(tx&&ftx&&ftx.guide&&ftx.guide.tariffs&&!(tx.guide&&tx.guide.tariffs)&&tx._ua<='2026-10-18 09:54')['base','rates','art','verify','guide','_ua'].forEach(k=>{if(ftx[k]!==undefined)tx[k]=structuredClone(ftx[k])});
+    const rt=pick(db.ref.reportTypes,'id','soc'),frt=pick(r.reportTypes,'id','soc');if(rt&&frt&&/27,25 % от фонда оплаты \(17,25/.test(rt.desc||''))['desc','verifyNote'].forEach(k=>rt[k]=frt[k]);
+    const og=db.ref.dictionaries&&pick(db.ref.dictionaries.organs.items,'code','ОРГ-02'),fog=r.dictionaries&&pick(r.dictionaries.organs.items,'code','ОРГ-02');if(og&&fog&&fog.contacts&&!og.contacts&&og._ua<='2026-10-18 09:54')['note','contacts','hours','site','contactsNote'].forEach(k=>{if(fog[k]!==undefined)og[k]=structuredClone(fog[k])})}
   ['dictGroups','statusNotes','templateNotes'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='dictGroups'?[]:{}))});
   {const cs=db.ref.dictionaries&&db.ref.dictionaries.cats;const o=cs&&cs.items.find(x=>x.name==='Другое'&&x.code==='КАТ-005');if(o&&cs.items.some(x=>x!==o&&x.code==='КАТ-005'))o.code='КАТ-007'}
   if(!db.kbProgress.u)db.kbProgress.u={};

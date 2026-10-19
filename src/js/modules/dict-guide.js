@@ -17,9 +17,18 @@ const tgKv=rows=>{rows=rows.filter(r=>r&&!dash(r[1]));return rows.length?`<div c
 const tgSec=(title,html,icn)=>html?`<section class="tg-sec"><h4>${ic(icn||'right','sm')}${title}</h4>${html}</section>`:'';
 const verifyNote=(on,txt)=>on?`<div class="note warn">${ic('alert')}<span><b>Сверить:</b> ${esc(txt||'данные уточняются')}. Проверьте на сайте ГНС или в органе перед применением.</span></div>`:'';
 
-/* ═════════════ Налог или платёж: блоки «Что это», «Кто платит и с чего», «Ставки», «Сроки», «Связи», «Освобождения», «Важно знать», «Статья НК» ═════════════ */
+/* ═════════════ Налог или платёж: блоки «Что это», «Кто платит и с чего», «Ставки», «Сроки», «Связи», «Освобождения», «Важно знать», «Как проверить», «Статья НК», «Источники» ═════════════ */
+// Тарифы по фондам: общий тариф, доли работодателя и работника, раскладка по фондам, предельная база с даты введения, пометка «Сверить»
+function tgTariffs(t){return `<div class="tg-tariffs">${t.map(r=>`<div class="tg-tariff"><div class="tg-tariff-h"><b>${esc(r.total||'')}</b><span class="grow">${esc(r.name||'')}${r.who?`<span class="faint"> · ${esc(r.who)}</span>`:''}</span>${r.since?`<span class="tag">с ${esc(r.since)}</span>`:''}${r.verify?`<span class="pill yellow sm">${ic('alert')}сверить</span>`:''}</div>
+    ${(r.parts||[]).map(pt=>`<div class="tg-part"><div class="tg-part-h"><span>${esc(pt.payer||'')}</span><b>${esc(pt.rate||'')}</b></div>${(pt.funds||[]).length?`<ul class="tg-funds">${pt.funds.map(f=>`<li><span>${esc(f.fund)}</span><b>${esc(f.rate)}</b></li>`).join('')}</ul>`:''}</div>`).join('')}
+    ${r.cap?`<div class="tg-cap">${ic('alert','sm')}<span>Предельная база: <b>${esc(r.cap.amount)}</b>${r.cap.since?` с ${esc(r.cap.since)}`:''}${r.cap.note?` (${esc(r.cap.note)})`:''}</span></div>`:''}
+    ${r.law||r.verifyNote?`<div class="faint tg-law">${esc([r.law,r.verifyNote?'Сверить: '+r.verifyNote:''].filter(Boolean).join(' · '))}</div>`:''}</div>`).join('')}</div>`}
+// Как проверить: способы со списком шагов
+const tgCheck=c=>c&&(c.ways||[]).length?`<ol class="tg-ways">${c.ways.map(w=>`<li><b>${esc(w.name)}</b>${(w.steps||[]).length?`<ul class="tg-ul">${w.steps.map(st=>`<li>${esc(st)}</li>`).join('')}</ul>`:''}</li>`).join('')}</ol>`:'';
+// Ссылки на источники: открываются в новой вкладке
+const tgLinks=a=>(a||[]).length?`<ul class="tg-ul tg-src">${a.map(l=>`<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title||l.url)}</a></li>`).join('')}</ul>`:'';
 function taxGuideHtml(x,o){o=o||{};const g=x.guide||{};
-  const rates=Array.isArray(g.rates)&&g.rates.length?`<div class="tg-rates">${g.rates.map(r=>`<div class="tg-rate"><b>${esc(r.rate)}</b><span>${esc(r.when)}</span></div>`).join('')}</div>`:x.rates?`<p class="pk-p">${esc(x.rates)}</p>`:'';
+  const rates=(g.tariffs||[]).length?tgTariffs(g.tariffs):Array.isArray(g.rates)&&g.rates.length?`<div class="tg-rates">${g.rates.map(r=>`<div class="tg-rate"><b>${esc(r.rate)}</b><span>${esc(r.when)}</span></div>`).join('')}</div>`:x.rates?`<p class="pk-p">${esc(x.rates)}</p>`:'';
   const gk=(g.gked||[]).length?g.gked.map(c=>`<span class="mono">${esc(c)}</span> ${esc(gkName(c)||'')}`).join('<br>'):'';
   const gkx=(g.gkedExclude||[]).length?g.gkedExclude.map(c=>`<span class="mono">${esc(c)}</span> ${esc(gkName(c)||'')}`).join('<br>'):'';
   const rts=(g.reportTypes||x.reportTypes||[]).map(id=>T[id]?esc(T[id].name)+(T[id].code?` <span class="faint mono">${esc(T[id].code)}</span>`:''):esc(id)).join('<br>');
@@ -28,11 +37,15 @@ function taxGuideHtml(x,o){o=o||{};const g=x.guide||{};
     ${tgSec('Что это',g.about?`<p class="pk-p">${esc(g.about)}</p>`:'','info')}
     ${tgSec('Кто платит и с чего',tgKv([['Кто платит',g.payers||x.payers],['С чего считается',g.base||x.base]]),'users')}
     ${tgSec('Ставки',rates,'coins')}
+    ${tgSec('Кто платит по полному тарифу',(g.exceptions27||[]).length?`<ul class="tg-ul">${g.exceptions27.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:'','list')}
+    ${tgSec('Кто администрирует',tgKv((g.admin||[]).map(a=>[esc(a.organ),a.what])),'landmark')}
     ${tgSec('Сроки',tgKv([['Налоговый период',g.period||x.period],['Срок сдачи отчёта',g.reportDue||x.reportDue],['Срок уплаты',g.payDue||x.payDue],['Что уплачивается',g.pays],['Форма отчёта',g.form||x.form],['Куда',g.organ||x.organ]]),'calendar')}
     ${tgSec('Связи',tgKv([['Платят на режимах',g.regimesPay],['Освобождают режимы',g.regimesFree],['Льготы и статусы',(g.benefits||[]).map(benName).join(', ')],['Основания',(g.bases||[]).map(baseName).join(', ')],['Виды деятельности (ГКЭД)',gk,1],['Кроме ГКЭД',gkx,1],['Виды отчётов',rts||'нет — отдельного отчёта не сдают',1]]),'link')}
     ${tgSec('Освобождения',dash(g.exemptions)?'':`<p class="pk-p">${esc(g.exemptions)}</p>`,'ban')}
     ${tgSec('Важно знать',(g.notes||[]).length?`<ul class="tg-ul">${g.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:'','alert')}
+    ${tgSec(esc((g.check||{}).title||'Как проверить'),tgCheck(g.check),'search')}
     ${tgSec('Статья НК',`<p class="pk-p">${esc(g.art||x.art||'—')}</p>${verifyNote(x.verify,g.verifyNote)}`,'book')}
+    ${tgSec('Источники',tgLinks(g.sources),'globe')}
   </div>`}
 function taxViewDlg(x){openModal({size:'mid',render:()=>({title:esc(x.name),sub:`${esc(x.code)} · ${esc(x.group||'')} · справочник платформы «Налоги и ставки»`,body:taxGuideHtml(x),foot:'<button class="btn cta" data-close>Закрыть</button>'})})}
 
@@ -48,7 +61,10 @@ function typeGuideHtml(t){const tx=taxesOfType(t.id);
 function valueGuideHtml(tab,x){
   if(tab==='Режимы')return tgKv([['Полное название',REGIME_FULL[x.name]||x.full||x.name],['Тип',x.type],['Освобождает от',x.frees],['Кто применяет',x.who],['Как переходят',x.how],['Совмещается с',x.combines],['Для бухгалтера',accTxt(x)],['Статья НК',x.art]]);
   if(tab==='Формы')return tgKv([['Код',x.code],['Полное название',x.full],['Считается',x.end==='ip'?'ИП (физическое лицо)':'организация'],['Что меняет в налогах',x.note]]);
-  if(tab==='Органы'){const rts=RT.filter(t=>t.organ===x.name&&t.active).map(t=>esc(t.short)).join(', ');return tgKv([['Код',x.code],['Что это и что туда сдают',x.note],['Виды отчётов',rts||'—',1]])}
+  if(tab==='Органы'){const rts=RT.filter(t=>t.organ===x.name&&t.active).map(t=>esc(t.short)).join(', ');
+    const kv=tgKv([['Код',x.code],['Что это и что туда сдают',x.note],['Виды отчётов',rts||'—',1]]);
+    const ct=tgKv([...(x.contacts||[]).map(ph=>[esc(ph.label),`<a href="tel:${esc(String(ph.value).replace(/[^\d+]/g,''))}">${esc(ph.value)}</a>`,1]),['График работы',x.hours],['Сайт',x.site?`<a href="${esc(x.site)}" target="_blank" rel="noopener">${esc(x.site.replace(/^https?:\/\//,'').replace(/\/$/,''))}</a>`:'',1]]);
+    return ct?`<div class="tg">${tgSec('Что это',kv,'info')}${tgSec('Контакты',ct+(x.contactsNote?verifyNote(1,x.contactsNote):''),'chat')}</div>`:kv}
   if(tab==='Льготы и статусы')return typeof benDescHtml==='function'?benDescHtml(x,{},''):'';
   if(tab==='Основания для отчётов')return tgKv([['Код',x.code],['Описание',x.desc],['Виды отчётов',RT.filter(t=>(t.basis||[]).includes(x.code)).map(t=>t.short).join(', ')]]);
   return tgKv([['Код',x.code],['Пояснение',x.note]])}
@@ -68,7 +84,7 @@ function orgDictDefs(){const y=+TODAY.slice(0,4);const D=k=>DICT[k]?DICT[k].item
     'ГКЭД':{n:GK.filter(g=>g.level==='subclass').length,rows:()=>GK.filter(g=>g.level==='subclass'&&g.active!==false),cols:[{key:'code',label:'Код',type:'text',w:100,val:x=>x.code,cls:'mono'},{key:'name',label:'Вид деятельности',type:'text',w:520,val:x=>x.name}],open:null,title:'name'},
     'Формы':{n:D('forms').length,rows:()=>D('forms'),cols:[{key:'name',label:'Форма',type:'text',w:200,val:x=>x.name,html:x=>`<span class="strong">${esc(x.name)}</span>`},{key:'full',label:'Полное название',type:'text',w:260,val:x=>x.full||''},{key:'end',label:'Считается',type:'enum',w:120,val:x=>x.end==='ip'?'ИП':'Организация'},{key:'note',label:'Что меняет в налогах',type:'text',w:360,val:x=>x.note||''}]},
     'Коды стран':{n:PHONES.length,rows:()=>PHONES,cols:[{key:'name',label:'Страна',type:'text',w:220,val:p=>`${p.flag} ${p.name}`},{key:'code',label:'Код',type:'text',w:90,val:p=>'+'+p.code},{key:'mask',label:'Маска номера',type:'text',w:160,val:p=>p.mask}],open:null,title:'name'},
-    'Органы':{n:D('organs').length,rows:()=>D('organs'),cols:[{key:'name',label:'Орган',type:'text',w:200,val:x=>x.name,html:x=>`<span class="strong">${esc(x.name)}</span>`},{key:'note',label:'Что это и что туда сдают',type:'text',w:460,val:x=>x.note||''}]},
+    'Органы':{n:D('organs').length,rows:()=>D('organs'),cols:[{key:'name',label:'Орган',type:'text',w:200,val:x=>x.name,html:x=>`<span class="strong">${esc(x.name)}</span>`},{key:'note',label:'Что это и что туда сдают',type:'text',w:460,val:x=>x.note||''},{key:'contacts',label:'Контакты',type:'text',w:220,val:x=>(x.contacts||[]).map(c=>`${c.label}: ${c.value}`).join('; ')}]},
     'УГНС':{n:D('ugns').length,rows:()=>D('ugns'),cols:[{key:'code',label:'Код',type:'text',w:90,val:x=>x.code||'—',cls:'mono'},{key:'name',label:'Налоговый орган',type:'text',w:380,val:x=>x.name},{key:'city',label:'Город или район',type:'enum',w:200,val:x=>x.city||''}],open:null,title:'name'},
     'Банки':{n:D('banks').length,rows:()=>D('banks'),cols:[{key:'name',label:'Банк',type:'text',w:280,val:x=>x.name,html:x=>`<span class="strong">${esc(x.name)}</span>`},{key:'code',label:'Код',type:'text',w:100,val:x=>x.code||'',cls:'mono'}],open:null},
     'Календарь':{n:holidayRows(y).length,rows:()=>holidayRows(y),cols:[{key:'d',label:'Дата',type:'date',w:120,val:h=>h.d},{key:'name',label:'Название',type:'text',w:320,val:h=>h.name},{key:'kind',label:'Тип',type:'enum',w:170,val:h=>h.kind}],open:null,title:'name',sort:{key:'d',dir:1}},
