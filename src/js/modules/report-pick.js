@@ -62,7 +62,7 @@ function pkDescHtml(t,cx,o){const en=['enq','enm'].includes(t.id)?gkEnRate(cx,t)
     ${t.desc?`<p class="pk-p">${esc(t.desc)}</p>`:''}${t.choice?`<div class="note">${ic('info')}<span>${esc(t.choice)}</span></div>`:''}${t.extra?`<div class="hint">${esc(t.extra)}</div>`:''}
     ${t.verify?`<div class="note warn">${ic('alert')}<span>Данные уточняются, проверьте на сайте ГНС${t.verifyNote?': '+esc(t.verifyNote):''}</span></div>`:''}
     <div class="kv pk-kv">${kv.map(([k,v])=>`<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}</div>
-    ${o&&o.btns||''}</div>`}
+    ${o&&o.btns||''}${taxesOfType(t.id).map(x=>`<details class="tg-tax"><summary>${ic('coins','sm')}<span class="grow">Подробнее о налоге: <b>${esc(x.name)}</b></span>${ic('down','sm')}</summary>${taxGuideHtml(x)}</details>`).join('')}</div>`}
 
 /* ═════════════ Окно «Подбор отчётов» ═════════════
    o: {cx, sel (Set), before (Set назначенных), edit (можно отмечать), single (добавить один отчёт), onApply({sel, bases, forced})} */

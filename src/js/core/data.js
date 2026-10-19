@@ -17,6 +17,7 @@ function dbRead(name,id){
 const DBSRC={demo:dbRead(DB_FILES.demo,'db-demo'),empty:dbRead(DB_FILES.empty,'db-tem'),ref:dbRead(DB_FILES.ref,'db-ref'),gked:dbRead(DB_FILES.gked,'db-gked')};
 // Поле «Виды деятельности (ГКЭД)» появилось в v37: у справочников, сохранённых в браузере раньше, его берём из refDB.json
 const DB_GK_REF=[['regimes',r=>r.dictionaries.regimes.items,x=>x.code||x.name],['benefits',r=>r.dictionaries.benefits.items,x=>x.code||x.name],['enRates',r=>r.enRates,x=>x.code],['reportTypes',r=>r.reportTypes,x=>x.id]];
+const DB_TXT_REF=[[r=>r.taxes,x=>x.code,['guide']],[r=>r.enRates,x=>x.code,['explain']],[r=>r.dictionaries.forms.items,x=>x.code||x.name,['note']],[r=>r.dictionaries.organs.items,x=>x.code||x.name,['note']],[r=>r.dictionaries.regimes.items,x=>x.code||x.name,['acc']]];
 let DATA_MODE=store.get('data','demo'),DBMISS=[];
 // Недостающие разделы (старый или чужой файл) берутся из пустого шаблона и refDB.json — прототип не ломается, а показывает, чего не хватило
 function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.meta||{};
@@ -26,6 +27,10 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   // Справочник ГКЭД — отдельный файл gkedDB.json; правки администратора платформы хранятся в TemDB (ref.gked)
   if(db.ref.gked==null)db.ref.gked=structuredClone(DBSRC.gked.db.items||[]);
   DB_GK_REF.forEach(([k,get,key])=>{let a,b;try{a=get(db.ref);b=get(r)}catch(e){return}if(!a||!b)return;const m=Object.fromEntries(b.map(x=>[key(x),x]));a.forEach(x=>{if(!('gked' in x)&&m[key(x)]&&m[key(x)].gked)x.gked=structuredClone(m[key(x)].gked)})});
+  // Пояснения справочников (v43) — содержимое платформы: у справочников, сохранённых в браузере раньше, берутся из refDB.json
+  DB_TXT_REF.forEach(([get,key,fs])=>{let a,b;try{a=get(db.ref);b=get(r)}catch(e){return}if(!a||!b)return;const m=Object.fromEntries(b.map(x=>[key(x),x]));a.forEach(x=>{const f=m[key(x)];if(f)fs.forEach(k=>{if(!(k in x)&&f[k]!=null)x[k]=structuredClone(f[k])})})});
+  ['dictGroups','statusNotes','templateNotes'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='dictGroups'?[]:{}))});
+  {const cs=db.ref.dictionaries&&db.ref.dictionaries.cats;const o=cs&&cs.items.find(x=>x.name==='Другое'&&x.code==='КАТ-005');if(o&&cs.items.some(x=>x!==o&&x.code==='КАТ-005'))o.code='КАТ-007'}
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}
 function dbFresh(mode){const db=structuredClone(mode==='empty'?DBSRC.empty.db:DBSRC.demo.db);delete db.ref;
