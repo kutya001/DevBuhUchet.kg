@@ -21,7 +21,7 @@ let dbT=null,dbWarned=false;
 function dbSave(){clearTimeout(dbT);dbT=null;try{localStorage.setItem(DB_KEY,JSON.stringify(dbSnap()))}catch(e){if(!dbWarned&&e&&e.name==='QuotaExceededError'){dbWarned=true;toast('Не удалось сохранить рабочие данные: в браузере не хватает места. Выгрузите TemDB.json','alert')}}}
 const dbSoon=()=>{clearTimeout(dbT);dbT=setTimeout(dbSave,700)};
 // После замены данных — как после входа: закрыть окна, войти владельцем, открыть «Главную»
-function dbAfter(msg){MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
+function dbAfter(msg){Object.keys(GS).forEach(k=>delete GS[k]);MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
   CK.active=null;CK.bar=false;CK.shown={};KB.memo={};Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
   if(location.hash==='#home.today')route();else location.hash='#home.today';
   ckBase();renderSide();dbSave();toast(msg,'refresh');whatsNew('login')}

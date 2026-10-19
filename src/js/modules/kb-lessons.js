@@ -9,7 +9,7 @@ const G=(mod,tab,hl,mhl,after)=>{const f=()=>{if(mod)go(mod,tab);if(after)setTim
 const hasLog=(ent,id,re)=>HIST.some(h=>h.ent===ent&&(id==null||h.id===id)&&(!re||re.test(h.what||'')));
 const CKG=[
  {id:'org',items:[
-  {id:'profile',star:1,perm:'org',done:()=>!!(ORG.name&&ORG.inn&&(ORG.head||hasLog('org','main'))),go:G('org','main','#og')},
+  {id:'profile',star:1,perm:'org',done:()=>!!(ORG.name&&ORG.inn&&(ORG.head||hasLog('org','main'))),go:G('org','main','#mbody .box')},
   {id:'accs',perm:'org',done:()=>ORG.accounts.length>0,go:G('org','main','#og-addacc',null,()=>{const b=$('#og-addacc');if(b)b.click()})},
   {id:'policy',star:1,perm:'org',hit:'policy',done:()=>hasLog('org','policy'),go:G('org','policy','#mbody .box')},
   {id:'remind',perm:'org',hit:'remind',go:G('org','policy','#rd-add')},
@@ -33,7 +33,7 @@ const CKG=[
   {id:'resp',star:1,perm:'assign',done:()=>{const a=CPS.filter(c=>!c.archived);return a.length>0&&a.every(c=>c.resp)},go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'tariff',perm:'fee',feat:()=>feat('fee'),done:()=>CPS.some(c=>c.tariffs&&c.tariffs.length),go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'flags',learn:1,hit:'cp.main',go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
-  {id:'oneoff',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','oneoff','#add-btn','#fab',()=>addCpDlg('oneoff'))},
+  {id:'oneoff',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','all','#add-btn','#fab',()=>addCpDlg('oneoff'))},
   {id:'pause',learn:1,at:['cps.all'],go:G('cps','all','#mbody')},
   {id:'archive',learn:1,at:['cps.all'],go:G('cps','all','#mbody')},
   {id:'balance',learn:1,staff:1,hit:'cp.hist',go:G('cps','mine','#mbody .gscroll, #mbody .gcards')}]},
@@ -92,7 +92,7 @@ const CKA=[{id:'adm',items:[
   {id:'a-types',star:1,at:['pdicts.types'],go:G('pdicts','types','#mbody')},
   {id:'a-xls',done:()=>PD_LOADS.some(l=>l.by===S.me&&l.at&&l.at.startsWith(TODAY)),hit:'pdload',go:G('pdicts','types','#mbody')},
   {id:'a-cal',at:['pdicts.calendar'],go:G('pdicts','calendar','#mbody')},
-  {id:'a-tpl',at:['pdicts.templates'],go:G('pdicts','templates','#mbody')},
+  {id:'a-tpl',at:['pdicts.templates','pdicts.roletpl'],go:G('pdicts','templates','#mbody')},
   {id:'a-l10n',at:['l10n'],go:G('l10n',null,'#mbody')},
   {id:'a-org',star:1,done:()=>ORGS.some(o=>o._cb===S.me&&String(o._ca||'').startsWith(TODAY)),go:G('orgs',null,'#add-btn','#fab',()=>addOrgDlg())}]}];
 const KB_ARTS=DB.ref.kbArticles;
@@ -107,10 +107,10 @@ const KB_EV={
  'type.cfg':['изменены настройки вида отчёта',h=>h.ent==='type'||(h.ent==='org'&&/^Настройки «/.test(h.what))],
  'role.save':['сохранена роль',h=>h.ent==='role'],
  'emp.new':['создан сотрудник',h=>h.ent==='emp'&&h.what==='Сотрудник создан'],
- 'cp.new':['создан контрагент',h=>h.ent==='cp'&&/^(Контрагент создан|Создан разовый|Создан загрузкой)/.test(h.what)],
+ 'cp.new':['создан контрагент',h=>h.ent==='cp'&&/^(Контрагент создан|Создан разовый|Создан загрузкой|Создан из свидетельства)/.test(h.what)],
  'cp.import':['выполнена загрузка контрагентов из Excel',h=>h.ent==='import'],
- 'cp.resp':['назначен ответственный',h=>h.ent==='cp'&&/^(Ответственный:|Контрагент создан|Создан загрузкой)/.test(h.what)],
- 'cp.tariff':['записан тариф',h=>h.ent==='cp'&&(/^Новая ставка/.test(h.what)||(/^Контрагент создан/.test(h.what)&&((CPM[h.id]||{}).tariffs||[]).length>0))],
+ 'cp.resp':['назначен ответственный',h=>h.ent==='cp'&&/^(Ответственный:|Контрагент создан|Создан загрузкой|Создан из свидетельства)/.test(h.what)],
+ 'cp.tariff':['записан тариф',h=>h.ent==='cp'&&(/^Новая ставка/.test(h.what)||(/^(Контрагент создан|Создан загрузкой|Создан из свидетельства)/.test(h.what)&&((CPM[h.id]||{}).tariffs||[]).length>0))],
  'cp.oneoff':['создан разовый контрагент',h=>h.ent==='cp'&&/^Создан разовый/.test(h.what)],
  'r.assign':['назначен отчёт',h=>h.ent==='cp'&&/^Назначен отчёт/.test(h.what)],
  'r.sub':['отчёт отмечен «Сдан»',h=>h.ent==='r'&&/→ Сдан|отмечен сданн/.test(h.what)],
