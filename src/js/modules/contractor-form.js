@@ -27,10 +27,10 @@ const sizeSeg=(id,v)=>`<div class="seg" role="group" aria-label="Размер б
 const basesChips=(id,arr)=>`<div class="chipsel" id="${id}">${(DICT.bases?DICT.bases.items:[]).filter(b=>b.active||arr.includes(b.code)).map(b=>`<button type="button" data-base="${b.code}" class="${arr.includes(b.code)?'on':''}" title="${esc(b.desc||'')}">${arr.includes(b.code)?ic('check','sm'):''}${esc(b.name)}</button>`).join('')}</div>`;
 // pre — создание «Из свидетельства и выписки»: {res, docs, files} — форма заполнена из документов; {manual, files} — пустая форма, файлы прикрепятся
 function addCpDlg(kind,pre){
-  const st={regime:'Единый налог',regime2:'',ben:[],benD:{},bases:[],size:'small',form:'ОсОО',kind:typeof kind==='string'?kind:'regular',per:'M',sel:new Set(),picked:false,forced:{},rates:{},rateMan:{},gked:'',gked2:[],reg:{},regOpen:!!pre};
+  const st={regime:'Единый налог',regime2:'',ben:[],benD:{},bases:[],size:'small',form:'ОсОО',kind:typeof kind==='string'?kind:'regular',per:'M',sel:new Set(),picked:false,forced:{},rates:{},rateMan:{},gked:'',gked2:[],reg:{},regOpen:!!pre,...sfInit(null)};
   if(pre&&pre.res)rdPrefill(st,pre);
   openModal({form:true,size:'mid',state:{step:1},render:m=>{const reg=st.kind==='regular';
-    const fake={regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2,assign:[...st.sel].filter(id=>['enq','enm'].includes(id)).map(id=>({t:id,rate:st.rates[id]||defRate(T[id])}))};
+    const fake={regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2,sf:st.sf,kind:st.kind,assign:[...st.sel].filter(id=>['enq','enm'].includes(id)).map(id=>({t:id,rate:st.rates[id]||defRate(T[id])}))};
     if(reg&&!st.picked)st.sel=new Set(pkAuto(Object.assign({},fake,{assign:[]})));
     // Ставка ЕН подставляется по ГКЭД и статусам, пока пользователь не выбрал её сам
     ['enq','enm'].forEach(id=>{if(st.sel.has(id)&&!st.rateMan[id]){const r=gkEnRate(fake,T[id]);if(r)st.rates[id]=r}});
@@ -52,6 +52,7 @@ function addCpDlg(kind,pre){
     ${fld('Размер бизнеса',sizeSeg('nc-size',st.size),{id:'nc-size',full:true,hint:esc((BIZSZ.find(b=>b.code===st.size)||{}).rule||'')+': от него зависит, ежемесячно или ежеквартально сдаются единый налог и налог с продаж'})}
     ${fld('Льготы и особые статусы',`<div class="cf-ben">${benLine(fake)}</div><button type="button" class="btn sm" id="nc-benb" style="align-self:flex-start">${ic('star','sm')}Выбрать льготы и статусы</button>`,{full:true,id:'nc-ben',hint:'Необязательно. В окне — описание каждой льготы, условия и какие отчёты она добавляет или делает ненужными'})}
     ${reg?fld('Основания для сквозных отчётов',basesChips('nc-bases',st.bases),{full:true,id:'nc-bases',hint:'Что есть у контрагента: по каждому основанию подбираются свои отчёты (например, сотрудники — Соцфонд)'}):''}
+    ${reg?sfFields('nc',fake,st):''}
     <div class="fld full">${gkNote(fake,reg?st.sel:new Set())}</div></div>`;
     const s3=`<div class="form">
     ${reg?`<div class="fld full" data-f="nc-types"><label class="req">Сдаёт отчёты</label>${cfTypes('nc',fake,st.sel,!st.picked&&st.sel.size>0)}<div class="err" hidden></div></div>
@@ -101,6 +102,7 @@ function addCpDlg(kind,pre){
       if($('#nc-per',el))$('#nc-per',el).onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;snap();st.per=b.dataset.p;m.draw()};
       if($('#nc-reg2',el))$('#nc-reg2',el).onchange=e=>{snap();st.regime2=e.target.value;m.draw()};
       $('#nc-size',el).onclick=e=>{const b=e.target.closest('[data-sz]');if(!b)return;snap();st.size=b.dataset.sz;m.draw()};
+      sfMount(el,'nc',st,snap,()=>m.draw());
       $('#nc-benb',el).onclick=()=>{snap();benPickDlg({cx:fake,ben:st.ben,dates:st.benD,title:val(el,'nc-name')||'Новый контрагент',onApply:({ben,dates})=>{st.ben=ben;st.benD=dates;m.draw()}})};
       if($('#nc-bases',el))$('#nc-bases',el).onclick=e=>{const b=e.target.closest('[data-base]');if(!b)return;snap();const k=b.dataset.base;st.bases=st.bases.includes(k)?st.bases.filter(x=>x!==k):[...st.bases,k];m.draw()};
       const openPick=single=>{snap();pickDlg({cx:fake,sel:st.sel,single,title:val(el,'nc-name')||'Новый контрагент',onApply:({sel,bases,forced})=>{st.sel=new Set(sel);st.bases=[...bases];Object.assign(st.forced,forced);st.picked=true;m.draw()}})};
@@ -117,7 +119,9 @@ function addCpDlg(kind,pre){
         const ok=validate(0);
         if(dup&&dup.archived&&can('createCp')){const e=el.querySelector('[data-f="nc-inn"] .err');if(e){e.insertAdjacentHTML('beforeend',' <button type="button" class="btn xs" id="nc-unarch">Вернуть из архива</button>');$('#nc-unarch',el).onclick=()=>{m.close();unarchiveCp(dup);openCp(dup)}}}
         if(!ok){const f=el.querySelector('.fld.bad');if(f){const s=f.closest('.cf-sec');if(mob&&s)cfShow(el,m,+s.dataset.sec);f.scrollIntoView({block:'center',behavior:'smooth'})}return}
+        if(!sfValid(el,'nc',fake,st)){const f=el.querySelector('.fld.bad');if(f){const s=f.closest('.cf-sec');if(mob&&s)cfShow(el,m,+s.dataset.sec);f.scrollIntoView({block:'center',behavior:'smooth'})}return}
         if(!gkBenOk(fake,st,()=>$('#nc-ok',el).click()))return;
+        if(!sfConfirm(fake,st,()=>$('#nc-ok',el).click()))return;
         if(pre&&pre.res&&pre.res.stopped&&!st.stopOk){confirmDlg({title:'Юрлицо прекращено',text:`По данным документа юрлицо прекращено (ликвидировано)${pre.res.status?`, статус «${esc(pre.res.status)}»`:''}. Всё равно создать контрагента?`,ok:'Создать',danger:true,run:()=>{st.stopOk=true;$('#nc-ok',el).click()}});return}
         m.saving=true;const start=val(el,'nc-start')||TODAY;
         const c={id:CPID++,name,inn,phone:ph.ph,form:st.form,regime:st.regime,regime2:st.regime2,ben:[...st.ben],benDates:JSON.parse(JSON.stringify(st.benD)),bases:[...st.bases],size:st.size,gked:st.gked,gked2:[...st.gked2],resp,head:val(el,'nc-head'),contact:val(el,'nc-contact'),start,contract:(()=>{const cno=val(el,'nc-cno').trim(),cd=val(el,'nc-cdate');return cno||cd?`${cno?'№ '+cno:'Без номера'}${cd?' от '+fmtD(cd):''}`:'—'})(),note:val(el,'nc-note'),paysTo:'emp',archived:false,assign:[],tariffs:[],feeDay:10,feePaid:{},first:$('#nc-first',el)?val(el,'nc-first'):'full',files:[],
@@ -127,7 +131,7 @@ function addCpDlg(kind,pre){
         if(!st.regime)setTimeout(()=>toast('Режим налогообложения не указан: проверьте, что назначены правильные отчёты','alert',true),1600);
         const nR=REPORTS.length,nH=HIST.length;
         try{if(!c.reg)delete c.reg;if(pre&&(pre.files||[]).length){c.files.push(...pre.files);c.regFiles=[...pre.files]}
-          born(c);CPS.push(c);CPM[c.id]=c;log('cp',c.id,pre&&pre.res?'Создан из свидетельства и выписки (бета)':reg?'Контрагент создан':'Создан разовый контрагент',c.id);if(reg){assignTypes(c,[...st.sel],start,st.rates);Object.keys(st.forced).filter(id=>!st.sel.has(id)).forEach(id=>log('cp',c.id,`Не назначен отчёт ${T[id].name}, хотя он ${st.forced[id]}`,c.id))}}
+          born(c);CPS.push(c);CPM[c.id]=c;log('cp',c.id,pre&&pre.res?'Создан из свидетельства и выписки (бета)':reg?'Контрагент создан':'Создан разовый контрагент',c.id);if(reg)sfApply(c,st);if(reg){assignTypes(c,[...st.sel],start,st.rates);Object.keys(st.forced).filter(id=>!st.sel.has(id)).forEach(id=>log('cp',c.id,`Не назначен отчёт ${T[id].name}, хотя он ${st.forced[id]}`,c.id))}}
         catch(err){m.saving=false;const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];REPORTS.length=nR;HIST.length=nH;console.error(err);toast('Не удалось сохранить контрагента, ничего не создано. Попробуйте ещё раз','alert',true);return}
         m.close();refreshAll();toast(reg?`Контрагент добавлен, отчётов создано: ${REPORTS.filter(r=>r.cp===c.id).length}`:'Разовый контрагент добавлен','building');openCp(c)}}};
   }});
@@ -137,7 +141,7 @@ function addCpDlg(kind,pre){
 function editCpDlg(c){
   const cm=String(c.contract||'').match(/№\s*(\S+)(?:\s+от\s+(\d\d)\.(\d\d)\.(\d{4}))?/);
   const before=new Set(c.assign.filter(a=>!a.to).map(a=>a.t));const reg=c.kind!=='oneoff';
-  const st={form:c.form,regime:c.regime||'',regime2:c.regime2||'',ben:[...(c.ben||[])],benD:JSON.parse(JSON.stringify(c.benDates||{})),bases:[...(c.bases||[])],size:c.size||'small',sel:new Set(before),forced:{},gked:c.gked||'',gked2:[...(c.gked2||[])],d:{name:c.name,inn:c.inn,ph:c.phone,head:c.head||'',contact:c.contact||'',note:c.note||'',cno:cm?cm[1]:'',cdate:cm&&cm[2]?`${cm[4]}-${cm[3]}-${cm[2]}`:'',feeDay:c.feeDay},reg:Object.assign({},c.reg||{})};
+  const st={form:c.form,regime:c.regime||'',regime2:c.regime2||'',ben:[...(c.ben||[])],benD:JSON.parse(JSON.stringify(c.benDates||{})),bases:[...(c.bases||[])],size:c.size||'small',sel:new Set(before),forced:{},gked:c.gked||'',gked2:[...(c.gked2||[])],...sfInit(c),d:{name:c.name,inn:c.inn,ph:c.phone,head:c.head||'',contact:c.contact||'',note:c.note||'',cno:cm?cm[1]:'',cdate:cm&&cm[2]?`${cm[4]}-${cm[3]}-${cm[2]}`:'',feeDay:c.feeDay},reg:Object.assign({},c.reg||{})};
   const feeOn=feat('fee')&&can('fee')&&c.kind!=='oneoff';
   openModal({form:true,size:'mid',render:m=>{const d=st.d;const bad=c.assign.filter(a=>!a.to&&st.sel.has(a.t)&&compatible(T[a.t],{regime:st.regime,regime2:st.regime2,form:st.form,assign:c.assign}));
     const fake=Object.assign({},c,{regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2});
@@ -152,6 +156,7 @@ function editCpDlg(c){
     ${fld('Размер бизнеса',sizeSeg('ec-size',st.size),{id:'ec-size',full:true,hint:esc((BIZSZ.find(b=>b.code===st.size)||{}).rule||'')})}
     ${fld('Льготы и особые статусы',`<div class="cf-ben">${benLine(fake)}</div><button type="button" class="btn sm" id="ec-benb" style="align-self:flex-start">${ic('star','sm')}Выбрать льготы и статусы</button>`,{full:true,id:'ec-ben'})}
     ${reg?fld('Основания для сквозных отчётов',basesChips('ec-bases',st.bases),{full:true,id:'ec-bases'}):''}
+    ${reg?sfFields('ec',fake,st,can('createCp')):''}
     <div class="full" style="grid-column:1/-1">${gkNote(fake)}</div>
     ${reg?`<div class="note full" style="grid-column:1/-1">${ic('list')}<span>Отчёты здесь не выбираются: их подбор с описаниями — на вкладке «Подбор отчётов» карточки контрагента. После смены режима, статусов, оснований или видов деятельности проверьте отчёты там.</span></div>`:''}
     ${bad.length?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Назначенные отчёты не меняются сами. Не подходят к новому режиму или форме: ${bad.map(a=>esc(T[a.t].short)).join(', ')}. После сохранения уберите их на вкладке «Подбор отчётов».</span></div>`:''}
@@ -168,6 +173,7 @@ function editCpDlg(c){
       $('#ec-reg',el).onchange=e=>{snap();st.regime=e.target.value;if(st.regime2===st.regime||!st.regime)st.regime2='';m.draw()};if($('#ec-reg2',el))$('#ec-reg2',el).onchange=e=>{snap();st.regime2=e.target.value;m.draw()};
       $('#ec-form',el).onchange=e=>{snap();st.form=e.target.value;m.draw()};
       $('#ec-size',el).onclick=e=>{const b=e.target.closest('[data-sz]');if(!b)return;snap();st.size=b.dataset.sz;m.draw()};
+      sfMount(el,'ec',st,snap,()=>m.draw());
       $('#ec-benb',el).onclick=()=>{snap();benPickDlg({cx:fake,ben:st.ben,dates:st.benD,edit:can('createCp'),title:c.name,onApply:({ben,dates})=>{st.ben=ben;st.benD=dates;m.draw()}})};
       if($('#ec-bases',el))$('#ec-bases',el).onclick=e=>{const b=e.target.closest('[data-base]');if(!b)return;snap();const k=b.dataset.base;st.bases=st.bases.includes(k)?st.bases.filter(x=>x!==k):[...st.bases,k];m.draw()};
       $('#ec-inn',el).addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,14)});
@@ -178,13 +184,16 @@ function editCpDlg(c){
           $('#ec-fday',el)?setErr(el,'ec-fday',fd>=1&&fd<=28?'':'Число от 1 до 28'):true,
           setErr(el,'ec-gk',st.gked?'':'Укажите основной вид деятельности (ГКЭД)'),setErr(el,'ec-reg',gkCheck(Object.assign({},c,st)).block[0]||''),regCheck(el,'ec')].every(Boolean);
         if(!ok){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
+        if(!sfValid(el,'ec',fake,st)){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
         if(!gkBenOk(Object.assign({},c,st),st,()=>$('#ec-ok',el).click()))return;
+        if(!sfConfirm(fake,st,()=>$('#ec-ok',el).click()))return;
         const cno=val(el,'ec-cno'),cd=val(el,'ec-cdate');
         const nv={name,inn,phone:ph.ph,form:st.form,regime:st.regime,regime2:st.regime2,ben:[...st.ben],benDates:Object.keys(st.benD).length?JSON.parse(JSON.stringify(st.benD)):undefined,bases:[...st.bases],size:st.size,gked:st.gked,gked2:[...st.gked2],head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),contract:cno||cd?`${cno?'№ '+cno:'Без номера'}${cd?' от '+fmtD(cd):''}`:'—',feeDay:fd,reg:(r=>regEmpty(r)?undefined:r)(regRead(el,'ec'))};
         const L={name:'название',inn:'ИНН',phone:'телефон',form:'форма собственности',regime:'режим налогообложения',regime2:'дополнительный режим',ben:'льготы и особые статусы',benDates:'сроки льгот',bases:'основания для отчётов',size:'размер бизнеса',gked:'основной ГКЭД',gked2:'дополнительные ГКЭД',head:'руководитель',contact:'контактное лицо',note:'примечание',contract:'договор',feeDay:'день оплаты обслуживания',reg:'регистрационные данные'};
         const ch=Object.keys(nv).filter(k=>JSON.stringify(nv[k]??(k==='bases'?[]:k==='size'?'small':''))!==JSON.stringify(c[k]??(k==='bases'?[]:k==='size'?'small':'')));
-        if(!ch.length){m.close();return toast('Изменений нет')}
-        const was=bad.length;Object.assign(c,nv);if(!c.benDates)delete c.benDates;touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
+        const sfCh=JSON.stringify(st.sf||{})!==JSON.stringify(c.sf||{})||(st.sfTouch&&(st.sfT||'')!==(c.sfT||''))||sfManBad(fake,st);
+        if(!ch.length&&!sfCh){m.close();return toast('Изменений нет')}
+        const was=bad.length;Object.assign(c,nv);if(!c.benDates)delete c.benDates;if(reg)sfApply(c,st);touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
         toast(miss.length?`Контрагент сохранён. Обязательны, но не назначены: ${miss.map(id=>T[id].short).join(', ')} — добавьте на вкладке «Подбор отчётов»`:'Контрагент сохранён',miss.length?'alert':undefined,!!miss.length);if(ch.includes('gked')||ch.includes('gked2')){const k=gkCheck(c);const n=k.regime.length+k.ben.length+k.types.length;if(n)setTimeout(()=>toast(`Виды деятельности изменились: проверьте режим, льготы и отчёты в карточке (замечаний: ${n})`,'alert',true),1400)}
         if(was&&(ch.includes('regime')||ch.includes('regime2')||ch.includes('form')))setTimeout(()=>toast('Проверьте назначенные отчёты: часть не подходит к новому режиму или форме','alert',true),1400)}}}}});
 }

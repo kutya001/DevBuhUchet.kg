@@ -692,7 +692,9 @@
    ],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "020",
    "oneSum": false,
    "needInFile": false,
@@ -707,7 +709,7 @@
    "_ub": "e1",
    "_ua": "2025-11-28 17:12",
    "feeDebt": 0,
-   "gked": "46.90.0",
+   "gked": "46.34.0",
    "gked2": [
     "47.19.0"
    ],
@@ -715,7 +717,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 2,
@@ -830,7 +839,9 @@
    ],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "002",
    "oneSum": false,
    "needInFile": false,
@@ -853,7 +864,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 3,
@@ -1033,7 +1051,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "002",
    "oneSum": true,
    "needInFile": true,
@@ -1056,7 +1076,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 5,
@@ -1136,7 +1163,9 @@
    ],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "002",
    "oneSum": false,
    "needInFile": false,
@@ -1159,7 +1188,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 6,
@@ -1236,7 +1272,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "005",
    "oneSum": false,
    "needInFile": false,
@@ -1258,7 +1296,14 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 7,
@@ -1357,7 +1402,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "005",
    "oneSum": false,
    "needInFile": false,
@@ -1380,7 +1427,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 8,
@@ -1528,7 +1582,8 @@
    "kind": "regular",
    "regime2": "",
    "ben": [
-    "Швейное и текстильное производство"
+    "Швейное и текстильное производство",
+    "Тариф Соцфонда 12,25 % (СПиНО)"
    ],
    "ugns": "005",
    "oneSum": false,
@@ -1549,7 +1604,14 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 10,
@@ -1616,7 +1678,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "003",
    "oneSum": false,
    "needInFile": false,
@@ -1640,7 +1704,16 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": false,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino",
+   "sfMan": true,
+   "sfWhy": "Зарплата переводится на карты с ноября, в октябре часть выплачена наличными"
   },
   {
    "id": 11,
@@ -1743,7 +1816,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "pvtpki"
   },
   {
    "id": 12,
@@ -1897,7 +1977,8 @@
    "kind": "regular",
    "regime2": "",
    "ben": [
-    "Сельскохозяйственный производитель"
+    "Сельскохозяйственный производитель",
+    "Тариф Соцфонда 12,25 % (СПиНО)"
    ],
    "ugns": "005",
    "oneSum": false,
@@ -1924,7 +2005,14 @@
     "land",
     "foreignPayments",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 13,
@@ -2146,7 +2234,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "002",
    "oneSum": false,
    "needInFile": false,
@@ -2169,7 +2259,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": false,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 15,
@@ -2274,7 +2371,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "020",
    "oneSum": false,
    "needInFile": false,
@@ -2297,7 +2396,14 @@
     "property",
     "land",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 16,
@@ -2374,7 +2480,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "010",
    "oneSum": false,
    "needInFile": false,
@@ -2395,7 +2503,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 17,
@@ -2500,7 +2615,12 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "confirmed": true,
+    "gov": false
+   }
   },
   {
    "id": 18,
@@ -2673,7 +2793,14 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "pvtpki"
   },
   {
    "id": 20,
@@ -2771,7 +2898,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "005",
    "oneSum": false,
    "needInFile": false,
@@ -2794,7 +2923,14 @@
     "property",
     "land",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 21,
@@ -2922,7 +3058,14 @@
     "property",
     "land",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": false,
+    "gov": false
+   },
+   "sfT": "general"
   },
   {
    "id": 22,
@@ -3005,7 +3148,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "005",
    "oneSum": false,
    "needInFile": false,
@@ -3026,7 +3171,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 23,
@@ -3142,7 +3294,7 @@
    "_ub": "e2",
    "_ua": "2026-09-01 11:39",
    "feeDebt": 0,
-   "gked": "33.14.1",
+   "gked": "35.13.0",
    "gked2": [
     "63.11.0"
    ],
@@ -3150,7 +3302,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "general"
   },
   {
    "id": 24,
@@ -3217,7 +3376,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "010",
    "oneSum": false,
    "needInFile": false,
@@ -3239,7 +3400,14 @@
    "size": "medium",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 25,
@@ -3313,7 +3481,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "003",
    "oneSum": false,
    "needInFile": false,
@@ -3334,7 +3504,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 26,
@@ -3493,7 +3670,9 @@
    "files": [],
    "kind": "regular",
    "regime2": "",
-   "ben": [],
+   "ben": [
+    "Тариф Соцфонда 12,25 % (СПиНО)"
+   ],
    "ugns": "005",
    "oneSum": false,
    "needInFile": false,
@@ -3513,7 +3692,14 @@
    "size": "small",
    "bases": [
     "employees"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "spino"
   },
   {
    "id": 28,
@@ -3614,7 +3800,14 @@
    "bases": [
     "employees",
     "statSample"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   },
+   "sfT": "pvtpki"
   },
   {
    "id": 29,
@@ -3719,7 +3912,13 @@
    "bases": [
     "employees",
     "foreignPayments"
-   ]
+   ],
+   "sf": {
+    "cashless": true,
+    "registry": true,
+    "confirmed": true,
+    "gov": false
+   }
   },
   {
    "id": 30,

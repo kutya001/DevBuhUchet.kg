@@ -26,14 +26,16 @@ function gkNote(c,sel){if(!c.gked&&!(c.gked2||[]).length)return '';const k=gkChe
 function gkFitHint(c,sel){const codes=cpCodes(c);if(!codes.length)return '';const fit=RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on&&t.active!==false&&gkFitType(t,c));if(!fit.length)return '';
   const miss=fit.filter(t=>!sel.has(t.id));return `<div class="hint">${ic('check','sm')} Подходит по ГКЭД: ${fit.map(t=>esc(t.short)).join(', ')}${miss.length?` · не выбраны: ${miss.map(t=>esc(t.short)).join(', ')}`:''}</div>`}
 // Ввод перечня «Виды деятельности (ГКЭД)» и «Кроме» в формах справочников
-function gkRuleFields(p,r,raw){r=r||{};raw=raw||{};const note=(r.note?`<div class="note ${gkToVerify(r)&&!r.verify?'warn':''} full" style="grid-column:1/-1">${ic(gkToVerify(r)&&!r.verify?'alert':'info')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'')+(r.verify?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Сверить: ${esc(r.verify)}</span></div>`:'');
+// warnOn — у статусов: поле «Предупреждать при ГКЭД» (коды, при которых статус можно выбрать только с предупреждением)
+function gkRuleFields(p,r,raw,warnOn){r=r||{};raw=raw||{};const note=(r.note?`<div class="note ${gkToVerify(r)&&!r.verify?'warn':''} full" style="grid-column:1/-1">${ic(gkToVerify(r)&&!r.verify?'alert':'info')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'')+(r.verify?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Сверить: ${esc(r.verify)}</span></div>`:'');
   return `${note}${fld('Виды деятельности (ГКЭД)',inp(p+'-gin',raw.in!=null?raw.in:(r.in||[]).join(', '),'class="inp mono" placeholder="Например: 47, 56.10, G"'),{full:true,id:p+'-gin',hint:'Коды или начала кодов через запятую; секция — буквой. Пусто — для всех видов деятельности'})}
-  ${fld('Кроме (ГКЭД)',inp(p+'-gex',raw.ex!=null?raw.ex:(r.ex||[]).join(', '),'class="inp mono" placeholder="Например: 47.26"'),{full:true,id:p+'-gex',hint:'Виды деятельности, для которых не подходит'})}`}
+  ${fld('Кроме (ГКЭД)',inp(p+'-gex',raw.ex!=null?raw.ex:(r.ex||[]).join(', '),'class="inp mono" placeholder="Например: 47.26"'),{full:true,id:p+'-gex',hint:'Виды деятельности, для которых не подходит'})}
+  ${warnOn||(r.warn||[]).length?fld('Предупреждать при ГКЭД',inp(p+'-gwarn',raw.warn!=null?raw.warn:(r.warn||[]).join(', '),'class="inp mono" placeholder="Например: 64.92.0, 05"'),{full:true,id:p+'-gwarn',hint:'При таком основном ГКЭД статус предлагается с жёлтым предупреждением «Проверьте право по виду деятельности»'}):''}`}
 // undefined — ошибка в кодах, null — пусто (без ограничения), иначе {in, ex} с прежними признаками правила
-function gkRuleRead(el,p,old){const a=gkParse(val(el,p+'-gin')),b=gkParse(val(el,p+'-gex'));const ok=[setErr(el,p+'-gin',a.err||''),setErr(el,p+'-gex',b.err||'')].every(Boolean);
-  if(!ok)return undefined;return a.v.length||b.v.length?gkRuleKeep(old,{in:a.v,ex:b.v}):null}
-const gkRaw=(el,p)=>$('#'+p+'-gin',el)?{in:val(el,p+'-gin'),ex:val(el,p+'-gex')}:undefined;
-const gkRuleSame=(a,b)=>gkRuleTxt(a)===gkRuleTxt(b);
+function gkRuleRead(el,p,old){const a=gkParse(val(el,p+'-gin')),b=gkParse(val(el,p+'-gex')),w=$('#'+p+'-gwarn',el)?gkParse(val(el,p+'-gwarn')):null;const ok=[setErr(el,p+'-gin',a.err||''),setErr(el,p+'-gex',b.err||''),w?setErr(el,p+'-gwarn',w.err||''):true].every(Boolean);
+  if(!ok)return undefined;const wv=w?w.v:(old&&old.warn)||[];if(!a.v.length&&!b.v.length&&!wv.length)return null;const r=gkRuleKeep(old,{in:a.v,ex:b.v});if(wv.length)r.warn=wv;else delete r.warn;return r}
+const gkRaw=(el,p)=>$('#'+p+'-gin',el)?{in:val(el,p+'-gin'),ex:val(el,p+'-gex'),warn:$('#'+p+'-gwarn',el)?val(el,p+'-gwarn'):undefined}:undefined;
+const gkRuleSame=(a,b)=>gkRuleTxt(a)===gkRuleTxt(b)&&((a||{}).warn||[]).join()===((b||{}).warn||[]).join();
 // Льгота или статус не подходит к видам деятельности: сохранить можно после подтверждения, в карточке останется жёлтая отметка
 function gkBenOk(c,st,again){const b=gkCheck(c).ben;if(!b.length||st.gkBenOk===gkSig(c))return true;
   confirmDlg({title:'Сохранить с несоответствием?',text:esc(b.join('. '))+'. Перечни видов деятельности для статусов ещё сверяются с законами, поэтому сохранить можно; в карточке останется предупреждение.',ok:'Сохранить',run:()=>{st.gkBenOk=gkSig(c);again()}});return false}

@@ -62,7 +62,7 @@ function pkDescHtml(t,cx,o){const en=['enq','enm'].includes(t.id)?gkEnRate(cx,t)
     ${t.desc?`<p class="pk-p">${esc(t.desc)}</p>`:''}${t.choice?`<div class="note">${ic('info')}<span>${esc(t.choice)}</span></div>`:''}${t.extra?`<div class="hint">${esc(t.extra)}</div>`:''}
     ${t.verify?`<div class="note warn">${ic('alert')}<span>Данные уточняются, проверьте на сайте ГНС${t.verifyNote?': '+esc(t.verifyNote):''}</span></div>`:''}
     <div class="kv pk-kv">${kv.map(([k,v])=>`<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}</div>
-    ${o&&o.btns||''}${taxesOfType(t.id).map(x=>`<details class="tg-tax"><summary>${ic('coins','sm')}<span class="grow">Подробнее о налоге: <b>${esc(x.name)}</b></span>${ic('down','sm')}</summary>${taxGuideHtml(x)}</details>`).join('')}</div>`}
+    ${typeof sfTypeNote==='function'?sfTypeNote(t,cx):''}${o&&o.btns||''}${taxesOfType(t.id).map(x=>`<details class="tg-tax"><summary>${ic('coins','sm')}<span class="grow">Подробнее о налоге: <b>${esc(x.name)}</b></span>${ic('down','sm')}</summary>${taxGuideHtml(x)}</details>`).join('')}</div>`}
 
 /* ═════════════ Окно «Подбор отчётов» ═════════════
    o: {cx, sel (Set), before (Set назначенных), edit (можно отмечать), single (добавить один отчёт), onApply({sel, bases, forced})} */
@@ -147,13 +147,14 @@ function benWarns(b,cx,chosen){const w=[];const codes=cpCodes(cx);
   if(b.who&&b.who!=='all'&&cx.form&&formEnd(cx)!==b.who)w.push(`Применяют ${whoText(b.who)}`);return w}
 function benDescHtml(b,cx,btns){const tl=ids=>(ids||[]).map(id=>T[id]?T[id].short:id).join(', ');
   const kv=[['Что даёт',esc(b.gives||'—')],['Кто может применять',whoText(b.who||'all')],b.cond?['Условия',esc(b.cond)]:null,b.confirm?['Как подтверждается',esc(b.confirm)]:null,b.combines?['Совмещается с',esc(b.combines)]:null,
-    b.term||b.until?['Срок действия',esc(b.term||'до '+fmtD(b.until))]:null,!gkEmpty(b.gked)?['Виды деятельности (ГКЭД)',esc(gkRuleTxt(b.gked))+(b.gked.note?`<div class="hint">${esc(b.gked.note)}</div>`:'')]:null,
+    b.term||b.until?['Срок действия',esc(b.term||'до '+fmtD(b.until))]:null,!gkEmpty(b.gked)?['Виды деятельности (ГКЭД)',esc(gkRuleTxt(b.gked))+(b.gked.note?`<div class="hint">${esc(b.gked.note)}</div>`:'')]:null,b.gked&&(b.gked.warn||[]).length?['Предупреждать при ГКЭД',esc(b.gked.warn.join(', '))]:null,
     (b.adds||[]).length?['Добавляет отчёты',esc(tl(b.adds))]:null,(b.removes||[]).length?['Делает ненужными',esc(tl(b.removes))]:null,b.art?['Статья НК КР',esc(b.art)]:null].filter(Boolean);
   return `<div class="pk-desc"><h3 class="pk-dh">${esc(b.name)}${b.verify?` <span class="pill yellow sm">${ic('alert')}сверить</span>`:''}</h3>
     ${b.verify?`<div class="note warn">${ic('alert')}<span>Данные уточняются${b.verifyNote?': '+esc(b.verifyNote):''}</span></div>`:''}
     <div class="kv pk-kv">${kv.map(([k,v])=>`<div class="${k==='Что даёт'||k==='Условия'?'pk-wide':''}"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}</div>${btns||''}</div>`}
 function benPickDlg(o){const cx=o.cx;const st={tab:'fit',q:'',cur:null,open:null,ben:[...(o.ben||[])],dates:JSON.parse(JSON.stringify(o.dates||{}))};const canEdit=o.edit!==false;
-  const items=()=>DICT.benefits.items.filter(b=>b.active||st.ben.includes(b.name));
+  // Тарифы Соцфонда выбираются отдельно (блок «Тариф Соцфонда»), в окне льгот их нет
+  const items=()=>DICT.benefits.items.filter(b=>b!==sfSpBen()&&(b.active||st.ben.includes(b.name)));
   const fits=b=>!gkEmpty(b.gked)&&(b.gked.in||[]).length&&cpCodes(cx).length&&(gkFit(b.gked,cpCodes(cx),cx)||[]).length>0;
   openModal({size:'wide',swipeHead:true,render:m=>{const q=norm(st.q).trim();const hit=b=>!q||[b.name,b.gives,b.code].some(x=>norm(x||'').includes(q));
     const list=items().filter(b=>(st.tab==='all'||fits(b))&&hit(b));const on=b=>st.ben.includes(b.name);

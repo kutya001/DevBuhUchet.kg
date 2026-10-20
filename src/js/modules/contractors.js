@@ -16,6 +16,8 @@ function cpCols(){const fee=feat('fee')&&can('fee');return [
  {key:'gked',label:'Основной ГКЭД',type:'text',w:280,val:c=>c.gked?gkT(c.gked):'',html:c=>c.gked?`<span class="mono">${esc(c.gked)}</span> ${esc(gkName(c.gked))}`:`<span class="pill yellow sm">${ic('alert')}Без ГКЭД</span>`,match:gkMatch,hide:true},
  {key:'gked2',label:'Дополнительные ГКЭД',type:'text',w:220,val:c=>(c.gked2||[]).join(', '),cls:'mono',match:gkMatch,hide:true},
  {key:'gkno',label:'ГКЭД указан',type:'enum',w:120,val:c=>c.gked?'Да':'Нет',hide:true},
+ {key:'sft',label:'Тариф Соцфонда',type:'enum',w:190,val:c=>sfName(c),html:c=>{const x=sfState(c);return x?sfPill(x.cur,1)+(x.ask&&x.cur?` <span class="pill yellow sm">${ic('alert')}под вопросом</span>`:''):''},hide:true},
+ {key:'sfq',label:'Тариф под вопросом',type:'enum',w:150,val:c=>{const x=sfState(c);return x&&x.ask?'Да':'Нет'},hide:true},
  {key:'ugns',label:'Налоговый орган',type:'enum',w:210,val:c=>ugnsLabel(c.ugns),hide:true},
  {key:'kind',label:'Тип обслуживания',type:'enum',w:150,val:c=>c.kind==='oneoff'?'Разовое':'Постоянное',hide:true},
  {key:'svc',label:'Статус обслуживания',type:'enum',w:190,val:c=>c.status,html:c=>scaleMini('svc',c.status,c)},
@@ -58,20 +60,21 @@ function renderCps(body,tab,fresh){
   const all=visCps(true).filter(c=>!c.archived);
   const noResp=all.filter(c=>!c.resp).length,withOver=all.filter(c=>c.overdue>0).length,deb=all.filter(c=>c.feeDebt>0);
   const gid='cps-'+tab;
-  const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length,nNoGk=all.filter(c=>!c.gked).length;
+  const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length,nNoGk=all.filter(c=>!c.gked).length,nSfq=all.filter(c=>{const x=sfState(c);return x&&x.ask}).length;
   body.innerHTML=(tab==='archive'?'':`<div class="plates">
     ${plate({id:'all',icon:'building',color:'blue',label:'На обслуживании',value:all.length,sub:can('viewAll')?'вся организация':'закреплены за вами'})}
     ${plate({id:'noresp',icon:'alert',color:noResp?'orange':'green',label:'Без ответственного',value:noResp,sub:noResp?'владелец получил уведомление':'все закреплены'})}
     ${plate({id:'over',icon:'clock',color:withOver?'red':'green',label:'С просроченными отчётами',value:withOver})}
     ${feat('fee')&&can('fee')?plate({id:'deb',icon:'coins',color:deb.length?'red':'green',label:'Должники',value:deb.length,sub:deb.length?som(deb.reduce((a,c)=>a+c.feeDebt,0)):'долгов нет',on:tab==='debtors'}):''}
     ${plate({id:'nogk',icon:'alert',color:nNoGk?'yellow':'green',label:'Без ГКЭД',value:nNoGk,sub:nNoGk?'укажите вид деятельности':'у всех указан',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.gkno)})}
+    ${plate({id:'sfq',icon:'shield',color:nSfq?'yellow':'green',label:'Тариф под вопросом',value:nSfq,sub:nSfq?'Соцфонд: не определён или выбран вопреки условиям':'у всех определён',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.sfq)})}
     ${plate({id:'pau',icon:'pause',color:'yellow',label:'Приостановлены',value:nPau,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('Приостановлен'))})}
     ${plate({id:'one',icon:'briefcase',color:'purple',label:'Разовые',value:nOne,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.kind)})}
     ${plate({id:'arc',icon:'archive',color:'gray',label:'В архиве',value:nArc,sub:'показать в списке',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('В архиве'))})}
   </div>`)+`<div id="cg"></div>`;
   const pl=body.querySelector('.plates');if(pl)pl.onclick=e=>{const b=e.target.closest('[data-plate]');if(!b)return;const id=b.dataset.plate;const g=GS[gid];
     if(id==='deb'){go('cps','debtors');return}
-    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='nogk')g.filters.gkno={type:'enum',vals:['Нет']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
+    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='nogk')g.filters.gkno={type:'enum',vals:['Нет']};if(id==='sfq')g.filters.sfq={type:'enum',vals:['Да']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
   const rows=()=>{const v=visCps(true);const g=GS[gid];const fs=g&&g.filters&&g.filters.svc;if(fs&&fs.vals&&fs.vals.includes('В архиве'))return v;const a=v.filter(c=>!c.archived);if(tab==='mine')return a.filter(c=>c.resp===S.me);if(tab==='debtors')return a.filter(c=>c.feeDebt>0);if(tab==='paused')return a.filter(c=>c.paused);if(tab==='oneoff')return a.filter(c=>c.kind==='oneoff');return a};
   grid($('#cg',body),{id:gid,cols:cpCols(),rows,title:'name',noun:['контрагент','контрагента','контрагентов'],rowClass:c=>!c.resp&&!c.archived?'warn':c.archived||c.paused?'muted':'',
     actions:cpActions,open:openCp,sort:{key:'name',dir:1},preset:S.preset,simulateLoad:fresh,

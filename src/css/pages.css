@@ -48,3 +48,16 @@
 .login .card{width:min(400px,100%);background:var(--pane);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-l);padding:28px 26px;display:flex;flex-direction:column;gap:14px;animation:slideUp .35s forwards}
 .login h2{margin:0;font-size:20px;font-weight:720;letter-spacing:-.015em}
 
+/* Тариф Соцфонда: признаки Да / Нет, выбор тарифа, ставки (ТЗ «Тариф страховых взносов в Соцфонд (СПиНО)») */
+.sf-box{gap:8px}
+.sf-flags{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-m);padding:2px 10px;background:var(--pane-alt)}
+.sf-flag{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.sf-flag:last-child{border-bottom:0}
+.sf-flag .hint{display:block;margin-top:1px}
+.sf-flag .seg{flex-shrink:0}
+.sf-d summary{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--muted);list-style:none}
+.sf-d summary::-webkit-details-marker{display:none}
+.sf-d[open] summary{margin-bottom:6px}
+.kv>.sf-kv{grid-column:span 2}
+.sf-n{flex-wrap:wrap}.sf-n>.grow{flex:1 1 220px;min-width:0}.sf-n>.btn{margin-left:auto}
+@media (max-width:420px){.kv>.sf-kv{grid-column:auto}}
