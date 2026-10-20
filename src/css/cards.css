@@ -213,3 +213,25 @@
 .dg-tu{font-size:11.5px;color:var(--faint);line-height:1.35}
 .tab-sep{flex:none;align-self:stretch;width:1px;margin:4px 2px;background:var(--border-strong)}
 @media (max-width:767px){.dg-tiles{grid-template-columns:minmax(0,1fr)}.tg-rate{grid-template-columns:minmax(0,1fr)}}
+/* Права роли по группам модулей (Сотрудники → Роли, шаблоны ролей) */
+.pg-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+@media (min-width:1101px){.pg-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pg{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-l);min-width:0}
+.pg-h{display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.pg-h .pg-t{display:flex;align-items:center;gap:6px;flex:1;min-width:0;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.pg-h .pg-t b{font-size:14px}
+.pg-h .pg-t .pg-chev{transition:transform .15s;display:inline-flex}
+.pg.open .pg-chev{transform:rotate(90deg)}
+.pg-n{font-size:12px;color:var(--muted);white-space:nowrap}
+.pg-off{font-size:12px;color:var(--faint);flex-basis:100%}
+.pg.off{opacity:.62}
+.pg-b{border-top:1px solid var(--border);padding:2px 14px 6px}
+.pg:not(.open) .pg-b{display:none}
+.pg-p{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.pg-p:last-child{border-bottom:0}
+.pg-p input{margin-top:2px;flex:none}
+.pg-p .pg-d{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:2px}
+.pg-p .pg-why{display:block;color:var(--orange);font-size:12px;margin-top:3px}
+.pg-p.ro{cursor:default}
+.pg-p.ro .pg-x{display:inline-flex;margin-top:1px;flex:none}
+.pg-p.ro.no b{color:var(--faint);font-weight:500}

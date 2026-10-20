@@ -62,7 +62,8 @@ const CKG=[
   {id:'regtasks',learn:1,staff:1,at:['tasks.mine'],go:G('tasks','mine','#mbody')},
   {id:'mtask',perm:'tasksCreate',done:()=>TASKS.some(t=>!t.reg),go:G('tasks','byme','#add-btn','#fab',()=>taskDlg())},
   {id:'daymonth',learn:1,staff:1,at:['tasks.mine','tasks.overdue','tasks.all'],go:G('tasks','mine','.kd-legend')},
-  {id:'tdone',staff:1,done:()=>TASKS.some(t=>t.status==='Выполнена'||t.status==='Не выполнена'),go:G('tasks','mine','#mbody .gscroll, #mbody .gcards')}]},
+  {id:'tdone',staff:1,done:()=>TASKS.some(t=>['Выполнена','Не выполнена','На подтверждении','Подтверждена'].includes(t.status)),go:G('tasks','mine','#mbody .gscroll, #mbody .gcards')},
+  {id:'tconf',perm:'tasksConfirm',done:()=>TASKS.some(t=>t.confBy===S.me||t.reworkBy===S.me),go:G('tasks','mine','#mbody .plates, #mbody')}]},
  {id:'projects',perm:'projects',feat:()=>feat('projects'),items:[
   {id:'proj',done:()=>PROJECTS.length>0,go:G('projects','all','#add-btn','#fab',()=>projectDlg())},
   {id:'works',done:()=>PROJECTS.some(p=>p.works.length),go:G('projects','all','#mbody .gscroll, #mbody .gcards')},
@@ -123,7 +124,8 @@ const KB_EV={
  's.new':['создана разовая услуга',h=>h.ent==='s'&&/^Разовая услуга «/.test(h.what)],
  'fee.pay':['принята оплата за обслуживание',h=>h.ent==='cp'&&/^Оплата за обслуживание/.test(h.what)],
  't.new':['поставлена ручная задача',h=>h.ent==='t'&&h.what==='Задача поставлена'],
- 't.done':['задача выполнена или не выполнена',h=>h.ent==='t'&&/^(Задача выполнена|Не выполнена)/.test(h.what)],
+ 't.done':['задача выполнена или не выполнена',h=>h.ent==='t'&&(/^(Задача выполнена|Не выполнена)/.test(h.what)||/^Статус: .+ → На подтверждении/.test(h.what))],
+ 't.conf':['задача подтверждена или возвращена на доработку',h=>h.ent==='t'&&/^Статус: На подтверждении → (Подтверждена|На доработке)/.test(h.what)],
  'p.new':['создан проект',h=>h.ent==='p'&&/^Проект «.*» создан$/.test(h.what)],
  'p.work':['добавлена работа по проекту',h=>h.ent==='p'&&/^Добавлена работа/.test(h.what)],
  'p.pay':['принят транш по проекту',h=>h.ent==='p'&&/^Оплата /.test(h.what)],
@@ -132,7 +134,7 @@ const KB_EV={
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
  'open':['открыт экран'],'use':['первое использование функции'],'state':['выполнено условие в данных пользователя'],'hand':['только вручную («Отметить как просмотрено»)']};
-const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kval:'k.val',kchk:'k.check',upload:'f.upload'};
+const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kval:'k.val',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
 const KBG=DB.ref.kbGroups;

@@ -20,6 +20,7 @@ function renderHome(body,tab){
    ${plate({id:'wks',icon:'send',color:'yellow',label:'Сдать на этой неделе',value:wkSub.length,sub:'до '+fmtD(w1)})}
    ${feat('taxpay')?plate({id:'wkp',icon:'coins',color:'yellow',label:'Оплатить на этой неделе',value:wkPay.length,sub:som(wkPay.reduce((a,r)=>a+r.sum-r.paid,0))}):''}
    ${plate({id:'wait',icon:'hourglass',color:'blue',label:'Ожидают подтверждения',value:waiting.length,sub:'сданы, но ещё не приняты'})}
+   ${feat('tasks')&&can('tasksConfirm')?(()=>{const pd=allTasks().filter(t=>taskPend(t)&&t.exec!==S.me);return plate({id:'tpend',icon:'hourglass',color:pd.length?'purple':'green',label:'Ждут подтверждения',value:pd.length,sub:pd.length?'выполненные задачи сотрудников':'подтверждать нечего'})})():''}
    ${feat('tasks')?plate({id:'tsk',icon:'task',color:'purple',label:'Мои задачи на сегодня',value:myTasks.length,sub:myTasks.filter(t=>t.date<TODAY).length?myTasks.filter(t=>t.date<TODAY).length+' просрочено':'включая просроченные'}):''}
   </div>`;
   const upcoming=vr.filter(r=>OPEN.has(r.status)&&r.due>=TODAY).sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:0).slice(0,9);
@@ -36,7 +37,7 @@ function renderHome(body,tab){
     if(b=e.target.closest('[data-plate]')){const id=b.dataset.plate;
       if(id==='ovr')go('reports','overdue',{ovk:{type:'enum',vals:['Сдача','Сдача и оплата']}});if(id==='ovp')go('reports','overdue',{ovk:{type:'enum',vals:['Оплата','Сдача и оплата']}});
       if(id==='wks')go('reports','week',{status:{type:'enum',vals:['К сдаче','В работе','Требует исправления']}});if(id==='wkp')go('reports','week',{paystatus:{type:'enum',vals:['Не оплачено','Оплачено частично']}});
-      if(id==='wait')go('reports','waiting');if(id==='tsk'){S.taskView='day';go('tasks','mine',{date:{type:'date',from:null,to:TODAY},open:{type:'enum',vals:['Да']}})}return}
+      if(id==='wait')go('reports','waiting');if(id==='tpend'){go('tasks',can('tasksAll')?'all':'mine',{status:{type:'enum',vals:['На подтверждении']}});return}if(id==='tsk'){S.taskView='day';go('tasks','mine',{date:{type:'date',from:null,to:TODAY},open:{type:'enum',vals:['Да']}})}return}
     if(b=e.target.closest('[data-goto]')){const[a,t]=b.dataset.goto.split('.');go(a,t);return}
     if(b=e.target.closest('[data-rep]')){openReport(REPORTS.find(r=>r.id===+b.dataset.rep));return}
     if(b=e.target.closest('[data-task]')){openTask(allTasks().find(t=>t.id===b.dataset.task));return}

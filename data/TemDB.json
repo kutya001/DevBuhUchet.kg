@@ -351,7 +351,8 @@
     "_ub": "admin",
     "_ua": "2026-10-18 17:30"
    }
-  }
+  },
+  "taskConfirm": true
  },
  "roles": [
   {
@@ -371,6 +372,7 @@
     "projects",
     "tasksCreate",
     "tasksAll",
+    "tasksConfirm",
     "indSetup",
     "indCheck",
     "rollback",
@@ -378,7 +380,11 @@
     "dicts",
     "org"
    ],
-   "locked": true
+   "locked": true,
+   "_cb": "e1",
+   "_ca": "2025-02-14 11:20",
+   "_ub": "e1",
+   "_ua": "2025-02-14 11:20"
   },
   {
    "id": "chief",
@@ -396,8 +402,13 @@
     "fee",
     "projects",
     "tasksCreate",
-    "tasksAll"
-   ]
+    "tasksAll",
+    "tasksConfirm"
+   ],
+   "_cb": "e1",
+   "_ca": "2025-02-14 11:20",
+   "_ub": "e1",
+   "_ua": "2025-02-14 11:20"
   },
   {
    "id": "acc",
@@ -406,7 +417,11 @@
     "changeStatus",
     "changeSum",
     "money"
-   ]
+   ],
+   "_cb": "e1",
+   "_ca": "2025-02-14 11:20",
+   "_ub": "e1",
+   "_ua": "2025-02-14 11:20"
   }
  ],
  "employees": [

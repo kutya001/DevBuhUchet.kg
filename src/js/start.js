@@ -3,7 +3,7 @@
 /* ═════════════ Start ═════════════ */
 // Живые данные ↔ TemDB: снимок для сохранения и выгрузки, замена на месте при загрузке и очистке
 const dbOrg=()=>({organization:ORG,roles:ROLES,employees:EMP,contractors:CPS,reports:REPORTS,moneyOps:OPS,history:HIST,tasks:TASKS,feePayments:FEEPAYS,services:SERVICES,projects:PROJECTS,files:FILES,indicators:IND,indicatorValues:IVALS,indicatorMonths:KMS,indicatorHistory:IHIST,kbProgress:CKS,newsRead:NEWS_READ,platformOrgs:ORGS,platformUsers:OTHER_USERS,dictRequests:REQUESTS,telegramLog:TG_LOG});
-const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD,gked:GK});
+const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD,permissions:PERM_REF,gked:GK});
 const CP_DERIVED=['overdue','avail','free','status','paused'],KB_FN=['done','go','ev','feat'];
 const dbClean=v=>JSON.parse(JSON.stringify(v,(k,x)=>x instanceof Set?[...x]:typeof x==='function'?undefined:x));
 function dbSnap(){const o=dbClean(dbOrg()),r=dbClean({...dbRef(),kbSteps:KBS.map(i=>Object.fromEntries(Object.entries(i).filter(([k,v])=>typeof v!=='function'&&!KB_FN.includes(k))))});
@@ -13,7 +13,7 @@ function dbApply(db){const o=dbOrg(),r=dbRef();
   DB_ORG_KEYS.forEach(k=>{if(k!=='newsRead')dbPut(o[k],db[k])});dbPut(NEWS_READ,dbSets(db.newsRead));
   DB_REF_KEYS.forEach(k=>{if(k==='kbSteps')return;if(k==='statuses'||k==='kbLevels')Object.keys(r[k]).forEach(s=>dbPut(r[k][s],db.ref[k][s]||(k==='kbLevels'?[]:{})));else dbPut(r[k],db.ref[k])});
   dbPut(GK,db.ref.gked||[]);gkIndex();
-  kbBuild(db.ref.kbSteps);ORGS.forEach(orgBind);DB.meta=db.meta;
+  permsBuild();kbBuild(db.ref.kbSteps);ORGS.forEach(orgBind);DB.meta=db.meta;
   dbPut(T,Object.fromEntries(RT.map(t=>[t.id,t])));dbPut(PH,Object.fromEntries(PHONES.map(p=>[p.cc,p])));
   dbPut(CPM,Object.fromEntries(CPS.map(c=>[c.id,c])));dbPut(EM,Object.fromEntries(EMP.map(e=>[e.id,e])));
   CPID=nextNum(CPS);RID=nextNum(REPORTS);OPID=nextNum(OPS);TID=nextNum(TASKS,'t');HIXn=-1;newsSync();derive()}

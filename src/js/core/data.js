@@ -6,7 +6,7 @@
 const DB_VER=1,DB_KEY='bu.temdb';
 const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json',gked:'gkedDB.json'};
 const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
-const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit'];
+const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit','permissions'];
 const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit']);
 const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram'};
 function dbRead(name,id){
@@ -36,6 +36,14 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     const og=db.ref.dictionaries&&pick(db.ref.dictionaries.organs.items,'code','ОРГ-02'),fog=r.dictionaries&&pick(r.dictionaries.organs.items,'code','ОРГ-02');if(og&&fog&&fog.contacts&&!og.contacts&&og._ua<='2026-10-18 09:54')['note','contacts','hours','site','contactsNote'].forEach(k=>{if(fog[k]!==undefined)og[k]=structuredClone(fog[k])})}
   ['dictGroups','statusNotes','templateNotes'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='dictGroups'?[]:{}))});
   {const cs=db.ref.dictionaries&&db.ref.dictionaries.cats;const o=cs&&cs.items.find(x=>x.name==='Другое'&&x.code==='КАТ-005');if(o&&cs.items.some(x=>x!==o&&x.code==='КАТ-005'))o.code='КАТ-007'}
+  // Подтверждение задач и права по модулям (v47): у данных, сохранённых в браузере раньше, — новые статусы задач, право «Подтверждать задачи» у главного бухгалтера, шаг урока, справочник «Права ролей» и тексты статей из refDB.json
+  if(!db.meta.v47){db.meta.v47=1;const ts=db.ref.statuses&&db.ref.statuses.task;if(ts)Object.entries(r.statuses.task).forEach(([k,v])=>{if(!ts[k])ts[k]=structuredClone(v)});
+    (db.roles||[]).forEach(x=>{if((x.id==='chief'||x.id==='owner')&&!x.perms.includes('tasksConfirm'))x.perms.push('tasksConfirm')});(db.ref.roleTemplates||[]).forEach(x=>{if(x.id==='chief'&&!x.perms.includes('tasksConfirm'))x.perms.push('tasksConfirm')});
+    const ks=db.ref.kbSteps||[];const nk=(r.kbSteps||[]).find(x=>x.id==='tconf');if(nk&&!ks.some(x=>x.id==='tconf')){const td=ks.find(x=>x.id==='tdone');ks.forEach(x=>{if(td&&x.ord>td.ord)x.ord++});ks.splice(td?ks.indexOf(td)+1:ks.length,0,Object.assign(structuredClone(nk),{ord:td?td.ord+1:nk.ord}))}
+    ['roles'].forEach(id=>{const a=ks.find(x=>x.id===id),b=(r.kbSteps||[]).find(x=>x.id===id);if(a&&b)a.w=b.w});
+    ['a3','a13'].forEach(id=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),b=(r.kbArticles||[]).find(x=>x.id===id);if(a&&b)a.html=b.html});
+    const g=(db.ref.dictGroups||[]).find(x=>x.group==='Работа системы'),fg=(r.dictGroups||[]).find(x=>x.group==='Работа системы');const ft=fg&&fg.tabs.find(x=>x.tab==='Права ролей');if(g&&ft&&!g.tabs.some(x=>x.tab==='Права ролей'))g.tabs.push(structuredClone(ft))}
+  if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}
 function dbFresh(mode){const db=structuredClone(mode==='empty'?DBSRC.empty.db:DBSRC.demo.db);delete db.ref;

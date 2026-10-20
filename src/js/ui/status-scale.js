@@ -4,23 +4,26 @@
 const SCALES={
  rep:{map:()=>ST,steps:['К сдаче','В работе','Сдан','Принят'],side:{'Требует исправления':{at:2,cls:'red'}},none:['Не требуется']},
  pay:{map:()=>PST,steps:['Не оплачено','Оплачено частично','Оплачено'],none:['Не требуется']},
- task:{map:()=>TST,steps:['К выполнению','В работе','Выполнена'],side:{'Не выполнена':{at:2,cls:'red'},'Отменена':{at:2,cls:'faint'}}},
+ task:{map:()=>TST,steps:['К выполнению','В работе','Выполнена'],stepsC:['К выполнению','В работе','На подтверждении','Подтверждена'],side:{'На доработке':{at:1,cls:'red'},'Не выполнена':{at:-1,cls:'red'},'Отменена':{at:-1,cls:'faint'}}},
  svc:{map:()=>SVST,steps:['Обслуживается','Приостановлен','В архиве']},
  proj:{map:()=>PRS,steps:['Планируется','В работе','Завершён'],side:{'Отменён':{at:2,cls:'faint'}}},
  ind:{map:()=>KST,steps:['Не заполнено','Заполнено','Проверено']}};
 const SC_NAME={rep:'Сдача',pay:'Оплата',task:'Задача',svc:'Обслуживание',proj:'Проект',ind:'Заполнение месяца'};
-function scPos(k,st){const D=SCALES[k];let i=D.steps.indexOf(st),side=null;if(i<0&&D.side&&D.side[st]){side=D.side[st];i=side.at}return {i,side,n:D.steps.length}}
+// Шкала задачи с подтверждением: 1 К выполнению → 2 В работе → 3 На подтверждении → 4 Подтверждена; без подтверждения — 1 → 2 → 3 Выполнена
+const taskConfSt=new Set(['На подтверждении','Подтверждена','На доработке']);
+function scSteps(k,o,st){const D=SCALES[k];return D.stepsC&&((o&&o.confirm)||taskConfSt.has(st))?D.stepsC:D.steps}
+function scPos(k,st,o){const D=SCALES[k];const S=scSteps(k,o,st);let i=S.indexOf(st),side=null;if(i<0&&D.side&&D.side[st]){side=D.side[st];i=side.at<0?S.length+side.at:side.at}return {i,side,n:S.length,steps:S}}
 const scCol=(k,st)=>((SCALES[k].map()[st])||['gray'])[0];
 const objOf=(k,id)=>k==='rep'||k==='pay'?REPORTS.find(x=>x.id===+id):k==='task'?TASKS.find(x=>x.id===id):k==='svc'?CPM[+id]:k==='proj'?PROJECTS.find(x=>x.id===id):k==='ind'?KMI[id]:null;
 function stSince(k,o){if(!o)return null;const h=statusHist(k,o);return h.length?h[h.length-1]:null}
-function scaleMini(k,st,o){const h=scaleMini0(k,st);const e=o&&stSince(k,o);return e?`<span class="scm-w" title="Установлен ${fmtDT(e.at)}${e.who?', '+esc(whoName(e.who)):''}">${h}<small>${fmtDT(e.at)}</small></span>`:h}
-function scaleMini0(k,st){const D=SCALES[k];if(!st)return '<span class="faint">—</span>';if((D.none||[]).includes(st))return `<span class="scm none" title="${esc(st)}: шкала не ведётся">${ic('ban','sm')}${esc(st)}</span>`;
-  const {i,side,n}=scPos(k,st);if(i<0)return pill(st,D.map());
-  return `<span class="scm sc-${scCol(k,st)}" title="Этап ${i+1} из ${n}: ${esc(st)}"><span class="scm-d">${D.steps.map((x,j)=>`<i class="${j<i?'p':j===i?(side?'c x':'c'):''}"></i>`).join('')}</span><b>${i+1}/${n}</b><span class="scm-l">${esc(stl(st))}</span></span>`}
+function scaleMini(k,st,o){const h=scaleMini0(k,st,o);const e=o&&stSince(k,o);return e?`<span class="scm-w" title="Установлен ${fmtDT(e.at)}${e.who?', '+esc(whoName(e.who)):''}">${h}<small>${fmtDT(e.at)}</small></span>`:h}
+function scaleMini0(k,st,o){const D=SCALES[k];if(!st)return '<span class="faint">—</span>';if((D.none||[]).includes(st))return `<span class="scm none" title="${esc(st)}: шкала не ведётся">${ic('ban','sm')}${esc(st)}</span>`;
+  const {i,side,n,steps}=scPos(k,st,o);if(i<0)return pill(st,D.map());
+  return `<span class="scm sc-${scCol(k,st)}" title="Этап ${i+1} из ${n}: ${esc(st)}"><span class="scm-d">${steps.map((x,j)=>`<i class="${j<i?'p':j===i?(side?'c x':'c'):''}"></i>`).join('')}</span><b>${i+1}/${n}</b><span class="scm-l">${esc(stl(st))}</span></span>`}
 function scNext(k,st,o){
   if(k==='rep')return st==='К сдаче'?['В работе','Сдан']:st==='В работе'||st==='Требует исправления'?['Сдан']:st==='Сдан'?['Принят']:[];
   if(k==='pay')return st==='Не оплачено'?['Оплачено частично','Оплачено']:st==='Оплачено частично'?['Оплачено']:[];
-  if(k==='task')return st==='К выполнению'?['В работе']:st==='В работе'?['Выполнена']:[];
+  if(k==='task'){const c=o&&o.confirm;return st==='К выполнению'?['В работе']:st==='В работе'||st==='На доработке'?[c?'На подтверждении':'Выполнена']:st==='На подтверждении'?['Подтверждена']:[]}
   if(k==='svc')return st==='Обслуживается'?['Приостановлен','В архиве']:st==='Приостановлен'?['В архиве']:st==='В архиве'?['Обслуживается']:[];
   if(k==='proj')return st==='Планируется'?['В работе']:st==='В работе'?['Завершён']:[];
   if(k==='ind')return st==='Заполнено'?['Проверено']:[];return []}
@@ -28,16 +31,16 @@ function scBack(k,st,o){
   if(k==='rep')return o&&o.superseded&&st!=='Не требуется'?{no:'Сначала откатите уточнённую версию отчёта'}:st==='Принят'?'Сдан':st==='Сдан'?'В работе':st==='Требует исправления'?'Сдан':st==='В работе'?'К сдаче':st==='Не требуется'?'К сдаче':null;
   if(k==='pay'&&o){const l0=OPS.filter(x=>x.kind==='pay'&&x.report===o.id).sort((a,b)=>a.date<b.date?1:-1)[0];if(l0&&CLOSED.has(ym(l0.date)))return {no:`${ymLabel(ym(l0.date))} закрыт отчётом о списаниях: отменить оплату нельзя, нужна корректирующая запись`}}
   if(k==='pay'){if(!o)return null;const l=OPS.filter(x=>x.kind==='pay'&&x.report===o.id).sort((a,b)=>a.date<b.date?1:-1)[0];if(!l)return null;const rest=o.paid-l.amount;return rest<=0?'Не оплачено':'Оплачено частично'}
-  if(k==='task')return ['Выполнена','Не выполнена','Отменена'].includes(st)?'В работе':st==='В работе'?'К выполнению':null;
+  if(k==='task')return st==='Подтверждена'?'На подтверждении':['Выполнена','Не выполнена','Отменена','На подтверждении'].includes(st)?'В работе':st==='В работе'?'К выполнению':null;
   if(k==='svc')return st==='Приостановлен'?'Обслуживается':null;
   if(k==='proj')return st==='Завершён'||st==='Отменён'?'В работе':st==='В работе'?'Планируется':null;
   if(k==='ind')return st==='Проверено'?'Заполнено':null;return null}
 function scaleFull(k,st,id){const D=SCALES[k];const o=objOf(k,id);const H=o?statusHist(k,o):[];const when=x=>{for(let q=H.length-1;q>=0;q--)if(H[q].to===x)return H[q].at;return null};
   const bk=can('rollback')?scBack(k,st,o):null;const bkT=typeof bk==='string'?bk:null;
   if((D.none||[]).includes(st))return `<div class="scf-wrap"><span class="scf-t">${SC_NAME[k]}</span><div class="scf" data-sk="${k}" data-sid="${esc(String(id))}"><span class="scf-none">${ic('ban','sm')}${esc(st)} — шкала не ведётся${when(st)?` <small>с ${fmtDT(when(st))}</small>`:''}</span>${bkT?`<button type="button" class="btn sm" data-back="${esc(bkT)}" style="margin-left:10px">${ic('history','sm')}Снять «${esc(st)}»</button>`:''}</div></div>`;
-  const {i,side}=scPos(k,st);const nx=scNext(k,st);const col=scCol(k,st);
-  return `<div class="scf-wrap"><span class="scf-t">${SC_NAME[k]}</span><div class="scf" data-sk="${k}" data-sid="${esc(String(id))}" role="list">${D.steps.map((x,j)=>{const cls=j<i?'p':j===i?'c sc-'+(side?side.cls==='red'?'red':'faint':col):'f';const go=nx.includes(x);const back=!go&&bkT===x&&(j<i||(j===i&&side));const w=j<=i?when(j===i&&side?st:x):null;
-    return `<button type="button" role="listitem" class="scf-s ${cls} ${go?'go':''} ${back?'back':''}" ${go?`data-step="${esc(x)}" title="Перевести в «${esc(x)}»"`:back?`data-back="${esc(x)}" title="Откатить в «${esc(x)}»"`:`tabindex="-1" aria-disabled="true"`} aria-current="${j===i?'step':'false'}"><span class="n">${j<i?ic('check','sm'):j===i&&side?ic(side.cls==='red'?'x':'ban','sm'):j+1}</span><span class="l">${j===i&&side?`${esc(stl(st))}<em class="scf-side">на шаге ${j+1} «${esc(stl(x))}»</em>`:esc(stl(x))}${w?`<small class="scf-at">${fmtDT(w)}</small>`:''}${back?`<small class="scf-bk">${ic('history','sm')}откатить</small>`:''}</span></button>${j<D.steps.length-1?`<span class="scf-ln ${j<i?'p':''}"></span>`:''}`}).join('')}</div>${bk&&bk.no?`<span class="hint">${esc(bk.no)}</span>`:''}${k==='svc'&&o?svcPlanNote(o):''}</div>`}
+  const {i,side,steps}=scPos(k,st,o);const nx=scNext(k,st,o);const col=scCol(k,st);
+  return `<div class="scf-wrap"><span class="scf-t">${SC_NAME[k]}</span><div class="scf" data-sk="${k}" data-sid="${esc(String(id))}" role="list">${steps.map((x,j)=>{const cls=j<i?'p':j===i?'c sc-'+(side?side.cls==='red'?'red':'faint':col):'f';const go=nx.includes(x);const back=!go&&bkT===x&&(j<i||(j===i&&side));const w=j<=i?when(j===i&&side?st:x):null;
+    return `<button type="button" role="listitem" class="scf-s ${cls} ${go?'go':''} ${back?'back':''}" ${go?`data-step="${esc(x)}" title="Перевести в «${esc(x)}»"`:back?`data-back="${esc(x)}" title="Откатить в «${esc(x)}»"`:`tabindex="-1" aria-disabled="true"`} aria-current="${j===i?'step':'false'}"><span class="n">${j<i?ic('check','sm'):j===i&&side?ic(side.cls==='red'?'x':'ban','sm'):j+1}</span><span class="l">${j===i&&side?`${esc(stl(st))}<em class="scf-side">на шаге ${j+1} «${esc(stl(x))}»</em>`:esc(stl(x))}${w?`<small class="scf-at">${fmtDT(w)}</small>`:''}${back?`<small class="scf-bk">${ic('history','sm')}откатить</small>`:''}</span></button>${j<steps.length-1?`<span class="scf-ln ${j<i?'p':''}"></span>`:''}`}).join('')}</div>${bk&&bk.no?`<span class="hint">${esc(bk.no)}</span>`:''}${k==='svc'&&o?svcPlanNote(o):''}</div>`}
 // Пауза в периодах: [{from,to:'последний месяц обслуживания'}, {from:'месяц возобновления',to:null}]. planPause — пауза ещё не началась.
 function planPause(c){const ps=c.periods||[];let l=ps[ps.length-1];if(!l||c.archived)return null;const fut=!l.to&&l.from>ym(TODAY)&&ps.length>1;const prev=fut?ps[ps.length-2]:l;
   return prev&&prev.to&&prev.to>=ym(TODAY)?{prev,fut,from:addMonths(prev.to,1),resume:fut?l.from:null}:null}
@@ -48,7 +51,7 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
   if(k==='rep'){const ov=o.due<TODAY;cons=[st==='Не требуется'?'Отчёт и его регулярная задача снова станут активными.':'Регулярная задача по отчёту снова станет открытой.',ov&&['К сдаче','В работе','Сдан'].includes(to)&&st!=='Требует исправления'?'Срок уже прошёл — отчёт снова попадёт в просроченные, пойдут напоминания.':'',st==='Принят'?'Дата принятия будет снята.':'',st==='Сдан'?'Дата сдачи будет снята.':'','Приложенные файлы не удаляются.'].filter(Boolean).join(' ')}
   if(k==='pay'){const l=OPS.filter(x=>x.kind==='pay'&&x.report===o.id).sort((a,b)=>a.date<b.date?1:-1)[0];const bon=OPS.find(x=>x.kind==='bonus'&&x.cp===o.cp&&x.date>=l.date);if(bon)return toast(`Сначала отмените списание остатка от ${fmtD(bon.date)}: оно сделано после этой оплаты`,'alert',true);
     title='Отменить запись об оплате';cons=`Оплата ${som(l.amount)} от ${fmtD(l.date)} будет отменена: сумма вернётся в свободный остаток контрагента на счёте, статус оплаты станет «${esc(to)}».`}
-  if(k==='task')cons=to==='В работе'?'Задача снова станет открытой у исполнителя. Приложенный файл останется.':'Задача вернётся в «К выполнению».';
+  if(k==='task')cons=to==='На подтверждении'?'Подтверждение будет снято: задача снова будет ждать подтверждения.':to==='В работе'?'Задача снова станет открытой у исполнителя. Приложенный файл останется.':'Задача вернётся в «К выполнению».';
   if(k==='ind')cons='Месяц снова будет ждать проверки. Внесённые значения не меняются.';
   if(k==='proj')cons=to==='В работе'?'Проект снова станет активным, по нему можно вести работы и принимать оплаты.':'Проект вернётся в план.';
   if(k==='svc'){if(o.archived)cons='Контрагент вернётся из архива, обслуживание продолжится с текущего месяца.';else{const l=lastPeriod(o);const from=l&&l.to?addMonths(l.to,1):ym(TODAY);const ms=[];for(let x=from;x<=ym(TODAY);x=addMonths(x,1))ms.push(x);
@@ -59,7 +62,7 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
     mount(el,m){$('#rb-ok',el).onclick=()=>{const why=val(el,'rb-why');if(!setErr(el,'rb-why',why?'':'Укажите причину'))return;const tag=`(откат: ${why})`;
       if(k==='rep'){if(st==='Принят')o.accDate=null;if(st==='Сдан')o.subDate=null;o.status=to;log('r',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='pay'){const l=OPS.filter(x=>x.kind==='pay'&&x.report===o.id).sort((a,b)=>a.date<b.date?1:-1)[0];l.kind='pay_x';l.xAt=nowStamp();l.xBy=S.me;l.xWhy=why;o.paid=Math.max(0,o.paid-l.amount);log('r',o.id,`Отменена оплата в бюджет ${som(l.amount)} от ${fmtD(l.date)} ${tag}`,o.cp)}
-      if(k==='task'){o.status=to;if(to!=='Выполнена')o.doneAt=null;log('t',o.id,`Статус: ${st} → ${to} ${tag}`)}
+      if(k==='task'){o.status=to;if(to!=='Выполнена'&&to!=='На подтверждении')o.doneAt=null;if(st==='Подтверждена'){o.confAt=null;o.confBy=null}log('t',o.id,`Статус: ${st} → ${to} ${tag}`)}
       if(k==='proj'){o.status=to;log('p',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='ind'){o.status=to;log('km',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='svc'){if(o.archived){o.archived=false;const l=lastPeriod(o);if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else o.periods.push({from:ym(TODAY),to:null});applyService(o);log('cp',o.id,`Возвращён из архива ${tag}`,o.id)}
@@ -76,7 +79,8 @@ function stepTo(k,id,to){
     if(to==='В работе')return setStatus(r,to);if(to==='Сдан')return submitDlg([r]);if(to==='Принят')return acceptDlg(r);return}
   if(k==='task'){const t=TASKS.find(x=>x.id===id);if(!t)return;const mine=t.exec===S.me,boss=t.by===S.me||me().role==='owner';
     if(to==='В работе'){if(!mine&&!boss)return toast('Менять статус может исполнитель или постановщик','alert',true);t.status='В работе';log('t',t.id,'Статус: К выполнению → В работе');refreshAll();return toast('Задача в работе')}
-    if(to==='Выполнена'){if(!mine)return toast('Отметить может только исполнитель','alert',true);return taskDoneDlg(t)}return}
+    if(to==='Выполнена'||to==='На подтверждении'){if(!mine)return toast('Отметить может только исполнитель','alert',true);return taskDoneDlg(t)}
+    if(to==='Подтверждена'){const why=taskConfWhy(t);if(why)return toast(why,'alert',true);return taskConfDlg(t)}return}
   if(k==='svc'){const c=CPM[+id];if(!c)return;const lab=to==='Приостановлен'?'Приостановить обслуживание':to==='В архиве'?'В архив':c.archived?'Вернуть из архива':'Возобновить обслуживание';
     const it=cpActions(c).find(x=>x&&x.label===lab)||(to==='Обслуживается'&&cpActions(c).find(x=>x&&x.label==='Отменить приостановку'));if(!it||it.disabled)return toast(it&&it.reason||'Нет права на это действие','alert',true);return it.run()}
   if(k==='ind'){const o=KMI[id];if(!o)return;if(!can('indCheck'))return toast('Нет права «Проверять показатели»','alert',true);
@@ -95,7 +99,7 @@ function statusHist(k,o){const out=[];const add=(at,from,to,who,note,file)=>{if(
   if(k==='rep'){add(o._ca,'','К сдаче',o._cb||'system','Отчёт создан по назначению');parse('r',o.id).forEach(h=>{const m=h.what.match(rx);if(!m)return;const rest=[m[3],m[4]].filter(Boolean).join(', ');const f=(rest.match(/файл[ыа]?:\s*(.+)$/)||[])[1];add(h.at,m[1],m[2].trim(),h.who,f?rest.replace(/,?\s*файл[ыа]?:.*$/,''):rest,f)})}
   if(k==='pay'){add(o._ca,'','Не оплачено',o._cb||'system','');let paid=0,cur='Не оплачено';const ev=[];OPS.filter(x=>(x.kind==='pay'||x.kind==='pay_x')&&x.report===o.id).forEach(x=>{ev.push({at:x._ca||x.date,a:x.amount,who:x.by,note:'Оплата в бюджет '+som(x.amount),f:(x.files||[])[0]});if(x.kind==='pay_x')ev.push({at:x.xAt,a:-x.amount,who:x.xBy,note:'откат: отменена оплата '+som(x.amount)+(x.xWhy?'. '+x.xWhy:'')})});
     ev.sort((a,b)=>a.at<b.at?-1:1).forEach(e=>{paid+=e.a;const nx=paid<=0?'Не оплачено':paid>=(o.sum||0)?'Оплачено':'Оплачено частично';add(e.at,cur,nx,e.who,e.note,e.f);cur=nx})}
-  if(k==='task'){let cur='К выполнению';add(o._ca||o.created,'',cur,o.by,'Задача поставлена');if(o._st0){add(o.doneAt?o.doneAt+' 17:30':(o._ca||o.created),cur,o._st0,o.exec,'');cur=o._st0}parse('t',o.id).forEach(h=>{let to=null,note='',f='';const m=h.what.match(rx);if(m){to=m[2].trim();note=[m[3],m[4]].filter(Boolean).join(', ')}else if(/^Задача выполнена/.test(h.what)){to='Выполнена';f=(h.what.match(/файл: (.+)$/)||[])[1]||''}else if(/^Не выполнена: /.test(h.what)){to='Не выполнена';note=h.what.slice(14)}else if(/^Задача отменена/.test(h.what)){to='Отменена'}if(to){add(h.at,cur,to,h.who,note,f);cur=to}});if(cur!==o.status)add(o._ua||o._ca,cur,o.status,o._ub||o.by,'')}
+  if(k==='task'){let cur='К выполнению';add(o._ca||o.created,'',cur,o.by,'Задача поставлена');if(o._st0){add(o.doneAt?o.doneAt+' 17:30':(o._ca||o.created),cur,o._st0,o.exec,'');cur=o._st0}parse('t',o.id).forEach(h=>{let to=null,note='',f='';const m=h.what.match(rx);if(m){to=m[2].trim();note=[m[3],m[4]].filter(Boolean).join(', ');const fm=note.match(/,?\s*файл:\s*(.+)$/);if(fm){f=fm[1];note=note.slice(0,fm.index)}}else if(/^Задача выполнена/.test(h.what)){to='Выполнена';f=(h.what.match(/файл: (.+)$/)||[])[1]||''}else if(/^Не выполнена: /.test(h.what)){to='Не выполнена';note=h.what.slice(14)}else if(/^Задача отменена/.test(h.what)){to='Отменена'}if(to){add(h.at,cur,to,h.who,note,f);cur=to}});if(cur!==o.status)add(o._ua||o._ca,cur,o.status,o._ub||o.by,'')}
   if(k==='svc'){let cur='Обслуживается';add(o._ca||o.start,'',cur,o._cb||'system','Начало обслуживания');parse('cp',o.id).forEach(h=>{let to=/приостановлено/.test(h.what)?'Приостановлен':/возобновлено|Возвращён из архива|Приостановка отменена/.test(h.what)?'Обслуживается':/Отправлен в архив/.test(h.what)?'В архиве':null;if(to){const rb=h.what.match(/\(откат: (.*?)\)/);add(h.at,cur,to,h.who,rb?'откат: '+rb[1]:h.what.replace(/^Обслуживание приостановлено\s*/,'').replace(/^\.\s*/,''));cur=to}});if(cur!==o.status)add(o._ua||o._ca,cur,o.status,o._ub||'system','')}
   if(k==='ind'){let cur='Не заполнено';add(o._ca,'',cur,o._cb||'system','Месяц открыт для заполнения');parse('km',o.id).forEach(h=>{const m=h.what.match(rx);if(!m)return;const to=m[2].trim();add(h.at,cur,to,h.who,[m[3],m[4]].filter(Boolean).join(', '));cur=to})}
   if(k==='proj'){const hs=parse('p',o.id).map(h=>[h,h.what.match(rx)]).filter(x=>x[1]);let cur=hs.length?hs[0][1][1]:o.status;add(o._ca||o.from,'',cur,o._cb||o.lead,'Проект создан');hs.forEach(([h,m])=>{add(h.at,cur,m[2].trim(),h.who,[m[3],m[4]].filter(Boolean).join(', '));cur=m[2].trim()})}
