@@ -1,7 +1,7 @@
 'use strict';
 // Модуль «Проекты контрагентов»
 /* ═════════════ Проекты контрагентов ═════════════ */
-const projVisible=p=>can('viewAll')||p.resps.includes(S.me)||(CPM[p.cp]&&CPM[p.cp].resp===S.me);
+const projVisible=p=>seeAll('projects')||p.resps.includes(S.me)||(CPM[p.cp]&&CPM[p.cp].resp===S.me);
 const projActive=p=>p.status==='В работе'||p.status==='Планируется';
 const workOver=w=>!w.done&&w.due&&w.due<TODAY;
 function projTabs(){const v=PROJECTS.filter(projVisible);return [{id:'active',label:'Активные',icon:'briefcase',count:v.filter(projActive).length},{id:'all',label:'Все',icon:'list'},{id:'mine',label:'Мои',icon:'user',count:v.filter(p=>p.resps.includes(S.me)&&projActive(p)).length}]}
@@ -62,7 +62,7 @@ function projectDlg(p0,c0){const e=p0?{name:p0.name,cp:p0.cp,from:p0.from,to:p0.
   const mv=moneyVis();const rs='style="min-height:30px;padding:3px 8px"';
   openModal({form:true,size:'mid',render:m=>({title:p0?'Изменить проект':'Новый проект',sub:p0||c0?esc(CPM[e.cp].name):'Разовая работа за отдельную плату',body:`<div class="form">
     ${fld('Название проекта',inp('pd-name',e.name,'placeholder="Например: восстановление учёта 2024–2025"'),{req:true,full:true,id:'pd-name'})}
-    ${p0||c0?'':fld('Контрагент',sel('pd-cp',[['','— выберите —'],...visCps().map(c=>[c.id,c.name])],e.cp),{req:true,full:true,id:'pd-cp',hint:'У контрагента может быть несколько проектов одновременно'})}
+    ${p0||c0?'':fld('Контрагент',sel('pd-cp',[['','— выберите —'],...visCps(false,'projects').map(c=>[c.id,c.name])],e.cp),{req:true,full:true,id:'pd-cp',hint:'У контрагента может быть несколько проектов одновременно'})}
     ${fld('Срок с',inp('pd-from',e.from,'type="date"'),{req:true,id:'pd-from'})}${fld('Срок по',inp('pd-to',e.to,'type="date"'),{req:true,id:'pd-to'})}
     ${p0?fld('Статус',`<div class="v" style="padding-top:6px">${pill(e.status,PRS)}</div>`,{id:'pd-stv',hint:'Меняется на шкале статусов в карточке проекта'}):fld('Статус',sel('pd-st',['Планируется','В работе'],e.status),{id:'pd-st'})}${mv?fld('Планируемая стоимость, сом',inp('pd-plan',e.plan,'inputmode="decimal" class="inp tnum" placeholder="не обязательно"'),{id:'pd-plan',hint:p0&&projPaid(p0)?`Уже получено ${som(projPaid(p0))}`:'Можно не указывать, если стоимость договорная'}):'<div></div>'}
     ${fld('Ответственные',`<div class="chipsel" id="pd-resp">${EMP.filter(x=>x.active).map(x=>`<button type="button" data-e="${x.id}" class="${e.resps.includes(x.id)?'on':''}">${e.resps.includes(x.id)?ic('check','sm'):''}${esc(x.short)}</button>`).join('')}</div>`,{req:true,full:true,id:'pd-resp',hint:'Можно выбрать нескольких'})}

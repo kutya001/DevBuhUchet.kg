@@ -6,7 +6,7 @@ function cpsTabs(){const v=visCps(true);const a=v.filter(c=>!c.archived);return 
  {id:'mine',label:'Мои контрагенты',icon:'user',count:CPS.filter(c=>!c.archived&&c.resp===S.me).length},
  feat('fee')&&can('fee')?{id:'debtors',label:'Должники',icon:'coins',count:a.filter(c=>c.feeDebt>0).length,red:true}:null,
 ]}
-function cpsAdd(){return can('createCp')?[{label:'Контрагент',icon:'building',run:addCpDlg},{label:'Загрузка из Excel',icon:'paste',run:importDlg},{label:'Из свидетельства и выписки',icon:'upload',run:regDocsDlg,beta:true,sub:'PDF Минюста: форма заполнится сама'}]:[]}
+function cpsAdd(){return [can('createCp')&&{label:'Контрагент',icon:'building',run:addCpDlg},can('cpImport')&&{label:'Загрузка из Excel',icon:'paste',run:importDlg},can('createCp')&&{label:'Из свидетельства и выписки',icon:'upload',run:regDocsDlg,beta:true,sub:'PDF Минюста: форма заполнится сама'}].filter(Boolean)}
 function cpCols(){const fee=feat('fee')&&can('fee');return [
  {key:'name',label:'Название',type:'text',w:250,val:c=>c.name,html:c=>`<span class="strong">${esc(c.name)}</span>${!c.resp&&!c.archived?` <span class="pill orange sm">${ic('alert')}нет ответственного</span>`:''}`},
  {key:'inn',label:'ИНН',type:'text',w:150,val:c=>c.inn,cls:'mono'},
@@ -38,21 +38,21 @@ function cpActions(c){const it=[{label:'Открыть карточку',icon:'b
     if(can('createCp'))it.push({label:'Изменить',icon:'edit',run:()=>editCpDlg(c)});
     if(can('assign')||can('createCp'))it.push({label:'Сменить ответственного',icon:'user',run:()=>respDlg([c])});
     if(can('assign')||can('createCp'))it.push({label:'Подобрать отчёты',icon:'matrix',run:()=>pickForCp(c)});
-    if(can('createCp')){const linked=REPORTS.some(r=>r.cp===c.id)?'По контрагенту есть отчёты — его можно только отправить в архив':OPS.some(o=>o.cp===c.id)||FEEPAYS.some(f=>f.cp===c.id)?'По контрагенту есть деньги — его можно только отправить в архив':PROJECTS.some(p=>p.cp===c.id)||SERVICES.some(s=>s.cp===c.id)?'По контрагенту есть проекты или услуги — его можно только отправить в архив':'';
+    if(can('cpArchive')){const linked=REPORTS.some(r=>r.cp===c.id)?'По контрагенту есть отчёты — его можно только отправить в архив':OPS.some(o=>o.cp===c.id)||FEEPAYS.some(f=>f.cp===c.id)?'По контрагенту есть деньги — его можно только отправить в архив':PROJECTS.some(p=>p.cp===c.id)||SERVICES.some(s=>s.cp===c.id)?'По контрагенту есть проекты или услуги — его можно только отправить в архив':'';
       c._del={label:'Удалить',icon:'trash',danger:true,disabled:!!linked,reason:linked,run:()=>confirmDlg({title:`Удалить ${esc(c.name)}?`,text:'По контрагенту нет отчётов, денег и проектов. Он будет удалён вместе с задачами и файлами карточки; вернуть его нельзя.',ok:'Удалить',danger:true,run:()=>{const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];for(let k=TASKS.length-1;k>=0;k--)if(TASKS[k].cp===c.id)TASKS.splice(k,1);log('org','cps',`Удалён контрагент ${c.name} (ИНН ${c.inn})`);refreshAll();toast('Контрагент удалён','trash')}})}}
     if(feat('taxpay')&&can('money'))it.push({label:'Поступление денег',icon:'wallet',run:()=>inDlg(c)});
     if(can('projects')&&feat('finops'))it.push({label:'Разовая услуга',icon:'coins',run:()=>serviceDlg(null,c)});if(can('projects')&&feat('projects'))it.push({label:'Новый проект',icon:'briefcase',run:()=>projectDlg(null,c)});
     if(feat('fee')&&can('fee')&&c.feeDebt>0)it.push({label:'Напомнить о долге в WhatsApp',icon:'chat',run:()=>waDlg({cp:c,fee:true})});
-    if(can('createCp')){it.push({sep:true});const l=lastPeriod(c);
-      if(c.kind==='oneoff')it.push({label:'Перевести в постоянное обслуживание',icon:'repeat',run:()=>toRegularDlg(c)});
-      else{const pp=planPause(c);
+    if(can('createCp')||can('cpPause')||can('cpArchive')){it.push({sep:true});const l=lastPeriod(c);
+      if(c.kind==='oneoff'){if(can('createCp'))it.push({label:'Перевести в постоянное обслуживание',icon:'repeat',run:()=>toRegularDlg(c)})}
+      else if(can('cpPause')){const pp=planPause(c);
         if(pp)it.push({label:'Отменить приостановку',icon:'refresh',sub:`Запланирована с ${ymG(pp.from)}`,disabled:!can('rollback'),reason:'Нужно право «Откат статусов»',run:()=>unpauseCp(c)});
         if(l&&l.to==null&&l.from>ym(TODAY))it.push({label:`Изменить возобновление: сейчас с ${ymG(l.from)}`,icon:'play',run:()=>resumeDlg(c)});
         else if(l&&l.to==null){if(!pp)it.push({label:'Приостановить обслуживание',icon:'pause',run:()=>pauseDlg(c)})}
         else if(!pp)it.push({label:'Возобновить обслуживание',icon:'play',run:()=>resumeDlg(c)});
         if(!pp&&c.status==='Приостановлен')it.push({label:'Откатить приостановку',icon:'history',disabled:!can('rollback'),reason:'Нужно право «Откат статусов»',run:()=>rollbackDlg('svc',c.id,'Обслуживается')})}
-      it.push({label:'В архив',icon:'archive',danger:true,run:()=>archiveDlg([c])})}
-  }else if(can('createCp'))it.push({label:'Вернуть из архива',icon:'refresh',run:()=>unarchiveCp(c)});
+      if(can('cpArchive'))it.push({label:'В архив',icon:'archive',danger:true,run:()=>archiveDlg([c])})}
+  }else if(can('cpArchive'))it.push({label:'Вернуть из архива',icon:'refresh',run:()=>unarchiveCp(c)});
   if(c._del){it.push({sep:true},c._del);delete c._del}
   return it}
 function unarchiveCp(c){{c.archived=false;const l=lastPeriod(c);if(c.kind!=='oneoff'){if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else c.periods.push({from:ym(TODAY),to:null})}const r=c.kind==='oneoff'?{on:0}:applyService(c);const nw=REPORTS.filter(x=>x.cp===c.id&&OPEN.has(x.status)&&!x.superseded).length;log('cp',c.id,'Возвращён из архива',c.id);refreshAll();toast(c.kind==='oneoff'?'Контрагент возвращён из архива':`Контрагент возвращён из архива, открытых отчётов: ${nw}`)}}
@@ -62,7 +62,7 @@ function renderCps(body,tab,fresh){
   const gid='cps-'+tab;
   const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length,nNoGk=all.filter(c=>!c.gked).length,nSfq=all.filter(c=>{const x=sfState(c);return x&&x.ask}).length;
   body.innerHTML=(tab==='archive'?'':`<div class="plates">
-    ${plate({id:'all',icon:'building',color:'blue',label:'На обслуживании',value:all.length,sub:can('viewAll')?'вся организация':'закреплены за вами'})}
+    ${plate({id:'all',icon:'building',color:'blue',label:'На обслуживании',value:all.length,sub:seeAll('cps')?'вся организация':'закреплены за вами'})}
     ${plate({id:'noresp',icon:'alert',color:noResp?'orange':'green',label:'Без ответственного',value:noResp,sub:noResp?'владелец получил уведомление':'все закреплены'})}
     ${plate({id:'over',icon:'clock',color:withOver?'red':'green',label:'С просроченными отчётами',value:withOver})}
     ${feat('fee')&&can('fee')?plate({id:'deb',icon:'coins',color:deb.length?'red':'green',label:'Должники',value:deb.length,sub:deb.length?som(deb.reduce((a,c)=>a+c.feeDebt,0)):'долгов нет',on:tab==='debtors'}):''}
@@ -78,7 +78,7 @@ function renderCps(body,tab,fresh){
   const rows=()=>{const v=visCps(true);const g=GS[gid];const fs=g&&g.filters&&g.filters.svc;if(fs&&fs.vals&&fs.vals.includes('В архиве'))return v;const a=v.filter(c=>!c.archived);if(tab==='mine')return a.filter(c=>c.resp===S.me);if(tab==='debtors')return a.filter(c=>c.feeDebt>0);if(tab==='paused')return a.filter(c=>c.paused);if(tab==='oneoff')return a.filter(c=>c.kind==='oneoff');return a};
   grid($('#cg',body),{id:gid,cols:cpCols(),rows,title:'name',noun:['контрагент','контрагента','контрагентов'],rowClass:c=>!c.resp&&!c.archived?'warn':c.archived||c.paused?'muted':'',
     actions:cpActions,open:openCp,sort:{key:'name',dir:1},preset:S.preset,simulateLoad:fresh,
-    bulk:tab==='archive'||!(can('assign')||can('createCp'))?null:[{label:'Назначить ответственного',icon:'user',run:(rs,done)=>respDlg(rs,done)},...(can('createCp')?[{label:'В архив',icon:'archive',danger:true,run:(rs,done)=>archiveDlg(rs,done)}]:[])],
+    bulk:tab==='archive'||!(can('assign')||can('createCp')||can('cpArchive'))?null:[...(can('assign')||can('createCp')?[{label:'Назначить ответственного',icon:'user',run:(rs,done)=>respDlg(rs,done)}]:[]),...(can('cpArchive')?[{label:'В архив',icon:'archive',danger:true,run:(rs,done)=>archiveDlg(rs,done)}]:[])],
     empty:{icon:'building',title:tab==='mine'?'За вами пока не закреплены контрагенты':tab==='archive'?'Архив пуст':'Контрагентов пока нет',text:tab==='all'?'Добавьте первого контрагента или загрузите список из Excel.':'',add:tab==='all'&&can('createCp')?addCpDlg:null}});
 }
 function respDlg(cs,done){

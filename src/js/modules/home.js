@@ -13,7 +13,7 @@ function renderHome(body,tab){
   const waiting=vr.filter(r=>r.status==='Сдан');
   const myTasks=feat('tasks')?allTasks().filter(t=>t.exec===S.me&&taskOpen(t)&&t.date<=TODAY):[];
   const d=D(TODAY);
-  let h=`<div class="hello"><span>Сегодня <b>${d.getUTCDate()} ${MONTHS_G[d.getUTCMonth()]}, ${DOW[d.getUTCDay()]}</b></span><span>·</span><span>${can('viewAll')?'Вы видите всю организацию':'Вы видите только своих контрагентов и свои отчёты'}</span><span>·</span><span>неделя ${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}${isWeekend()?' (сегодня выходной, показана ближайшая рабочая неделя)':''}</span></div>`;
+  let h=`<div class="hello"><span>Сегодня <b>${d.getUTCDate()} ${MONTHS_G[d.getUTCMonth()]}, ${DOW[d.getUTCDay()]}</b></span><span>·</span><span>${seeAll('reports')?'Вы видите всю организацию':'Вы видите только своих контрагентов и свои отчёты'}</span><span>·</span><span>неделя ${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}${isWeekend()?' (сегодня выходной, показана ближайшая рабочая неделя)':''}</span></div>`;
   h+=`<div class="plates">
    ${plate({id:'ovr',icon:'alert',color:ovRep.length?'red':'green',label:'Просрочено отчётов',value:ovRep.length,sub:ovRep.length?'срок прошёл, отчёт не сдан':'всё сдано в срок'})}
    ${feat('taxpay')?plate({id:'ovp',icon:'wallet',color:ovPay.length?'red':'green',label:'Просрочено оплат',value:ovPay.length,sub:ovPay.length?som(ovPay.reduce((a,r)=>a+r.sum-r.paid,0))+' не оплачено':'долгов в бюджет нет'}):''}
@@ -25,7 +25,7 @@ function renderHome(body,tab){
   </div>`;
   const upcoming=vr.filter(r=>OPEN.has(r.status)&&r.due>=TODAY).sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:0).slice(0,9);
   const month=ym(TODAY);
-  const people=(can('viewAll')?EMP.filter(e=>e.active&&e.role!=='owner'):[u]);
+  const people=(seeAll('reports')?EMP.filter(e=>e.active&&e.role!=='owner'):[u]);
   const prog=people.map(e=>{const rs=REPORTS.filter(r=>!r.superseded&&r.resp===e.id&&ym(r.due)===month&&r.status!=='Не требуется');const done=rs.filter(r=>r.status==='Сдан'||r.status==='Принят').length;return {e,done,all:rs.length}}).filter(x=>x.all);
   h+=`<div class="cols2"><div class="box"><h3>Ближайшие сроки сдачи<span class="grow"></span><button class="linkbtn" data-goto="reports.all" style="text-transform:none;letter-spacing:0;font-size:12.5px">Все отчёты</button></h3><div class="list">${upcoming.map(r=>{const dd=new Date(D(r.due));return `<div class="li" data-rep="${r.id}" tabindex="0"><div class="datebox ${r.overdue?'red':''}"><b>${dd.getUTCDate()}</b><span>${MONTHS_G[dd.getUTCMonth()].slice(0,3)}</span></div><div class="grow"><div class="t1">${esc(T[r.t].short)} · ${esc(CPM[r.cp].name)}</div><div class="t2">${esc(r.phuman)} · ${esc(empName(r.resp)||'нет ответственного')}${r.overdue?' · <span class="red">просрочен</span>':''}</div></div>${pill(r.status,ST)}</div>`}).join('')||'<div class="muted">Несданных отчётов нет.</div>'}</div></div>
   <div style="display:flex;flex-direction:column;gap:14px;min-width:0"><div class="box"><h3>Отчёты со сроком в этом месяце: сдано</h3>${prog.map(p=>`<div class="prog"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.e.short)}</span><div class="bar" role="progressbar" aria-valuenow="${p.done}" aria-valuemax="${p.all}"><i style="width:${Math.round(p.done/p.all*100)}%"></i></div><span class="n">${p.done} из ${p.all}</span></div>`).join('')||'<div class="muted">Нет отчётов со сроком в этом месяце.</div>'}</div>

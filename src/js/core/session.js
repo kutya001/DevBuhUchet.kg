@@ -5,10 +5,14 @@ const S={me:'e1',search:'',navHidden:store.get('nav',false),open:new Set(store.g
 const me=()=>S.me==='admin'?PLATFORM_ADMIN:EM[S.me];
 const isAdmin=()=>S.me==='admin';
 const myRole=()=>ROLES.find(r=>r.id===me().role);
-function can(p){if(isAdmin())return false;const u=me();if(u.role==='owner')return true;const r=myRole();return !!(r&&r.perms.includes(p))}
+// Право действует, только если в роли есть и «Просматривать …» своей группы (ТЗ «Сотрудники» → «Роли»)
+function can(p){if(isAdmin())return false;const u=me();if(u.role==='owner')return true;const r=myRole();if(!r||!r.perms.includes(p))return false;const v=PERM_VIEW[permGroup(p)];return !v||v===p||r.perms.includes(v)}
+// Область группы прав: «Свои контрагенты» (где сотрудник ответственный) или «Все контрагенты»; право «Видеть все отчёты и всех контрагентов» даёт «Все» во всех группах
+const roleScope=r=>Object.fromEntries(SCOPE_GROUPS.map(g=>[g,(r&&r.scope&&r.scope[g])||'own']));
+function seeAll(g){if(isAdmin())return false;if(me().role==='owner'||can('viewAll'))return true;return roleScope(myRole())[g||'cps']==='all'}
 const feat=f=>!!ORG.features[f];
-const visCps=(all)=>CPS.filter(c=>(all||!c.archived)&&(can('viewAll')||c.resp===S.me));
-const visReports=()=>REPORTS.filter(r=>!r.superseded&&(can('viewAll')||r.resp===S.me));
+const visCps=(all,g)=>{const a=seeAll(g||'cps');return CPS.filter(c=>(all||!c.archived)&&(a||c.resp===S.me))};
+const visReports=()=>{const a=seeAll('reports');return REPORTS.filter(r=>!r.superseded&&(a||r.resp===S.me))};
 function born(o,who){o._cb=o._ub=who||S.me;o._ca=o._ua=nowStamp();return o}
 function touch(o){if(o){o._ub=S.me;o._ua=nowStamp()}return o}
 function log(ent,id,what,cp){HIST.push({at:nowStamp(),who:S.me,ent,id,cp,what});ckSoon();

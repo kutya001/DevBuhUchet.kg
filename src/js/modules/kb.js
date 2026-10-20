@@ -1,7 +1,7 @@
 'use strict';
 // Модуль «База знаний»
 /* ═════════════ Модуль «База знаний» ═════════════ */
-function kbTabs(){const nu=newsUnread();return [{id:'level',label:'Мой уровень',icon:'grad'},{id:'lessons',label:'Уроки',icon:'list'},{id:'arts',label:'Статьи',icon:'book'},{id:'news',label:'Новости',icon:'bell',count:nu||'',red:true},can('staff')?{id:'team',label:'Уровни сотрудников',icon:'users'}:null]}
+function kbTabs(){const nu=newsUnread();return [{id:'level',label:'Мой уровень',icon:'grad'},{id:'lessons',label:'Уроки',icon:'list'},{id:'arts',label:'Статьи',icon:'book'},{id:'news',label:'Новости',icon:'bell',count:nu||'',red:true},can('kbLevels')?{id:'team',label:'Уровни сотрудников',icon:'users'}:null]}
 const stripTags=h=>String(h).replace(/<[^>]+>/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();
 function kbArts(){return KB_ARTS.filter(a=>a.active!==false&&(a.aud==='all'||(a.aud==='adm')===isAdmin())&&(!a.mod||mods().some(m=>m.id===a.mod))&&(!a.perm||can(a.perm))&&(!a.feat||feat(a.feat)))}
 const kbArtOf=i=>{const l=kbArts();return (i.art&&l.find(a=>a.id===i.art))||l.find(a=>a.mod&&a.mod===kbMod(i))||null};
@@ -25,7 +25,7 @@ function renderKB(body,tab,fresh){if(tab==='news')return renderNews(body);const 
     ${secs.length?secs.map(sc=>`<div class="box"><h3>${esc(sc)}</h3><div class="kb-list">${f.filter(a=>a.sec===sc).map(a=>`<button class="kb-a" data-art="${a.id}"><b>${esc(a.t)}</b><span class="hint">${snip(a)}</span>${a.mod?`<span class="tag">${esc(kbModT(a.mod))}</span>`:''}</button>`).join('')}</div></div>`).join(''):`<div class="state">${ic('search','lg')}<b>Ничего не найдено</b><span>Попробуйте другое слово.</span><button class="linkbtn" id="kb-qx">Сбросить поиск</button></div>`}`;
     const qi=$('#kb-q',body);qi.oninput=()=>{KB.q=qi.value;const p=qi.selectionStart;renderPage();const n=$('#kb-q');if(n){n.focus({preventScroll:true});n.setSelectionRange(p,p)}};
     body.onclick=e=>{const b=e.target.closest('[data-art]');if(b)kbArtDlg(KB_ARTS.find(a=>a.id===b.dataset.art));if(e.target.closest('#kb-qx')){KB.q='';renderPage()}};return}
-  if(tab==='team'){if(!can('staff')){body.innerHTML=`<div class="state">${ic('lock','lg')}<b>Нет доступа</b><span>Уровни сотрудников видят владелец и роль с правом «Сотрудники и роли».</span></div>`;return}
+  if(tab==='team'){if(!can('kbLevels')){body.innerHTML=`<div class="state">${ic('lock','lg')}<b>Нет доступа</b><span>Уровни сотрудников видят владелец и роль с правом «Видеть уровни сотрудников».</span></div>`;return}
     const P={};EMP.forEach(e=>P[e.id]=kbFor(e.id));body.innerHTML='<div id="kbg"></div>';
     grid($('#kbg',body),{id:'kb-team',cols:[
       {key:'fio',label:'Сотрудник',type:'text',w:260,val:e=>e.fio,html:e=>`<span class="strong">${esc(e.fio)}</span>`},

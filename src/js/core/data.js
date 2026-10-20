@@ -5,10 +5,10 @@
    в артефакте и при открытии с диска — из копии, которую сборка встраивает в страницу (блоки db-*). */
 const DB_VER=1,DB_KEY='bu.temdb';
 const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json',gked:'gkedDB.json'};
-const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
+const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','indicatorImports','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
 const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit','permissions'];
 const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit']);
-const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram'};
+const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',indicatorImports:'Загрузки показателей из Excel',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram'};
 function dbRead(name,id){
   if(/^https?:/.test(location.protocol))try{const x=new XMLHttpRequest();x.open('GET','data/'+name+'?v='+Date.now(),false);x.send();
     if(x.status===200){const v=JSON.parse(x.responseText);if(v&&v.meta&&v.meta.file===name)return {db:v,from:'папка data'}}}catch(e){}
@@ -43,6 +43,19 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     ['roles'].forEach(id=>{const a=ks.find(x=>x.id===id),b=(r.kbSteps||[]).find(x=>x.id===id);if(a&&b)a.w=b.w});
     ['a3','a13'].forEach(id=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),b=(r.kbArticles||[]).find(x=>x.id===id);if(a&&b)a.html=b.html});
     const g=(db.ref.dictGroups||[]).find(x=>x.group==='Работа системы'),fg=(r.dictGroups||[]).find(x=>x.group==='Работа системы');const ft=fg&&fg.tabs.find(x=>x.tab==='Права ролей');if(g&&ft&&!g.tabs.some(x=>x.tab==='Права ролей'))g.tabs.push(structuredClone(ft))}
+  // Права по действиям и область (37 прав вместо 20): у данных, сохранённых в браузере раньше, — новый справочник «Права ролей», роли сохраняют прежние возможности:
+  // просмотр всех модулей, «Создавать…» → ещё загрузка списком, приостановка, архив; «Назначать отчёты» → ещё «Изменять срок»; ввод показателей, загрузка файлов и выгрузка — всем, как было
+  if(!db.meta.perms2){db.meta.perms2=1;if(r.permissions)db.ref.permissions=structuredClone(r.permissions);
+    const sg=['cps','reports','fin','projects','kpi','files'],mig=x=>{if(!x||x.scope)return;const p=new Set(x.perms||[]);
+      ['cpView','repView','finView','projView','kpiView','filesView','kpiEdit','filesUpload','export'].forEach(k=>p.add(k));
+      if(p.has('createCp'))['cpImport','cpPause','cpArchive'].forEach(k=>p.add(k));if(p.has('assign'))p.add('repDue');if(p.has('indSetup'))p.add('kpiImport');if(p.has('staff'))['staffView','kbLevels'].forEach(k=>p.add(k));
+      x.perms=[...p];x.scope=Object.fromEntries(sg.map(g=>[g,p.has('viewAll')?'all':'own']))};
+    (db.roles||[]).forEach(mig);(db.ref.roleTemplates||[]).forEach(mig);const ow=(db.roles||[]).find(x=>x.id==='owner');if(ow)ow.perms=(r.permissions||[]).map(x=>x.id);
+    // Шаги «Кому вести» и «Ввод из Excel», права шагов и статьи «Роли и права», «Показатели контрагентов» — из refDB
+    const ks=db.ref.kbSteps||[],rk=r.kbSteps||[];['kwho','kxls'].forEach(id=>{const nk=rk.find(x=>x.id===id);if(!nk||ks.some(x=>x.id===id))return;const prev=rk[rk.indexOf(nk)-1];const a=prev&&ks.find(x=>x.id===prev.id);ks.forEach(x=>{if(a&&x.ord>a.ord)x.ord++});ks.splice(a?ks.indexOf(a)+1:ks.length,0,Object.assign(structuredClone(nk),{ord:a?a.ord+1:nk.ord}))});
+    ['import','xls','kval','roles'].forEach(id=>{const a=ks.find(x=>x.id===id),b=rk.find(x=>x.id===id);if(a&&b){a.perm=b.perm;a.w=b.w}});
+    ['a3','a_kpi'].forEach(id=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),b=(r.kbArticles||[]).find(x=>x.id===id);if(a&&b)a.html=b.html});
+    const nw=db.ref.news||[];(r.news||[]).forEach(x=>{const i=nw.findIndex(y=>y.id===x.id);if(i<0)nw.push(structuredClone(x));else if(nw[i].status==='Черновик'&&nw[i]._cb==='admin'&&nw[i]._ua<=x._ua)nw[i]=structuredClone(x)})}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}

@@ -4,7 +4,7 @@
 // First-run empty states per module (ТЗ «Пустые состояния и первый вход»); shown only when the module has no data at all.
 function firstEmpty(){const needCp=f=>()=>CPS.length?f():(toast('Сначала добавьте контрагента','info'),go('cps'));
   const F={
-  cps:()=>!CPS.length&&{icon:'building',title:'Здесь будут ваши клиенты',text:'Добавьте контрагентов по одному или загрузите сразу списком из Excel.',btns:[can('createCp')&&['Добавить контрагента','plus',addCpDlg,1],can('createCp')&&['Загрузить из Excel','paste',importDlg]]},
+  cps:()=>!CPS.length&&{icon:'building',title:'Здесь будут ваши клиенты',text:'Добавьте контрагентов по одному или загрузите сразу списком из Excel.',btns:[can('createCp')&&['Добавить контрагента','plus',addCpDlg,1],can('cpImport')&&['Загрузить из Excel','paste',importDlg]]},
   reports:()=>!REPORTS.length&&{icon:'file',title:'Отчёты появятся, когда вы назначите виды отчётов контрагентам',text:'Отчёты создаются сами по назначенным видам и срокам, вручную их заводить не нужно.',btns:[['Перейти к контрагентам','building',()=>go('cps'),1]]},
   tasks:()=>!allTasks().length&&{icon:'task',title:'Регулярные задачи создадутся сами по отчётам; ручную задачу можно поставить сейчас',btns:[can('tasksCreate')&&['Добавить','plus',()=>taskDlg(),1]]},
   fin:()=>!OPS.length&&!FEEPAYS.length&&!SERVICES.length&&{icon:'coins',title:'Поступления и оплаты налогов появятся после первого приёма денег',btns:[taxVis()&&['Принять деньги','wallet',needCp(()=>inDlg()),1]]},

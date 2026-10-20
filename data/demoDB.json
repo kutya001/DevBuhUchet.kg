@@ -366,69 +366,139 @@
    "id": "owner",
    "name": "Владелец организации",
    "perms": [
-    "viewAll",
-    "changeStatus",
-    "changeSum",
-    "assign",
+    "cpView",
     "createCp",
-    "money",
-    "bonus",
-    "archiveRest",
+    "cpImport",
+    "cpPause",
+    "cpArchive",
     "fee",
     "tariff",
+    "archiveRest",
+    "repView",
+    "assign",
+    "repDue",
+    "changeStatus",
+    "changeSum",
+    "finView",
+    "money",
+    "bonus",
+    "projView",
     "projects",
+    "kpiView",
+    "kpiEdit",
+    "kpiImport",
+    "indSetup",
+    "indCheck",
     "tasksCreate",
     "tasksAll",
     "tasksConfirm",
-    "indSetup",
-    "indCheck",
-    "rollback",
+    "filesView",
+    "filesUpload",
+    "filesDelete",
+    "staffView",
     "staff",
     "dicts",
-    "org"
+    "kbLevels",
+    "org",
+    "viewAll",
+    "export",
+    "rollback"
    ],
    "locked": true,
    "_cb": "e1",
    "_ca": "2025-02-14 11:20",
    "_ub": "e1",
-   "_ua": "2025-02-14 11:20"
+   "_ua": "2025-02-14 11:20",
+   "scope": {
+    "cps": "all",
+    "reports": "all",
+    "fin": "all",
+    "projects": "all",
+    "kpi": "all",
+    "files": "all"
+   }
   },
   {
    "id": "chief",
    "name": "Главный бухгалтер",
    "perms": [
-    "indSetup",
-    "indCheck",
-    "viewAll",
+    "cpView",
+    "createCp",
+    "cpImport",
+    "cpPause",
+    "fee",
+    "tariff",
+    "repView",
+    "assign",
+    "repDue",
     "changeStatus",
     "changeSum",
-    "assign",
-    "createCp",
+    "finView",
     "money",
     "bonus",
-    "fee",
+    "projView",
     "projects",
+    "kpiView",
+    "kpiEdit",
+    "kpiImport",
+    "indSetup",
+    "indCheck",
     "tasksCreate",
     "tasksAll",
-    "tasksConfirm"
+    "tasksConfirm",
+    "filesView",
+    "filesUpload",
+    "filesDelete",
+    "staffView",
+    "dicts",
+    "kbLevels",
+    "viewAll",
+    "export"
    ],
    "_cb": "e1",
    "_ca": "2025-02-14 11:20",
    "_ub": "e1",
-   "_ua": "2025-02-14 11:20"
+   "_ua": "2025-02-14 11:20",
+   "scope": {
+    "cps": "all",
+    "reports": "all",
+    "fin": "all",
+    "projects": "all",
+    "kpi": "all",
+    "files": "all"
+   }
   },
   {
    "id": "acc",
    "name": "Бухгалтер",
    "perms": [
+    "cpView",
+    "repView",
+    "finView",
+    "projView",
+    "kpiView",
+    "filesView",
+    "createCp",
     "changeStatus",
     "changeSum",
-    "money"
+    "money",
+    "kpiEdit",
+    "kpiImport",
+    "filesUpload",
+    "export"
    ],
    "_cb": "e1",
    "_ca": "2025-02-14 11:20",
    "_ub": "e1",
-   "_ua": "2025-02-14 11:20"
+   "_ua": "2025-02-14 11:20",
+   "scope": {
+    "cps": "own",
+    "reports": "own",
+    "fin": "own",
+    "projects": "own",
+    "kpi": "own",
+    "files": "own"
+   }
   }
  ],
  "employees": [
@@ -37496,7 +37566,11 @@
    "order": 1,
    "_cb": "e1",
    "_ca": "2025-02-14 11:00",
-   "name": "Выручка"
+   "name": "Выручка",
+   "off": {},
+   "from": {},
+   "autoNew": true,
+   "seen": []
   },
   {
    "id": "k2",
@@ -37512,7 +37586,11 @@
    "order": 2,
    "_cb": "e1",
    "_ca": "2025-02-14 11:00",
-   "name": "Количество сотрудников"
+   "name": "Количество сотрудников",
+   "off": {},
+   "from": {},
+   "autoNew": true,
+   "seen": []
   },
   {
    "id": "k3",
@@ -37528,7 +37606,16 @@
    "order": 3,
    "_cb": "e2",
    "_ca": "2025-02-14 11:00",
-   "name": "Фонд оплаты труда"
+   "name": "Фонд оплаты труда",
+   "off": {
+    "3": "2026-08",
+    "8": "2026-08",
+    "13": "2026-08",
+    "18": "2026-08"
+   },
+   "from": {},
+   "autoNew": true,
+   "seen": []
   },
   {
    "id": "k4",
@@ -37548,7 +37635,42 @@
    "order": 4,
    "_cb": "e2",
    "_ca": "2025-02-14 11:00",
-   "name": "Доля экспорта"
+   "name": "Доля экспорта",
+   "off": {},
+   "from": {},
+   "autoNew": false,
+   "seen": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+   ]
   }
  ],
  "indicatorValues": [
@@ -48241,6 +48363,32 @@
   }
  ],
  "indicatorHistory": [],
+ "indicatorImports": [
+  {
+   "id": "ki1",
+   "at": "2026-09-08 10:12",
+   "by": "e2",
+   "file": "Показатели август 2026.xlsx",
+   "from": "2026-08",
+   "to": "2026-08",
+   "nNew": 58,
+   "nChg": 4,
+   "nErr": 2,
+   "nSkip": 0
+  },
+  {
+   "id": "ki2",
+   "at": "2026-10-07 16:40",
+   "by": "e3",
+   "file": "Показатели сентябрь 2026.xlsx",
+   "from": "2026-09",
+   "to": "2026-09",
+   "nNew": 21,
+   "nChg": 1,
+   "nErr": 0,
+   "nSkip": 1
+  }
+ ],
  "kbProgress": {
   "u": {
    "e1": {

@@ -38,7 +38,7 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'money',label:'Деньги',type:'enum',w:290,val:moneyTxt,html:moneyHtml}]:[]),
  {key:'ovk',label:'Просрочка',type:'enum',w:140,val:r=>r.overdue&&r.payOverdue?'Сдача и оплата':r.overdue?'Сдача':r.payOverdue?'Оплата':'',hide:true},
  {key:'pays',label:'Что уплачивается',type:'text',w:220,val:r=>tR(r).sum?paysTxt(T[r.t]):'',hide:true},
- {key:'resp',label:'Ответственный',type:'enum',w:132,val:r=>empName(r.resp),hide:!!o.compact&&!can('viewAll')},
+ {key:'resp',label:'Ответственный',type:'enum',w:132,val:r=>empName(r.resp),hide:!!o.compact&&!seeAll('reports')},
  {key:'fcode',label:'Код формы',type:'text',w:110,val:r=>T[r.t].code||'',cls:'mono',hide:true},
  {key:'funds',label:'Средства от контрагента',type:'enum',w:190,val:r=>!r.sum||!tR(r).sum?'':(r.recv||0)>=r.sum?'Получены':(r.recv||0)>0?'Получены частично':'Ожидаем',hide:true},
  {key:'pfull',label:'Период полностью',type:'text',w:170,val:r=>r.phuman,sortVal:r=>r.pkey,hide:true},
@@ -91,7 +91,7 @@ function renderReports(body,tab,fresh){
 }
 function renderMatrix(body){
   const types=RT.filter(t=>ORG.types[t.id]&&ORG.types[t.id].on);
-  const q=norm(S.search);const cps=visCps().filter(c=>!q||norm(c.name).includes(q)||c.inn.includes(q));
+  const q=norm(S.search);const cps=visCps(false,'reports').filter(c=>!q||norm(c.name).includes(q)||c.inn.includes(q));
   const ca=can('assign');
   body.innerHTML=`<div class="note">${ic('info')}<span>Галочка назначает отчёт контрагенту, снятая — завершает назначение: сданные отчёты остаются, будущие несданные получают статус «Не требуется». Заштрихованные ячейки не подходят по режиму или форме собственности.${ca?'':' <b>У вас нет права назначать отчёты.</b>'}</span></div>
   <div class="mx"><table><thead><tr><th>Контрагент · режим</th>${types.map(t=>`<th title="${esc(t.name)}">${esc(t.short)}</th>`).join('')}</tr></thead><tbody>${cps.map(c=>`<tr><th title="${esc(c.name)}"><div style="max-width:230px;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</div><div class="faint" style="font-weight:450;font-size:11.5px">${esc(c.regime||'режим не указан')}</div></th>${types.map(t=>{const a=c.assign.find(a=>a.t===t.id&&!a.to);const why=compatible(t,c);return `<td class="${why&&!a?'na':''}" title="${esc(why||t.name)}"><input type="checkbox" data-cp="${c.id}" data-t="${t.id}" ${a?'checked':''} ${(!ca||(why&&!a))?'disabled':''} aria-label="${esc(t.short)} — ${esc(c.name)}"></td>`}).join('')}</tr>`).join('')}</tbody>
@@ -123,13 +123,13 @@ function reportActions(r){
   if(OPEN.has(st))it.push({label:'Отметить сданным',icon:'send',disabled:!cs,reason:!cs&&no,run:()=>submitDlg([r])});
   if(st==='К сдаче')it.push({label:'Взять в работу',icon:'clock',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'В работе')});
   if(st==='Сдан'){it.push({label:'Отметить принятым',icon:'ok',disabled:!cs,reason:!cs&&no,run:()=>acceptDlg(r)});it.push({label:'Требует исправления',icon:'alert',disabled:!cs,run:()=>setStatus(r,'Требует исправления')})}
-  if(OPEN.has(r.status)&&!t.payOnly)it.push({label:'Изменить срок',icon:'calendar',disabled:!can('assign'),reason:'Нужно право «Назначать отчёты контрагентам»',run:()=>dueEditDlg(r)});
+  if(OPEN.has(r.status)&&!t.payOnly)it.push({label:'Изменить срок',icon:'calendar',disabled:!can('repDue'),reason:'Нужно право «Изменять срок отчёта»',run:()=>dueEditDlg(r)});
   if(t.sum&&r.status!=='Не требуется')it.push({label:'Указать сумму',icon:'coins',disabled:!can('changeSum'),reason:!can('changeSum')&&'Нет права менять сумму',run:()=>sumDlg(r)});
   if(feat('taxpay')&&t.sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'){const ok=r.money&&r.money.s==='ok';
     it.push({label:'Принять деньги',icon:'download',sub:'Поступление от контрагента под этот отчёт',disabled:!can('money'),reason:'Нет права на учёт денег',run:()=>recvDlg(r)});
     it.push({label:'Отметить оплаченным',icon:'wallet',disabled:!ok||!can('money'),reason:!can('money')?'Нет права на учёт денег':!ok?`Денег контрагента не хватает: ${som(r.money?r.money.n:r.sum-r.paid)}`:'',run:()=>payDlg(r)});
     it.push({label:'Напомнить в WhatsApp',icon:'chat',run:()=>waDlg({r})})}
-  if(feat('files'))it.push({label:'Прикрепить файл',icon:'clip',run:()=>fileDlg(r)});
+  if(feat('files')&&can('filesUpload'))it.push({label:'Прикрепить файл',icon:'clip',run:()=>fileDlg(r)});
   if(st==='Сдан'||st==='Принят')it.push({label:'Создать уточнённый',icon:'repeat',disabled:!cs,reason:!cs&&no,run:()=>createRevision(r)});
   it.push({sep:true});
   if(st==='Сдан'||st==='Принят'){const bk=scBack('rep',st,r);it.push({label:`Откатить в «${bk&&!bk.no?bk:'—'}»`,icon:'history',disabled:!can('rollback')||!bk||!!bk.no,reason:!can('rollback')?'Нужно право «Откат статусов»':bk&&bk.no?bk.no:'',run:()=>rollbackDlg('rep',r.id,bk)})}

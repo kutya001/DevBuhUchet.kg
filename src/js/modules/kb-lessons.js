@@ -29,7 +29,7 @@ const CKG=[
   {id:'empcard',learn:1,hit:'empcard',go:G('staff','list','#mbody .gscroll, #mbody .gcards')}]},
  {id:'cps',items:[
   {id:'cp1',star:1,perm:'createCp',done:()=>CPS.length>0,go:G('cps','all','#add-btn','#fab',()=>addCpDlg())},
-  {id:'import',perm:'createCp',done:()=>hasLog('import'),go:G('cps','all','#add-btn','#fab',()=>importDlg())},
+  {id:'import',perm:'cpImport',done:()=>hasLog('import'),go:G('cps','all','#add-btn','#fab',()=>importDlg())},
   {id:'resp',star:1,perm:'assign',done:()=>{const a=CPS.filter(c=>!c.archived);return a.length>0&&a.every(c=>c.resp)},go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'tariff',perm:'fee',feat:()=>feat('fee'),done:()=>CPS.some(c=>c.tariffs&&c.tariffs.length),go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
   {id:'flags',learn:1,hit:'cp.main',go:G('cps','all','#mbody .gscroll, #mbody .gcards')},
@@ -70,8 +70,10 @@ const CKG=[
   {id:'tranche',done:()=>PROJECTS.some(p=>p.pays.length),go:G('projects','all','#mbody .gscroll, #mbody .gcards')},
   {id:'pstat',learn:1,at:['projects.all'],go:G('projects','all','#mbody')}]},
  {id:'kpi',feat:()=>feat('indicators'),items:[
-  {id:'kset',perm:'indSetup',done:()=>hasLog('kind'),go:G('kpi','setup','.kset')},
+  {id:'kset',perm:'indSetup',done:()=>hasLog('kind'),go:G('kpi','setup','.kset',null,()=>{if(S.kSetV!=='list'){S.kSetV='list';renderPage()}ckFlash('.kset')})},
+  {id:'kwho',perm:'indSetup',go:G('kpi','setup','#ksb',null,()=>{S.kSetV='who';renderPage();ckFlash('#ksb')})},
   {id:'kval',staff:1,soft:1,done:()=>IVALS.length>0,go:G('kpi','month','.kt, #mbody',null,()=>{const p=kPrev();const m=kCps(p).length||!kCps(ym(TODAY)).length?p:ym(TODAY);if(S.kpiM!==m){S.kpiM=m;renderPage()}})},
+  {id:'kxls',staff:1,perm:'kpiImport',go:G('kpi','month','.add-x, #add-btn','#fab',()=>kxDlg())},
   {id:'kper',learn:1,staff:1,at:['kpi.period'],go:G('kpi','period','#mbody')},
   {id:'kchk',perm:'indCheck',done:()=>KMS.some(k=>k.status==='Проверено'),go:G('kpi','period','#mbody')},
   {id:'kcard',learn:1,hit:'cp.kpi',go:G('cps','all','#mbody .gscroll, #mbody .gcards')}]},
@@ -131,10 +133,12 @@ const KB_EV={
  'p.pay':['принят транш по проекту',h=>h.ent==='p'&&/^Оплата /.test(h.what)],
  'k.setup':['сохранён показатель',h=>h.ent==='kind'],
  'k.val':['внесено значение показателя',h=>h.ent==='kv'],
+ 'k.who':['изменено, каким контрагентам вести показатель',h=>h.ent==='kind'&&/: «(Не ведётся|Ведётся)» → «/.test(h.what)],
+ 'k.xls':['показатели загружены из Excel',h=>h.ent==='kimp'&&/^Ввод показателей из Excel/.test(h.what)],
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
  'open':['открыт экран'],'use':['первое использование функции'],'state':['выполнено условие в данных пользователя'],'hand':['только вручную («Отметить как просмотрено»)']};
-const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kval:'k.val',kchk:'k.check',upload:'f.upload'};
+const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kwho:'k.who',kval:'k.val',kxls:'k.xls',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
 const KBG=DB.ref.kbGroups;
