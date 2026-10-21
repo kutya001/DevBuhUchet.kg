@@ -16,7 +16,7 @@ function firstLogin(how){if(navigator.webdriver&&!store.get('wntest',false))retu
   whatsNew(how)}
 // o.again — открыть снова из «Базы знаний» (без опросника); o.quiz — «Пройти опросник заново» из учётной политики
 function welcomeOpen(o={}){const quiz=o.quiz||(!o.again&&obQuiz());
-  WL.screens=o.quiz?['quiz','plan']:['hello','mods',...(quiz?['quiz','plan']:[]),'start'];WL.i=0;WL.again=!!o.again;WL.quiz=!!o.quiz;WL.plan=null;WL.ans=obAnsInit(!!o.quiz);
+  WL.screens=o.quiz?['quiz','plan']:['hello','mods',...(quiz?['quiz','plan']:[]),'start',...(quiz&&can('dicts')?['taxes']:[])];WL.tx=null;WL.i=0;WL.again=!!o.again;WL.quiz=!!o.quiz;WL.plan=null;WL.ans=obAnsInit(!!o.quiz);
   let el=$('#welcome');if(!el){el=document.createElement('div');el.id='welcome';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Приветствие');document.body.appendChild(el);
     el.addEventListener('click',wlClick);el.addEventListener('change',wlChange);
     // Свайп влево-вправо листает экраны на телефоне
@@ -54,12 +54,15 @@ function wlRender(){const el=$('#welcome');const k=WL.screens[WL.i];const n=WL.s
       <div class="note">${ic('info')}<span>Всегда включены: ${OB.always.map(id=>'«'+((BIZ.find(m=>m.id===id)||{}).title||'Мой профиль')+'»').join(', ')}. Всё остальное можно включить или выключить позже в «Моя организация» → «Учётная политика»; данные при выключении не удаляются.</span></div>`}
   if(k==='start'){const h=OB.s4;const l=wlFirst();body=`<h1>${esc(h.t)}</h1><p class="wl-lead">${esc(own&&!WL.again?h.lead:h.leadStaff)}</p><ol class="wl-steps">${l.map(i=>`<li><b>${i.star?'★ ':''}${esc(i.t)}</b><p>${esc(i.w||'')}</p></li>`).join('')||'<li><b>Все основные шаги уже выполнены</b><p>Загляните в «Базу знаний», чтобы пройти остальные уроки.</p></li>'}</ol>
     <div class="wl-how"><span class="wl-ic">${ic('play')}</span><div><b>${esc(h.howT)}</b><p>${esc(h.how)}</p></div></div>`}
+  // Экран 5 «Выбор налогов»: весь каталог видов отчётов по группам (компонент tax-pick.js)
+  if(k==='taxes'){const h=OB.tax;const st=WL.tx||(WL.tx=txState());body=`<h1>${esc(h.t)}</h1><p class="wl-lead">${esc(h.lead)}</p>${txHtml(st)}`}
   const dots=WL.screens.map((s,j)=>`<span class="${j===WL.i?'on':''}"></span>`).join('');
   const later=!WL.again&&!WL.quiz&&WL.i<WL.screens.indexOf('quiz')&&obQuiz();
-  let right='';if(k==='quiz')right=`<button class="btn cta" data-wl="next">Далее: что будет включено</button>`;else if(k==='plan')right=`<button class="btn cta" data-wl="apply">${ic('check','sm')}Применить</button>`;else if(k==='start')right=`<button class="btn ghost" data-wl="self">Осмотреться самому</button><button class="btn cta" data-wl="learn">${ic('play','sm')}Начать обучение</button>`;else right=`<button class="btn cta" data-wl="next">Далее</button>`;
+  let right='';if(k==='quiz')right=`<button class="btn cta" data-wl="next">Далее: что будет включено</button>`;else if(k==='plan')right=`<button class="btn cta" data-wl="apply">${ic('check','sm')}Применить</button>`;else if(k==='taxes'){const n=WL.tx?WL.tx.sel.size:0;right=`<span class="muted wl-n">Выбрано: <b>${n}</b></span><button class="btn ghost" data-wl="taxskip">Пропустить</button><button class="btn" data-wl="taxself" ${n?'':'disabled'}>Подключить и осмотреться</button><button class="btn cta" data-wl="taxlearn" ${n?'':'disabled'}>${ic('play','sm')}Подключить и начать обучение</button>`}else if(k==='start'&&WL.screens[WL.i+1]==='taxes')right=`<button class="btn cta" data-wl="next">Далее: выбор налогов</button>`;else if(k==='start')right=`<button class="btn ghost" data-wl="self">Осмотреться самому</button><button class="btn cta" data-wl="learn">${ic('play','sm')}Начать обучение</button>`;else right=`<button class="btn cta" data-wl="next">Далее</button>`;
   el.innerHTML=`<div class="wl-card"><div class="wl-head"><div class="wl-dots" aria-label="Экран ${WL.i+1} из ${n}">${dots}</div><span class="muted">${WL.i+1} из ${n}</span><span class="grow"></span>${later?`<button class="btn ghost sm" data-wl="later" title="Опросник можно пройти позже в учётной политике">Позже</button>`:''}<button class="icon-btn" data-wl="x" aria-label="Закрыть">${ic('x')}</button></div><div class="wl-body">${body}</div>
     <div class="wl-foot">${WL.i?'<button class="btn ghost" data-wl="prev">Назад</button>':''}<div class="grow"></div>${right}</div></div>`;
-  const b=el.querySelector('.wl-body');if(b)b.scrollTop=0;const f=el.querySelector('.wl-foot .cta');if(f&&!isMobile())f.focus({preventScroll:true})}
+  const b=el.querySelector('.wl-body');if(b&&!WL.keep)b.scrollTop=0;WL.keep=false;
+  if(k==='taxes')txMount(b,WL.tx,()=>{const sc=b.scrollTop;WL.keep=true;wlRender();$('#welcome .wl-body').scrollTop=sc});const f=el.querySelector('.wl-foot .cta');if(f&&!isMobile())f.focus({preventScroll:true})}
 // Первые три невыполненных шага программы (основные «★» — первыми)
 function wlFirst(){const l=ckAll().filter(i=>!ckDone(i));return [...l.filter(i=>i.star),...l.filter(i=>!i.star)].slice(0,3).sort((a,b)=>l.indexOf(a)-l.indexOf(b))}
 function wlClick(e){const b=e.target.closest('[data-wl],[data-ans]');if(!b)return;
@@ -69,6 +72,8 @@ function wlClick(e){const b=e.target.closest('[data-wl],[data-ans]');if(!b)retur
   if(a==='later'){ORG.onboard.later=true;ORG.onboard.at=nowStamp();welcomeClose();toast('Опросник можно пройти позже: «Моя организация» → «Учётная политика»','info');return}
   if(a==='x'){if(!WL.again&&!WL.quiz&&obQuiz()&&WL.screens.includes('quiz')){ORG.onboard.later=true}welcomeClose();return}
   if(a==='apply'){const ch=obApply();if(WL.quiz){welcomeClose();if(ch.on.length)featOnDlg(ch.on);else toast(ch.on.length||ch.off.length?'Учётная политика обновлена по опроснику':'Изменений нет: учётная политика не изменилась');return}WL.i++;wlRender();return}
+  if(a==='taxskip'){ORG.onboard.taxes='skip';welcomeClose();go('home');toast('Налоги можно выбрать позже: «Справочники» → «Виды отчётов» → «Подключить из каталога»','info');return}
+  if(a==='taxself'||a==='taxlearn'){const r=txApply(WL.tx,null,'приветствие, выбор налогов');ORG.onboard.taxes=[...WL.tx.sel];toast(`Подключено видов отчётов: ${r.on}`,'ok');return wlClick({target:{closest:()=>({dataset:{wl:a==='taxself'?'self':'learn'}})}})}
   if(a==='self'){welcomeClose();go('home');return}
   if(a==='learn'){welcomeClose();const l=wlFirst();go('kb','lessons');if(l[0])setTimeout(()=>ckHow(l[0].id),450);return}}
 function wlChange(e){const x=e.target;if(x.dataset.plan){const p=WL.plan||(WL.plan=obPlan());const k=x.dataset.plan;p.f[k]=x.checked;

@@ -64,7 +64,7 @@ function renderReports(body,tab,fresh){
   if(['week','overdue','waiting','all'].includes(tab)){
     const c=counts();const accepted=vr.filter(r=>r.accDate&&ym(r.accDate)===month).length;
     const toPay=vr.filter(r=>tR(r).sum&&r.sum>0&&r.payDue&&ym(r.payDue)===month);
-    body.innerHTML=`<div class="plates">
+    body.innerHTML=`${txNote()}<div class="plates">
       ${plate({id:'overdue',icon:'alert',color:c.overdue?'red':'green',label:'Просрочено',value:c.overdue,sub:'сдача или оплата',on:tab==='overdue'})}
       ${plate({id:'week',icon:'calendar',color:'yellow',label:'На этой неделе',value:c.week,sub:`${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}`,on:tab==='week'})}
       ${plate({id:'waiting',icon:'hourglass',color:'blue',label:'Ожидают подтверждения',value:c.waiting,sub:'сданы, не приняты',on:tab==='waiting'})}

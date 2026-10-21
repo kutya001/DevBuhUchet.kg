@@ -92,7 +92,7 @@ function pkView(o,st){const cx=st.cx;const before=o.before||new Set();const canE
     const bases=(DICT.bases?DICT.bases.items:[]).filter(b=>b.active||cx.bases.includes(b.code));
     const cur=st.cur&&T[st.cur];
     return {add,rem,
-      body:`${pkCtxLine(cx)}
+      body:`${txNote()}${pkCtxLine(cx)}
       ${!o.single&&bases.length?`<div class="pk-bases"><span class="muted">Основания:</span><div class="chipsel" id="pk-bases">${bases.map(b=>`<button type="button" data-base="${b.code}" class="${cx.bases.includes(b.code)?'on':''}" title="${esc(b.desc||'')}" ${canEdit?'':'disabled'}>${cx.bases.includes(b.code)?ic('check','sm'):''}${esc(b.name)}</button>`).join('')}</div></div>`:''}
       <div class="pk-bar"><span class="kb-search pk-q">${ic('search','sm')}<input class="inp" id="pk-q" value="${esc(st.q)}" placeholder="Название или код формы, например STI-091" aria-label="Поиск отчёта"></span>
         ${o.single?'':`<div class="seg" role="tablist" id="pk-tab">${[['rec','Рекомендуемые'],['all','Все']].map(([k,l])=>`<button type="button" data-tab="${k}" class="${st.tab===k?'on':''}">${l}</button>`).join('')}</div>`}</div>

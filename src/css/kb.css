@@ -136,3 +136,4 @@ body.wl-open{overflow:hidden}
  .wl-row{grid-template-columns:1fr auto}.wl-row span:nth-child(2){display:none}
  .wl-foot .btn{flex:1 1 auto;min-height:42px}
 }
+.wl-taxes{display:flex;flex-direction:column;gap:6px}.wl-tax{border:1px solid var(--border);border-radius:var(--r-l);padding:8px 12px}
