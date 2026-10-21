@@ -6,8 +6,8 @@
 const DB_VER=1,DB_KEY='bu.temdb';
 const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json',gked:'gkedDB.json'};
 const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','indicatorImports','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
-const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit','permissions'];
-const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit']);
+const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit','permissions','kbUi','kbShows','onboarding'];
+const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit','kbUi','onboarding']);
 const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',indicatorImports:'Загрузки показателей из Excel',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram'};
 function dbRead(name,id){
   if(/^https?:/.test(location.protocol))try{const x=new XMLHttpRequest();x.open('GET','data/'+name+'?v='+Date.now(),false);x.send();
@@ -56,6 +56,14 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     ['import','xls','kval','roles'].forEach(id=>{const a=ks.find(x=>x.id===id),b=rk.find(x=>x.id===id);if(a&&b){a.perm=b.perm;a.w=b.w}});
     ['a3','a_kpi'].forEach(id=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),b=(r.kbArticles||[]).find(x=>x.id===id);if(a&&b)a.html=b.html});
     const nw=db.ref.news||[];(r.news||[]).forEach(x=>{const i=nw.findIndex(y=>y.id===x.id);if(i<0)nw.push(structuredClone(x));else if(nw[i].status==='Черновик'&&nw[i]._cb==='admin'&&nw[i]._ua<=x._ua)nw[i]=structuredClone(x)})}
+  // Обучение и первый запуск (v49): шаги уроков — новые названия, права и признаки из refDB; статьи — пересобранные под текущий прототип, если администратор их не менял;
+  // пустая организация, в которой ещё ничего не сделано, получает основной набор модулей и приветствие с опросником, как новая
+  if(!db.meta.v49){db.meta.v49=1;const ks=db.ref.kbSteps||[],rk=r.kbSteps||[];
+    rk.forEach(b=>{const a=ks.find(x=>x.id===b.id);if(!a)return;['t','w','perm','art','learn'].forEach(k=>{if(b[k]!==undefined)a[k]=b[k]});delete a.mob});
+    (r.kbGroups||[]).forEach(b=>{const a=(db.ref.kbGroups||[]).find(x=>x.id===b.id);if(a&&b.scr)a.scr=b.scr});
+    const arts=db.ref.kbArticles||[];(r.kbArticles||[]).forEach(b=>{const i=arts.findIndex(x=>x.id===b.id);if(i<0)arts.push(structuredClone(b));else if(!arts[i]._ub||arts[i]._ub==='system')arts[i]=structuredClone(b)});
+    const nw=db.ref.news||[];(r.news||[]).forEach(x=>{const i=nw.findIndex(y=>y.id===x.id);if(i<0)nw.push(structuredClone(x));else if(nw[i].status==='Черновик'&&nw[i]._cb==='admin')nw[i]=structuredClone(x)});
+    const o=db.organization;if(db.meta.mode==='empty'&&o&&!o.onboard&&!(db.contractors||[]).length&&!(db.history||[]).some(h=>h.who!=='system')){o.onboard={state:'new'};Object.assign(o.features,(r.onboarding||{}).base||{})}}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}

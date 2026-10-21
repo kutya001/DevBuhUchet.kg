@@ -89,7 +89,7 @@ const CKG=[
   {id:'grp',learn:1,staff:1,hit:'grp',go:G('cps','all','[data-a=grp]')},
   {id:'xls',learn:1,staff:1,hit:'xls',go:G('cps','all','[data-a=xls]')},
   {id:'stats',learn:1,staff:1,hit:'stats',go:G('reports','week','#stat-btn')},
-  {id:'swipe',learn:1,staff:1,mob:1,hit:'swipe',go:G('reports','week','#tabs')}]}];
+  {id:'swipe',learn:1,staff:1,hit:'swipe',go:G('reports','week','#tabs')}]}];
 const CKA=[{id:'adm',items:[
   {id:'a-dicts',at:['pdicts.regimes','pdicts.forms','pdicts.organs','pdicts.ugns','pdicts.banks'],go:G('pdicts','regimes','#mbody')},
   {id:'a-types',star:1,at:['pdicts.types'],go:G('pdicts','types','#mbody')},
@@ -137,7 +137,7 @@ const KB_EV={
  'k.xls':['показатели загружены из Excel',h=>h.ent==='kimp'&&/^Ввод показателей из Excel/.test(h.what)],
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
- 'open':['открыт экран'],'use':['первое использование функции'],'state':['выполнено условие в данных пользователя'],'hand':['только вручную («Отметить как просмотрено»)']};
+ 'open':['показ «Показать как» до конца или статья шага (Посмотреть)'],'use':['первое использование функции (раздел «Работа со списками»)'],'state':['выполнено условие в данных пользователя'],'hand':['только показом или статьёй']};
 const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kwho:'k.who',kval:'k.val',kxls:'k.xls',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
@@ -151,16 +151,25 @@ kbBuild(DB.ref.kbSteps);
 const kbMod=i=>i.mod||(i.go&&i.go.mod)||(i.at&&i.at[0].split('.')[0])||null;
 const kbModT=id=>{const m=[...BIZ,...ADM].find(x=>x.id===id);return m?m.title:''};
 const permT=p=>{const x=PERMS.find(y=>y[0]===p);return x?x[1]:''};
-const ckU=u=>{u=u||S.me;return CKS.u[u]=CKS.u[u]||{done:{},skip:{},max:null,got:[]}};
-function kbVis(i){if(i.active===false)return false;if(i.perm&&!can(i.perm))return false;if(i.featk&&!feat(i.featk))return false;if(i.feat&&!i.feat())return false;if(i.mob&&!isMobile())return false;
+const ckU=u=>{u=u||S.me;const x=CKS.u[u]=CKS.u[u]||{done:{},skip:{},max:null,got:[]};if(!x.arts)x.arts={};return x};
+// Отметка шага: один раз и навсегда, с датой и способом (ТЗ «Точные правила подсчёта»); у старых записей способ — строкой
+const CK_HOW={action:'действием',data:'действием, сделанным раньше',show:'показом «Показать как»',art:'чтением статьи',use:'первым использованием',auto:'действием',visit:'открытием экрана',hand:'вручную'};
+const ckRec=i=>{const r=ckU().done[i.id];return !r?null:typeof r==='string'?{how:r,at:''}:r};
+const ckHowTxt=i=>{const r=ckRec(i);return r?(CK_HOW[r.how]||'')+(r.at?' · '+fmtD(r.at.slice(0,10)):''):''};
+function kbVis(i){if(i.active===false)return false;if(i.perm&&!can(i.perm))return false;if(i.featk&&!feat(i.featk))return false;if(i.feat&&!i.feat())return false;
   const m=kbMod(i);return !m||mods().some(x=>x.id===m)}
-function ckGroups(){const adm=isAdmin();return KBG.filter(g=>!!g.adm===adm).map(g=>({...g,items:KBS.filter(i=>i.g===g.id&&kbVis(i)).sort((a,b)=>a.ord-b.ord)})).filter(g=>g.items.length)}
+// Порядок групп: у владельца — порядок первичной настройки; у остальных сотрудников первой идёт «Главная и аналитика»
+function ckGroups(){const adm=isAdmin();let gs=KBG.filter(g=>!!g.adm===adm);if(!adm&&me().role!=='owner'){const h=gs.find(g=>g.id==='home');if(h)gs=[h,...gs.filter(g=>g!==h)]}
+  return gs.map(g=>({...g,items:KBS.filter(i=>i.g===g.id&&kbVis(i)).sort((a,b)=>a.ord-b.ord)})).filter(g=>g.items.length)}
 const ckAll=()=>ckGroups().flatMap(g=>g.items);
 const ckDone=i=>!!ckU().done[i.id];
 const ckSkip=i=>!ckDone(i)&&!!ckU().skip[i.id];
 const ckRes=i=>ckDone(i)||ckSkip(i);
 const ckFind=id=>KBS.find(i=>i.id===id);
-function ckMark(i,how){const sc=ckU();if(sc.done[i.id])return false;sc.done[i.id]=how||'auto';delete sc.skip[i.id];return true}
+function ckMark(i,how){const sc=ckU();if(sc.done[i.id])return false;sc.done[i.id]={how:how==='auto'||!how?'action':how,at:nowStamp()};delete sc.skip[i.id];return true}
+// «Новое»: шаг добавлен администратором или его модуль недавно включён в учётной политике (30 дней)
+const kbFeatOf=i=>i.featk||KB_FEAT[i.g]||'';
+const kbIsNew=i=>!ckDone(i)&&(!!i.isNew||(()=>{const f=kbFeatOf(i);const d=f&&ORG.featOn&&ORG.featOn[f];return !!d&&d>=addDays(TODAY,-30)})());
 function ckNext(after){const l=ckAll();const k=after?l.findIndex(i=>i.id===after):-1;return [...l.slice(k+1),...l.slice(0,k+1)].find(i=>!ckRes(i))||null}
 function kbOk(i){if(i.ev&&!HIST.some(h=>h.who===S.me&&i.ev(h)))return false;if(i.done)return !!i.done();return !!i.ev}
 /* Уровни: только по проценту выполненных шагов своей программы; полученный уровень не понижается */
@@ -169,7 +178,8 @@ const KB_LVA=DB.ref.kbLevels.admin;
 const kbLv=()=>isAdmin()?KB_LVA:KB_LVB;
 function kbStat(){const gs=ckGroups();const l=gs.flatMap(g=>g.items);const n=l.length,d=l.filter(ckDone).length;const pct=n?Math.floor(d*100/n):0;const lv=kbLv();let k=0;lv.forEach((x,j)=>{if(pct>=x.p)k=j});
   const u=ckU();const cur=Math.max(k,u.max==null?0:u.max);const nx=lv[cur+1]||null;const need=nx?Math.max(1,Math.ceil(nx.p*n/100)-d):0;
-  return {n,d,pct,k,cur,lv,nx,need,u,gs,mods:gs.map(g=>({id:g.id,t:g.t,d:g.items.filter(ckDone).length,n:g.items.length})),last:(u.got||[]).slice(-1)[0]||null,star:l.filter(i=>i.star).length,stard:l.filter(i=>i.star&&ckDone(i)).length}}
+  const al=typeof kbArts==='function'?kbArts():[];
+  return {n,d,pct,k,cur,lv,nx,need,u,gs,mods:gs.map(g=>({id:g.id,t:g.t,d:g.items.filter(ckDone).length,n:g.items.length})),last:(u.got||[]).slice(-1)[0]||null,star:l.filter(i=>i.star).length,stard:l.filter(i=>i.star&&ckDone(i)).length,arts:al.length,artsRead:al.filter(a=>u.arts[a.id]).length}}
 function kbSync(silent){const s=kbStat();const u=s.u;
   if(u.max==null){u.max=s.k;u.got=s.lv.slice(0,s.k+1).map((x,j)=>({l:j,at:nowStamp()}));return kbStat()}
   if(s.k>u.max){for(let j=u.max+1;j<=s.k;j++)u.got.push({l:j,at:nowStamp()});u.max=s.k;if(!silent)kbCongrats(s.lv[s.k].n)}
@@ -196,15 +206,18 @@ function ckEval(){const fresh=CK.q.splice(0);
   ckBar()}
 // Silent baseline: what this user already did before (history under his name) is marked at once, without dialogs.
 function ckBase(noSync){ckAll().forEach(i=>{if(!ckDone(i)&&(i.ev||i.done)){let ok=false;try{ok=kbOk(i)}catch(e){}if(ok)ckMark(i,'data')}});if(!noSync)kbSync(true)}
-function ckHit(name){ckAll().forEach(i=>{if(i.hit===name&&ckMark(i))CK.q.push(i)});ckSoon()}
-function ckVisit(){const k=S.mod+(S.tab?'.'+S.tab:'');ckAll().forEach(i=>{if(i.at&&(i.at.includes(k)||i.at.includes(S.mod)))ckMark(i,'visit')});ckSoon()}
+// Первое использование функции засчитывает шаг «Сделать» и шаги «Посмотреть» раздела «Работа со списками и интерфейсом»; остальные «Посмотреть» — только показом или статьёй
+function ckHit(name){if(TOUR.on)return;ckAll().forEach(i=>{if(i.hit===name&&(!i.learn||i.g==='lists')&&ckMark(i,'use'))CK.q.push(i)});ckSoon()}
+// Открытие экрана шаг «Посмотреть» больше не засчитывает (ТЗ: «просто открыть экран недостаточно»)
+function ckVisit(){}
+// Статья прочитана: открыта и прокручена до конца; засчитывает связанный шаг «Посмотреть»
+function kbArtRead(a,stepId){if(!a||!a.id)return;const u=ckU();const fresh=!u.arts[a.id];if(fresh)u.arts[a.id]={at:nowStamp()};
+  const l=ckAll().filter(i=>i.learn&&(i.id===stepId||i.art===a.id)&&ckMark(i,'art'));if(l.length||fresh){kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();if(S.mod==='kb'&&!MODALS.length)renderPage()}
+  if(l.length)toast(`База знаний: ${l.length===1?'шаг просмотрен — «'+l[0].t+'»':'просмотрено шагов: '+l.length}`,'grad');else if(fresh)toast('Статья прочитана','book')}
 function ckFlash(sel,msel){setTimeout(()=>{const s=isMobile()&&msel?msel:sel;if(!s)return;const el=[...document.querySelectorAll(s)].find(x=>x.getClientRects().length);if(!el)return;
   el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('ck-flash');void el.offsetWidth;el.classList.add('ck-flash');setTimeout(()=>el.classList.remove('ck-flash'),2800)},380)}
 function ckGo(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;MODALS.slice().forEach(m=>m.close());i.go();ckBar()}
-function ckHow(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;const g=i.go;let mod=g.mod||kbMod(i),tab=g.tab||null;
-  if(i.at&&!g.mod){[mod,tab]=i.at[0].split('.')}const hl=g.hl||'#mbody',mhl=g.mhl||hl;const d1=hl.split(',')[0].trim(),m1=mhl.split(',').pop().trim();
-  const tips=(i.how&&i.how.length?i.how:[i.w+(i.learn?' Шаг отметится сам, когда вы откроете это место или воспользуетесь функцией.':' Шаг отметится сам, когда действие будет сохранено.')]);
-  TOUR.custom=tips.map((t,k)=>[mod,tab||null,d1,m1,i.t+(tips.length>1?` (${k+1} из ${tips.length})`:''),t]);tourStart('item',0)}
+function ckHow(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=false;CK.barOff=false;tourStep(i)}
 function ckDoneDlg(i){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(i.id);
   openModal({noMax:true,size:'mid',render:()=>({title:`Готово: шаг «${esc(i.t)}» выполнен`,sub:(()=>{const s=kbStat();return `База знаний: ${esc(s.lv[s.cur].n)} · ${s.pct} %`})(),
     body:`<p style="margin:0;color:var(--muted);line-height:1.55">${nx?`Следующий шаг — «${esc(nx.t)}».`:'Все шаги вашей программы пройдены.'} Можно вернуться к Базе знаний, сразу перейти к следующему шагу или остаться здесь.</p>`,

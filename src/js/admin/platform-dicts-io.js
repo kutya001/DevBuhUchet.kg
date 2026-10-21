@@ -95,6 +95,13 @@ DX.kbnews={title:'Новости',key:'id',items:()=>NEWS,cols:[
  ['md','Подробное описание (markdown)',n=>n.md||'',v=>v||{err:'нет подробного описания'}]],
  upd:(x,v)=>{Object.keys(v).forEach(f=>{if(v[f]!=null)x[f]=v[f]});if(x.status==='Опубликовано')x.edited=TODAY;touch(x)},
  add:v=>{const o=born(Object.assign({status:'Черновик',off:false,link:null,hist:[{at:nowStamp(),to:'Черновик',who:S.me}]},v));NEWS.push(o)}};
+// Показы: строка — одно облачко сценария; меняются заголовок, текст и «Активен» сценария
+const shFlat=()=>KBSH.flatMap(h=>h.items.map((p,k)=>({id:h.id+'#'+(k+1),h,p,name:((KBS.find(s=>s.id===h.step)||{}).t||h.step)+' · облачко '+(k+1)})));
+DX.kbshows={title:'Показы',key:'id',items:shFlat,cols:[
+ ['id','Код',x=>x.id,v=>v],['step','Шаг',x=>{const i=KBS.find(s=>s.id===x.h.step);return i?i.t:x.h.step},v=>v],['what','Что подсвечивает',x=>kbShowWhat(x.p),v=>v],
+ ['t','Заголовок облачка',x=>x.p.auto?'':x.p.t||'',v=>v],['x','Текст облачка',x=>x.p.auto?'':x.p.x||'',v=>v],['active','Сценарий активен',x=>YN(x.h.active!==false),ynIn('Сценарий активен')]],
+ upd:(x,v)=>{if(!x.p.auto){if(v.t)x.p.t=v.t;if(v.x!=null)x.p.x=v.x}if(v.active!=null)x.h.active=v.active},
+ add:v=>{const h=KBSH.find(s=>v.id&&v.id.startsWith(s.id+'#'));if(h&&v.t)h.items.push({t:v.t,x:v.x||''})}};
 DX.kbarts={title:'Статьи Базы знаний',key:'id',items:()=>KB_ARTS,cols:[
  ['id','Код',a=>a.id,v=>v],['sec','Раздел',a=>a.sec,v=>v||{err:'нет раздела'}],['t','Название',a=>a.t,v=>v||{err:'нет названия'}],
  ['mod','Модуль',a=>a.mod?kbModT(a.mod):'',v=>{if(!v||v==='—')return '';const m=[...BIZ,...ADM].find(x=>norm(x.title)===norm(v));return m?m.id:{err:`модуля «${v}» нет`}}],

@@ -3,7 +3,7 @@
 /* ═════════════ Start ═════════════ */
 // Живые данные ↔ TemDB: снимок для сохранения и выгрузки, замена на месте при загрузке и очистке
 const dbOrg=()=>({organization:ORG,roles:ROLES,employees:EMP,contractors:CPS,reports:REPORTS,moneyOps:OPS,history:HIST,tasks:TASKS,feePayments:FEEPAYS,services:SERVICES,projects:PROJECTS,files:FILES,indicators:IND,indicatorValues:IVALS,indicatorMonths:KMS,indicatorHistory:IHIST,indicatorImports:KIMP,kbProgress:CKS,newsRead:NEWS_READ,platformOrgs:ORGS,platformUsers:OTHER_USERS,dictRequests:REQUESTS,telegramLog:TG_LOG});
-const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD,permissions:PERM_REF,gked:GK});
+const dbRef=()=>({dictionaries:DICT,taxes:TAXES,enRates:EN_TABLE,propertyRates:PROP_RATES,bizSize:BIZ_SIZE,notes:REF_NOTES,reportTypes:RT,singleTaxRates:EN_RATES,taxRates:RATES,defaultRates:DEF_RATE,phoneCodes:PHONES,holidays:HOLIDAYS,workingSaturdays:WORK_SAT,statuses:{report:ST,payment:PST,task:TST,service:SVST,project:PRS,indicator:KST},statusNames:STL,roleTemplates:ROLE_TPL,messageTemplates:TPL,localization:L10N,kbGroups:KBG,kbSteps:KBS,kbLevels:{business:KB_LVB,admin:KB_LVA},kbArticles:KB_ARTS,news:NEWS,dictHistory:PD_HIST,dictLoads:PD_LOADS,calendarAudit:HOL_AUD,permissions:PERM_REF,gked:GK,kbUi:KBUI,kbShows:KBSH,onboarding:OB});
 const CP_DERIVED=['overdue','avail','free','status','paused'],KB_FN=['done','go','ev','feat'];
 const dbClean=v=>JSON.parse(JSON.stringify(v,(k,x)=>x instanceof Set?[...x]:typeof x==='function'?undefined:x));
 function dbSnap(){const o=dbClean(dbOrg()),r=dbClean({...dbRef(),kbSteps:KBS.map(i=>Object.fromEntries(Object.entries(i).filter(([k,v])=>typeof v!=='function'&&!KB_FN.includes(k))))});
@@ -21,10 +21,10 @@ let dbT=null,dbWarned=false;
 function dbSave(){clearTimeout(dbT);dbT=null;try{localStorage.setItem(DB_KEY,JSON.stringify(dbSnap()))}catch(e){if(!dbWarned&&e&&e.name==='QuotaExceededError'){dbWarned=true;toast('Не удалось сохранить рабочие данные: в браузере не хватает места. Выгрузите TemDB.json','alert')}}}
 const dbSoon=()=>{clearTimeout(dbT);dbT=setTimeout(dbSave,700)};
 // После замены данных — как после входа: закрыть окна, войти владельцем, открыть «Главную»
-function dbAfter(msg){Object.keys(GS).forEach(k=>delete GS[k]);MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
+function dbAfter(msg){Object.keys(GS).forEach(k=>delete GS[k]);if(typeof welcomeClose==='function')welcomeClose();MODALS.slice().forEach(m=>m.close());closeSheet();closePop();if(TOUR.on){TOUR.on=false;$('#tour').hidden=true}
   CK.active=null;CK.bar=false;CK.shown={};KB.memo={};Object.keys(TAB_SCROLL).forEach(k=>delete TAB_SCROLL[k]);S.me='e1';S.mod=null;S.tab=null;derive();
   if(location.hash==='#home.today')route();else location.hash='#home.today';
-  ckBase();renderSide();dbSave();toast(msg,'refresh');whatsNew('login')}
+  ckBase();renderSide();dbSave();toast(msg,'refresh');firstLogin('login')}
 // Переключатель «Данные» и «Очистить рабочие данные»: TemDB создаётся заново из demoDB.json или из пустого шаблона TemDB.json
 function setDataMode(v){DATA_MODE=v;store.set('data',v);if(v==='empty')EMP.forEach(e=>store.set('kbw.'+e.id,false));
   dbApply(dbFresh(v));dbAfter(v==='empty'?'Пустая организация: как сразу после регистрации':'Включены демо-данные')}
@@ -52,4 +52,4 @@ addEventListener('pagehide',()=>{if(dbT)dbSave()});document.addEventListener('vi
 derive();initTop();dbSave();
 if(DBMISS.length)setTimeout(()=>toast('В сохранённых рабочих данных не хватало разделов: '+DBMISS.join(', ')+'. Они взяты из шаблона','alert'),600);
 if(!location.hash||location.hash==='#')history.replaceState(null,'','#home');
-ckBase();route();ckBar();renderSide();renderSheetDot();whatsNew('open');
+ckBase();route();ckBar();renderSide();renderSheetDot();firstLogin('open');

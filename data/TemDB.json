@@ -19,14 +19,14 @@
   "features": {
    "tasks": true,
    "calendar": true,
-   "fee": true,
-   "accounts": true,
-   "taxpay": true,
    "telegram": true,
    "files": true,
-   "finops": true,
-   "projects": true,
-   "indicators": true
+   "taxpay": false,
+   "accounts": false,
+   "fee": false,
+   "finops": false,
+   "projects": false,
+   "indicators": false
   },
   "remind": [
    7,
@@ -352,7 +352,10 @@
     "_ua": "2026-10-18 17:30"
    }
   },
-  "taskConfirm": true
+  "taskConfirm": true,
+  "onboard": {
+   "state": "new"
+  }
  },
  "roles": [
   {

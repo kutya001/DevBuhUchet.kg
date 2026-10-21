@@ -71,3 +71,68 @@
 .md-prev{border:1px solid var(--border);border-radius:var(--r-m);padding:10px 14px;background:var(--pane);overflow:auto;max-height:520px;font-size:13.5px}
 .wn-item{padding:4px 0 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;align-items:flex-start}.wn-item:last-child{border-bottom:0;padding-bottom:0}
 .wn-item h3{margin:2px 0 0;font-size:16px}.wn-item .kb-art{width:100%}
+/* Показ «Показать как»: счётчик, полоса, кнопки */
+.tour-top{gap:6px;min-height:24px}
+.tour-bar{height:4px;margin:0 0 4px}
+.tour-nav{gap:8px;margin-top:2px;flex-wrap:wrap}
+.tour-keys{font-size:11.5px;color:var(--faint);text-align:right}
+.tour-bub .linkbtn{font-size:12.5px}
+@media (max-width:767px){.tour-bub{padding:12px 14px 10px}.tour-bub b{font-size:15px}.tour-bub p{font-size:13.5px;max-height:30vh;overflow:auto}.tour-nav .btn{min-height:40px}}
+/* Обучение: правила подсчёта, прочитанная статья, «Можно включить», вид шага */
+.kb-rules{background:var(--pane-alt);border-radius:var(--r-m);padding:10px 14px;font-size:13px;line-height:1.5}
+.kb-rules ul{margin:4px 0 0;padding-left:20px}.kb-rules li{margin:2px 0;color:var(--muted)}
+.kb-art-end{display:flex;align-items:center;gap:6px;justify-content:center;margin:18px 0 4px;font-size:12px;color:var(--faint);border-top:1px dashed var(--border);padding-top:10px}
+.kb-off{display:flex;flex-direction:column}
+.kb-offi{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}.kb-offi:first-child{border-top:0}
+.tag.do{background:var(--green-bg);color:var(--green)}
+/* Приветствие новой организации */
+#welcome{position:fixed;inset:0;z-index:98;background:var(--cover);display:grid;place-items:center;padding:24px}
+#welcome[hidden]{display:none}
+body.wl-open{overflow:hidden}
+.wl-card{background:var(--raised);color:var(--text);border:1px solid var(--border-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-l);width:min(860px,100%);max-height:min(760px,100%);display:flex;flex-direction:column;overflow:hidden}
+.wl-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.wl-dots{display:flex;gap:6px}.wl-dots span{width:8px;height:8px;border-radius:50%;background:var(--border-strong)}.wl-dots span.on{background:var(--accent);width:22px;border-radius:5px}
+.wl-body{flex:1;overflow:auto;padding:22px 28px;display:flex;flex-direction:column;gap:14px}
+.wl-body h1{margin:0;font-size:24px;letter-spacing:-.02em}
+.wl-lead{margin:0;color:var(--muted);font-size:15px;line-height:1.55;max-width:680px}
+.wl-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+.wl-hero{display:flex;flex-direction:column;gap:8px}
+.wl-logo{transform:scale(1.3);transform-origin:left center;margin-bottom:6px}
+.wl-pts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.wl-pt{display:flex;gap:10px;align-items:flex-start;background:var(--pane-alt);border-radius:var(--r-l);padding:12px}
+.wl-pt p,.wl-mod p,.wl-q p,.wl-steps p,.wl-how p{margin:3px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
+.wl-ic{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--blue-bg);color:var(--blue);flex:none}
+.wl-pic{margin:0;display:flex;flex-direction:column;gap:6px}
+.wl-pic figcaption{font-size:12.5px;color:var(--faint)}
+.wl-app{display:flex;border:1px solid var(--border);border-radius:var(--r-l);overflow:hidden;background:var(--pane);min-height:170px}
+.wl-side{display:flex;flex-direction:column;gap:6px;padding:10px 8px;background:var(--pane-alt);border-right:1px solid var(--border)}
+.wl-side span{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;color:var(--muted)}.wl-side span.on{background:var(--nav-active);color:var(--text)}
+.wl-main{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.wl-top{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}.wl-top b{color:var(--text);font-size:13.5px}
+.wl-add{margin-left:auto;background:var(--accent);color:var(--on-accent);padding:3px 10px;border-radius:8px;font-weight:600}
+.wl-plates{display:flex;gap:8px;flex-wrap:wrap}.wl-plates span{display:flex;flex-direction:column;font-size:11.5px;color:var(--muted);padding:6px 10px;border-radius:9px;min-width:92px}
+.wl-plates b{font-size:17px;color:var(--text)}.wl-plates .r{background:var(--red-bg)}.wl-plates .y{background:var(--yellow-bg)}.wl-plates .b{background:var(--blue-bg)}
+.wl-row{display:grid;grid-template-columns:1.2fr 1.4fr auto;gap:8px;font-size:12.5px;padding:5px 2px;border-top:1px solid var(--border);align-items:center}
+.wl-st{font-size:11.5px;padding:1px 8px;border-radius:6px;font-weight:600}.wl-st.y{background:var(--yellow-bg);color:var(--yellow)}.wl-st.b{background:var(--blue-bg);color:var(--blue)}.wl-st.g{background:var(--green-bg);color:var(--green)}
+.wl-mods,.wl-fx{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.wl-mod{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-l)}
+.wl-mod .pill{flex:none;align-self:center}.wl-mod.sm{padding:8px 12px}
+.wl-h3{margin:6px 0 0;font-size:14px}
+.wl-qs{display:flex;flex-direction:column;gap:8px}
+.wl-q{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-l)}
+.wl-q.sub{margin-left:28px;background:var(--pane-alt)}
+.wl-seg{flex:none}
+.wl-plan{display:grid;grid-template-columns:1fr 1fr;gap:16px}.wl-plan>div{display:flex;flex-direction:column;gap:4px}
+.wl-pl{padding:8px 4px}
+.wl-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px}
+.wl-how{display:flex;gap:10px;align-items:flex-start;background:var(--pane-alt);border-radius:var(--r-l);padding:12px}
+@media (max-width:767px){
+ #welcome{padding:0;place-items:stretch}
+ .wl-card{border-radius:0;max-height:none;height:100%;border:0}
+ .wl-body{padding:16px}.wl-body h1{font-size:21px}
+ .wl-pts,.wl-mods,.wl-fx,.wl-plan{grid-template-columns:1fr}
+ .wl-q{grid-template-columns:1fr;gap:8px}.wl-q.sub{margin-left:14px}
+ .wl-seg{display:flex}.wl-seg button{flex:1}
+ .wl-row{grid-template-columns:1fr auto}.wl-row span:nth-child(2){display:none}
+ .wl-foot .btn{flex:1 1 auto;min-height:42px}
+}
