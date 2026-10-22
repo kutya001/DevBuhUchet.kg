@@ -64,6 +64,22 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     const arts=db.ref.kbArticles||[];(r.kbArticles||[]).forEach(b=>{const i=arts.findIndex(x=>x.id===b.id);if(i<0)arts.push(structuredClone(b));else if(!arts[i]._ub||arts[i]._ub==='system')arts[i]=structuredClone(b)});
     const nw=db.ref.news||[];(r.news||[]).forEach(x=>{const i=nw.findIndex(y=>y.id===x.id);if(i<0)nw.push(structuredClone(x));else if(nw[i].status==='Черновик'&&nw[i]._cb==='admin')nw[i]=structuredClone(x)});
     const o=db.organization;if(db.meta.mode==='empty'&&o&&!o.onboard&&!(db.contractors||[]).length&&!(db.history||[]).some(h=>h.who!=='system')){o.onboard={state:'new'};Object.assign(o.features,(r.onboarding||{}).base||{})}}
+  // Сверка с прототипом (v51): статьи, облачка показов и подсказки «Базы знаний» с новыми названиями прав и кнопок, шаблон Telegram «Должники по обслуживанию», описания прав «Просматривать финансовые операции» и «Просматривать отчёты» —
+  // у данных, сохранённых в браузере раньше, берутся из refDB, если администратор их не менял (статья без его правки, облачко со старым текстом, подсказки, которых ещё не было, в том числе подсказки админки)
+  if(!db.meta.v51){db.meta.v51=1;const arts=db.ref.kbArticles||[];
+    ['a_kbadm','a14','a12','a7','a_kb','a3','a15'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
+    const old=['Нужно право «Выгрузка в Excel».','Нужно право «Тариф и оплата обслуживания».','прежние тарифы остаются в журнале.'];
+    ['sh-xls','sh-feepay','sh-tariff'].forEach(id=>{const a=(db.ref.kbShows||[]).find(x=>x.id===id),b=(r.kbShows||[]).find(x=>x.id===id);if(!a||!b)return;
+      b.items.forEach(bi=>{const ai=bi.s&&(a.items||[]).find(x=>x.s===bi.s);if(ai&&old.some(o=>(ai.x||'').includes(o))){ai.t=bi.t;ai.x=bi.x}})});
+    const tc=(db.ref.kbShows||[]).find(x=>x.id==='sh-typecfg'),tcb=(r.kbShows||[]).find(x=>x.id==='sh-typecfg');if(tc&&tcb){const i=(tc.items||[]).findIndex(x=>x.t==='Подключённый вид отчёта');if(i>=0)tc.items[i]=structuredClone(tcb.items[0])}
+    // «Создать уточнённый», «Отметить оплаченным» и «Принять деньги» есть не у всех отчётов: показ открывает меню и карточку отчёта, у которого это действие есть
+    ['sh-ver','sh-pay','sh-in'].forEach(id=>{const a=(db.ref.kbShows||[]).find(x=>x.id===id),b=(r.kbShows||[]).find(x=>x.id===id);if(!a||!b||!a.items||!a.items.length)return;
+      if(JSON.stringify(a.items[0].sub)==='["menu"]'){a.items[0].sub=structuredClone(b.items[0].sub);if(a.items[1]&&b.items[1]&&JSON.stringify(a.items[1].pre)==='["row"]')a.items[1].pre=structuredClone(b.items[1].pre);if(id==='sh-ver'&&a.scr==='reports.all')a.scr=b.scr}});
+    const u=db.ref.kbUi,ru=r.kbUi;if(u&&ru){['fields','forms','boxes','rows','acts','tabs','add','addItems','plates','plateMode','buttons'].forEach(k=>{u[k]=u[k]||{};Object.entries(ru[k]||{}).forEach(([n,v])=>{if(!(n in u[k]))u[k][n]=structuredClone(v)})});
+      if(u.ui&&ru.ui){if(/^Форма новой записи/.test(u.ui.form||''))u.ui.form=ru.ui.form;Object.entries(ru.ui).forEach(([n,v])=>{if(!(n in u.ui))u.ui[n]=v})}const tf=u.fields['Тип обслуживания'];if(tf&&/«Постоянный»/.test(tf.x||''))tf.x=ru.fields['Тип обслуживания'].x;
+      if(u.acts['Заблокировать']==='Запрещает вход; данные сотрудника сохраняются.')u.acts['Заблокировать']=ru.acts['Заблокировать']}
+    [['finView',/«Финансы»/],['repView',/вкладку «Отчёты» в/]].forEach(([id,re])=>{const a=(db.ref.permissions||[]).find(x=>x.id===id),b=(r.permissions||[]).find(x=>x.id===id);if(a&&b&&re.test(a.desc||''))a.desc=b.desc});
+    ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k])Object.entries(r[k]).forEach(([n,v])=>{if(a[n]==null)a[n]=v})})}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}

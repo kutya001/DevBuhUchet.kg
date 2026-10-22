@@ -21,32 +21,44 @@ function tFind(p){const r=tRoot(p);if(!r)return null;
 function tClick(sel,root){const el=[...(root||document).querySelectorAll(sel)].find(tVis);if(el){el.click();return true}return false}
 // Действия перед показом пункта
 async function tAct(a){if(!a)return;
-  if(a==='row'){tClick('#mbody tbody tr[data-id], #mbody .gcard');await tSettle(320);return}
+  // Открывается первая обычная строка, бледная (приостановленная, неподключённая) — только если других нет
+  if(a==='row'){if(!tClick('#mbody tbody tr[data-id]:not(.muted), #mbody .gcard:not(.muted)'))tClick('#mbody tbody tr[data-id], #mbody .gcard');await tSettle(320);return}
   // {row:'К сдаче'} — первая запись списка с этим текстом (например, со статусом)
   if(a.row){const r=$$('#mbody tbody tr[data-id], #mbody .gcard').filter(tVis).find(x=>x.textContent.includes(a.row));if(r){r.click();await tSettle(320)}else await tAct('row');return}
   if(a==='menu'){if(POP&&POP_ANCHOR&&POP_ANCHOR.matches('[data-menu]'))return;tClick('#mbody [data-menu]');await tWait(120);return}
+  // {menuWith:'Создать уточнённый'} — меню «…» первой строки, где есть это действие (оно есть не у всех записей); {rowWith:…} — карточка этой строки.
+  // Меню открывается и закрывается в один ход, без мигания; такой строки нет — как 'menu' и 'row'
+  if(a.menuWith||a.rowWith){const l=a.menuWith||a.rowWith;const has=()=>!!POP&&$$('.mi',POP).some(x=>x.textContent.includes(l));
+    if(a.menuWith&&POP&&POP_ANCHOR&&POP_ANCHOR.matches('[data-menu]')&&has())return;
+    for(const r of $$('#mbody tbody tr[data-id], #mbody .gcard').filter(tVis)){const b=r.querySelector('[data-menu]');if(!b)continue;b.click();const ok=has();if(ok&&a.menuWith){await tWait(120);return}closePop();if(ok){r.click();await tSettle(320);return}}
+    return tAct(a.menuWith?'menu':'row')}
   if(a==='add'){if(POP&&POP_ANCHOR&&POP_ANCHOR.matches('#add-btn,#fab'))return;tClick(isMobile()?'#fab':'#add-btn');await tWait(120);return}
   if(['cols','grp','opts'].includes(a)){if(POP&&POP_ANCHOR&&POP_ANCHOR.matches(`[data-a=${a}]`))return;tClick(`#mbody [data-a=${a}]`);await tWait(120);return}
   if(a==='filter'){if(POP&&POP_ANCHOR&&POP_ANCHOR.matches('.th-f'))return;tClick('#mbody .th-f');await tWait(120);return}
   if(a==='stepgo'){const i=TOUR.sid&&ckFind(TOUR.sid);if(i&&i.go)i.go();await tSettle(520);return}
   if(a==='pop'){closePop();return}
   if(a.click){const r=a.in?tRoot(a):document;if(!r)return;if(a.pop&&POP&&POP_ANCHOR&&POP_ANCHOR.matches(a.click))return;tClick(a.click,r);await tSettle(a.pop?120:260);return}
-  if(a.tab){const t=$$('.modal .ctabs .tab').filter(tVis).find(x=>tLbl(x).replace(/\s*\d+ из \d+.*$/,'')===a.tab);if(t&&!t.classList.contains('on')){t.click();await tSettle(220)}return}
+  // {tab:'Обслуживание'} — вкладка верхнего окна; на телефоне видна только текущая, остальные нажимаются скрытыми
+  if(a.tab){const md=MODALS[MODALS.length-1];const t=md&&$$('.ctabs .tab',md.el).find(x=>tLbl(x).replace(/\s*\d+ из \d+.*$/,'')===a.tab);if(t&&!t.classList.contains('on')){t.click();await tSettle(220)}return}
   if(a.nav){const[m,t]=a.nav.split('.');if(S.mod!==m||(t&&S.tab!==t)){go(m,t||null);await tSettle(260)}return}}
 const tScr=()=>S.mod+(S.tab?'.'+S.tab:'');
 async function tBase(scr){closePop();while(MODALS.length>TOUR.mbase)MODALS[MODALS.length-1].close();if(scr&&scr!==tScr()){const[m,t]=scr.split('.');go(m,t||null);await tSettle(300)}}
 // Привести экран к пункту: при смене контекста — назад к экрану и заново pre; внутри контекста — только sub
 async function tPrep(p){const scr=p.scr||TOUR.scr;if(p.ctx!==TOUR.ctx||(scr&&scr!==tScr())){await tBase(scr);for(const a of p.pre||[])await tAct(a);TOUR.ctx=p.ctx}
-  const opensPop=(p.sub||[]).some(a=>['menu','add','cols','grp','opts','filter'].includes(a)||(a&&a.pop));if(!opensPop)closePop();for(const a of p.sub||[])await tAct(a)}
+  const opensPop=(p.sub||[]).some(a=>['menu','add','cols','grp','opts','filter'].includes(a)||(a&&(a.pop||a.menuWith)));if(!opensPop)closePop();for(const a of p.sub||[])await tAct(a);
+  // Плашка, спрятанная вместе со статистикой (на телефоне по умолчанию), на время показа видна; выбор пользователя не меняется
+  if(/\.plate\b/.test(p.s||'')){const pg=$('#page');if(pg&&pg.classList.contains('nostats'))pg.classList.remove('nostats')}}
 
 /* Тексты для элементов: справочник kbUi */
 const tTabTxt=(mod,id,label)=>(KBUI.tabs||{})[mod+'.'+id]||tq('tab').replace('{t}',label);
 // Ключ справочника по точному названию или по началу (например «Выручка за» для «Выручка за 2026»)
 const tKey=(m,l)=>{m=m||{};if(m[l]!=null)return m[l];const k=Object.keys(m).filter(x=>l.startsWith(x)).sort((a,b)=>b.length-a.length)[0];return k?m[k]:''};
 // Что делает плашка: открывает список (Главная), вкладку, фильтрует или только показывает итог — по справочнику plateMode
-const tPlateTxt=(lbl,sub)=>{const k=tKey(KBUI.plates,lbl);const s=sub?`Сейчас: ${sub}. `:'';const pm=KBUI.plateMode||{};const md=pm[tScr()]||pm[S.mod]||'filter';
+const tPlateTxt=(lbl,sub)=>{const k=tKey(KBUI.plates,lbl);sub=(sub||'').replace(/[.\s]+$/,'');const s=sub?`Сейчас: ${sub}. `:'';const pm=KBUI.plateMode||{};const md=pm[tScr()]||pm[S.mod]||'filter';
   return s+(k||tq({go:'plateGo',tab:'plateTab',info:'plateInfo'}[md]||'plateFilter'))};
 const tBtnTxt=l=>tKey(KBUI.buttons,l);
+// Переключатель: пояснение по названию (или по его началу, например «Основной счёт — …»)
+const tSwTxt=l=>{const d=tKey(KBUI.fields,l);return d?(d.x||d):''};
 function tFieldTxt(f){const id=f.dataset.f||'';const lab=f.querySelector(':scope > label');const l=lab?lab.textContent.trim():'';const h=f.querySelector(':scope > .hint');
   const d=(KBUI.fields||{})[id]||(KBUI.fields||{})[l];const own=d?(d.x||d):'';const hint=h?h.textContent.trim():'';
   return {t:l||tq('fieldNoName'),req:!!(lab&&lab.classList.contains('req')),x:own||hint||tq(lab&&lab.classList.contains('req')?'fieldReq':'fieldOpt')}}
@@ -55,12 +67,13 @@ function tFieldTxt(f){const id=f.dataset.f||'';const lab=f.querySelector(':scope
 function tExpTitle(){const m=curMod();return [{s:'#tb-title',m:'#tb-title',t:m.title,x:(KBUI.mods||{})[m.id]||m.desc}]}
 function tExpTabs(){const m=curMod();return $$('#tabs .tab').map(a=>{const h=a.getAttribute('href');const id=h.split('.')[1];const l=tLbl(a).replace(/\s*\d+$/,'');return {s:`#tabs .tab[href="${h}"]`,t:`Вкладка «${l}»`,x:tTabTxt(m.id,id,l)}})}
 function tExpAdd(){const m=curMod();const P=[];$$('#page .add-x').forEach(b=>{const l=tLbl(b);P.push({s:`#page [data-addx="${b.dataset.addx}"]`,t:`Кнопка «${l}»`,x:tBtnTxt(l)||(KBUI.addItems||{})[l]||tq('btn')})});
-  const all=m.add?m.add().filter(Boolean).filter(a=>!a.sep):[];const adds=isMobile()?all:all.filter(a=>!a.btn);if(!adds.length)return P;
+  // Номер пункта в меню считается вместе с разделителями — так же, как его нумерует menu()
+  const all=m.add?m.add().filter(Boolean):[];const menuIts=isMobile()?all:all.filter(a=>!a.btn);const adds=menuIts.filter(a=>!a.sep);if(!adds.length)return P;
   P.push({s:'#add-btn',m:'#fab',t:isMobile()?'Кнопка «+»':'Кнопка «+ Добавить»',x:((KBUI.add||{})[m.id]||tq('add'))+(adds.length>1?' '+tq('addMenu').replace('{n}',adds.length):'')});
-  if(adds.length>1)adds.forEach((a,k)=>P.push({ctx:'add',sub:['add'],s:`.pop .mi[data-i="${k}"]`,t:`«${a.label}»`,x:(KBUI.addItems||{})[a.label]||a.sub||tq('addItem')}));
+  if(adds.length>1)menuIts.forEach((a,k)=>{if(!a.sep)P.push({ctx:'add',sub:['add'],s:`.pop .mi[data-i="${k}"]`,t:`«${a.label}»`,x:(KBUI.addItems||{})[a.label]||tBtnTxt(a.label)||a.sub||tq('addItem')})});
   return P}
 function tExpPlates(){return $$('#mbody .plates .plate').filter(tVis).map(b=>{const l=b.querySelector('.pl-top').textContent.trim();const v=b.querySelector('.pl-val');const sub=b.querySelector('.pl-sub');
-  return {s:`#mbody .plate[data-plate="${b.dataset.plate}"]`,t:`Плашка «${l}»`,x:tPlateTxt(l,(v?v.textContent.trim():'')+(sub&&sub.textContent.trim()?' — '+sub.textContent.trim():''))}})}
+  return {s:`#mbody .plate[data-plate="${b.dataset.plate}"]`,t:`Плашка «${l}»`,x:tPlateTxt(l,[v&&v.textContent.trim(),sub&&sub.textContent.trim()].filter(Boolean).join(' — '))}})}
 function tExpEls(at){const k=tScr();return (KBUI.els||[]).filter(e=>(e.at||'body')===at&&(e.scr===k||e.scr===S.mod||e.scr==='*')&&tFind(e)).map(e=>Object.assign({},e))}
 // Блоки экрана с заголовком (кроме блока со списком — список разбирается отдельно)
 function tExpBoxes(sel){const inM=/^\.modal/.test(sel||'');return $$(sel||'#mbody .box').filter(b=>tVis(b)&&b.querySelector(':scope > h3')&&!b.querySelector('.grid')&&!b.closest('.grid')&&!b.closest('.pop')).map(b=>{const h=b.querySelector(':scope > h3');const t=(h.childNodes[0]&&h.childNodes[0].textContent||h.textContent).replace(/\s*·\s*\d+.*$/,'').trim();
@@ -77,27 +90,31 @@ function tExpGrid(){const g=$('#mbody .grid');if(!g||!tVis(g))return [];const P=
   if(th.length){P.push({s:sel('.gt thead tr'),t:'Столбцы списка',x:tq('thead').replace('{cols}',th.slice(0,8).join(', ')+(th.length>8?` и ещё ${th.length-8}`:''))});
     P.push({s:sel('.gt thead .th-f'),t:'Фильтр столбца',x:tq('filterBtn')});P.push({ctx:'filter',sub:['filter'],s:'.pop',t:'Окно фильтра',x:tq('filter')})}
   if($(sel('th.selc input, .gcard [data-sel]')))P.push({s:sel('th.selc'),m:sel('.gcard [data-sel]'),t:'Галочки выбора',x:tq('selall')});
-  const k=tScr();P.push({s:sel('tbody tr[data-id]')+' || '+sel('.gcard'),t:'Строка списка',x:(KBUI.rows||{})[k]||(KBUI.rows||{})[S.mod]||tq('row')});
+  const k=tScr();P.push({s:[sel('tbody tr[data-id]:not(.muted)'),sel('.gcard:not(.muted)'),sel('tbody tr[data-id]'),sel('.gcard')].join(' || '),t:'Строка списка',x:(KBUI.rows||{})[k]||(KBUI.rows||{})[S.mod]||tq('row')});
   if($(sel('[data-menu]'))){P.push({s:sel('[data-menu]'),t:'Кнопка «…» — действия',x:tq('rowMenu')});P.push({ctx:'menu',sub:['menu'],gen:'menu'})}
   if($(sel('.gfoot')))P.push({s:sel('.gfoot'),t:'Низ списка',x:tq('foot')});
   return P}
 // Пункты меню «…» строки: по одному на действие (раскрываются, когда меню открыто)
 function tExpMenu(){if(!POP)return [];return $$('.mi',POP).filter(tVis).map(b=>{const sp=b.querySelector('span');const l=(sp.childNodes[0]||sp).textContent.trim();const sub=b.querySelector('.sub');
   return {ctx:'menu',sub:['menu'],s:`.pop .mi[data-i="${b.dataset.i}"]`,t:`«${l}»`,x:tKey(KBUI.acts,l)||(sub?sub.textContent.trim():tq('act'))}})}
-// Окно (карточка или форма): заголовок, вкладки, блоки, шкалы статусов, поля, кнопки внизу
+// Окно (карточка или форма): заголовок, вкладки, блоки, шкалы статусов, поля, кнопки внизу.
+// Окно, открытое только для просмотра (openModal({form:false}), например неподключённый вид отчёта), разбирается как карточка;
+// у окна с названием записи в заголовке текст берётся по его ключу kb (openModal({kb:…}))
 function tExpModal(o={}){const md=MODALS[MODALS.length-1];if(!md)return [];const el=md.el;const P=[];const c={ctx:o.ctx,pre:o.pre};const ttl=el.querySelector('.mh h2');
-  const kt=(ttl.childNodes[0]||ttl).textContent.trim();P.push({...c,in:'.modal',s:'.mh',t:o.form?`Окно «${kt}»`:`Карточка «${kt}»`,x:tKey(KBUI.forms,kt)||(o.form?'':(KBUI.cards||{})[S.mod])||tq(o.form?'form':'card')});
+  o={...o,form:!!(o.form&&md.o.form!==false)};const kb=md.o.kb&&(KBUI.forms||{})[md.o.kb];
+  const kt=(ttl.childNodes[0]||ttl).textContent.trim();P.push({...c,in:'.modal',s:'.mh',t:o.form?`Окно «${kt}»`:`Карточка «${kt}»`,x:tKey(KBUI.forms,kt)||kb||(o.form?'':(KBUI.cards||{})[S.mod])||tq(o.form?'form':'card')});
   if(el.querySelector('[data-max]'))P.push({...c,in:'.modal',s:'[data-max]',t:'«На весь экран»',x:tq('max')});
   $$('.ctabs .tab',el).filter(tVis).forEach(t=>{const l=tLbl(t).replace(/\s*\d+ из \d+.*$/,'').replace(/\s*\d+$/,'');P.push({...c,in:'.modal',el:t,t:`Вкладка «${l}»`,x:tKey(KBUI.ctabs,l)||tq('ctab')})});
   if(!o.noBody){$$('.mb .scf-wrap',el).filter(tVis).forEach((w,k)=>{const t=(w.querySelector('.scf-t')||{}).textContent||'Статус';P.push({...c,in:'.modal',s:`.mb .scf-wrap:nth-of-type(${k+1})`,el:w,t:`Шкала «${t.trim()}»`,x:tq('scale')})});
     if(o.form)P.push(...tExpFields('.modal',c));
     else $$('.mb .box',el).filter(b=>tVis(b)&&b.querySelector(':scope > h3')).forEach(b=>{const h=b.querySelector(':scope > h3');const t=(h.childNodes[0]&&h.childNodes[0].textContent||'').replace(/\s*·\s*\d+.*$/,'').trim();if(!t)return;P.push({...c,el:b,in:'.modal',t:`Блок «${t}»`,x:tKey(KBUI.boxes,t)||tq('box')})})}
-  $$('.mf .btn',el).filter(tVis).forEach(b=>{const l=tLbl(b);if(!l||(o.form&&!b.classList.contains('cta')))return;P.push({...c,in:'.modal',el:b,t:`Кнопка «${l}»`,x:tBtnTxt(l)||(b.classList.contains('cta')?tq(o.form?'save':'cta'):tq('btn')),kind:o.form&&b.classList.contains('cta')?'save':undefined})});
+  // Кнопки внизу карточки повторяют действия меню «…» («Выполнена», «Подтвердить»): без своего текста кнопки берётся текст действия
+  $$('.mf .btn',el).filter(tVis).forEach(b=>{const l=tLbl(b);if(!l||(o.form&&!b.classList.contains('cta')))return;P.push({...c,in:'.modal',el:b,t:`Кнопка «${l}»`,x:tBtnTxt(l)||(!o.form&&(KBUI.acts||{})[l])||(b.classList.contains('cta')?tq(o.form?'save':'cta'):tq('btn')),kind:o.form&&b.classList.contains('cta')?'save':undefined})});
   return P}
 function tExpFields(inSel,c={}){const r=$$(inSel).filter(tVis).pop();if(!r)return [];const P=[];
   $$('.fld',r).filter(f=>tVis(f)&&!f.closest('.pop')).forEach(f=>{const d=tFieldTxt(f);const lab=f.querySelector(':scope > label');if(!lab||!lab.textContent.trim())return;P.push({...c,in:inSel,el:f,t:d.t+(d.req?' · обязательно':''),x:d.x})});
   $$('.check-row',r).filter(tVis).forEach(row=>{const b=row.querySelector('b');const t=(b||row.querySelector('.grow')||row).childNodes[0];const l=(t&&t.textContent||'').trim();const h=row.querySelector('.hint');if(!l)return;
-    P.push({...c,in:inSel,el:row,t:`Переключатель «${l}»`,x:((KBUI.fields||{})[l]&&((KBUI.fields||{})[l].x||(KBUI.fields||{})[l]))||(h?h.textContent.trim():tq('check'))})});
+    P.push({...c,in:inSel,el:row,t:`Переключатель «${l}»`,x:tSwTxt(l)||(h?h.textContent.trim():tq('check'))})});
   return P}
 // Полный обзор текущего экрана
 function tExpScreen(){return [...tExpTitle(),...tExpTabs(),...tExpEls('top'),...tExpAdd(),{s:'.search',m:'#q-open',t:'Поиск',x:tq('search')},...($('#stat-btn')&&tVis($('#stat-btn'))?[{s:'#stat-btn',t:'Кнопка «Статистика»',x:tq('stats')}]:[]),
@@ -164,8 +181,10 @@ async function tourGo(d){if(TOUR.busy)return;const p=TOUR.list[TOUR.i];
 // «Сделать сейчас»: открыть форму шага и продолжить показ по её полям
 async function tourDoit(){TOUR.busy=true;const i=ckFind(TOUR.sid);const sh=i&&tShowOf(i);await tBase(sh&&sh.scr||TOUR.scr);const n0=MODALS.length;for(const a of sh&&sh.doit||['stepgo'])await tAct(a);
   if(MODALS.length>n0){TOUR.mbase=MODALS.length;TOUR.form=true;CK.active=i.id;CK.bar=true;CK.barOff=false;
+    // Открылась карточка без полей (например, задача): последнее облачко — про кнопки окна, а не «заполните и сохраните»
+    const card=MODALS[MODALS.length-1].o.form===false;
     const f=tExpModal({form:true}).map(tFix);const fin=f.find(x=>x.kind==='save');const rest=f.filter(x=>x.kind!=='save');
-    TOUR.list.splice(TOUR.i+1,TOUR.list.length,...rest,fin||{t:tq('finFormT'),x:tq('finForm'),kind:'save'});TOUR.busy=false;TOUR.i++;
+    TOUR.list.splice(TOUR.i+1,TOUR.list.length,...rest,fin||(card?{t:tq('finCardT'),x:tq('finCard'),kind:'save'}:{t:tq('finFormT'),x:tq('finForm'),kind:'save'}));TOUR.busy=false;TOUR.i++;
     // пункты формы — внутри уже открытого окна, без возврата к экрану
     TOUR.list.slice(TOUR.i).forEach(x=>{x.ctx='form';x.pre=[];x.scr=tScr()});TOUR.ctx='form';await tourShow();return}
   TOUR.busy=false;tourEnd(true,true);if(i)ckGo(i.id)}

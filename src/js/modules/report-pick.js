@@ -99,7 +99,7 @@ function pkView(o,st){const cx=st.cx;const before=o.before||new Set();const canE
       ${st.tab==='all'?`<div class="pk-flt">${sel('pk-act',[['','Сдача и уплата: все'],['sub','Сдача'],['pay','Уплата'],['both','Сдача + уплата']],st.act,'data-pkf="act"')}${sel('pk-kind',[['','Режимные и сквозные'],['regime','Режимные'],['cross','Сквозные']],st.kind,'data-pkf="kind"')}${sel('pk-per',[['','Любая периодичность'],['M','Месяц'],['Q','Квартал'],['H','Полугодие'],['Y','Год'],['own','По назначению']],st.per,'data-pkf="per"')}</div>`:''}
       <div class="pk-split"><div class="pk-list">${list}</div><div class="pk-side">${cur?descOf(cur):`<div class="state">${ic('info','lg')}<b>Описание отчёта</b><span>Нажмите на строку, чтобы увидеть, что это за отчёт, кто его сдаёт, сроки и ставки.</span></div>`}</div></div>`,
       sum:`<span class="muted pk-sum">Выбрано: <b>${st.sel.size}</b>${add.length?` · новых ${add.length}`:''}${rem.length?` · <span class="red">будет снято ${rem.length}</span>`:''}</span>`,
-      ro:'<span class="muted">Только просмотр: менять отчёты может сотрудник с правом «Создавать и загружать контрагентов»</span>'}}
+      ro:'<span class="muted">Только просмотр: менять отчёты может сотрудник с правом «Назначать отчёты контрагентам» или «Создавать и изменять контрагентов»</span>'}}
 // Обработчики подбора; draw — перерисовка окна или карточки
 function pkMount(el,o,st,draw){const cx=st.cx;const before=o.before||new Set();const m={draw};
         const q=$('#pk-q',el);q.oninput=()=>{st.q=q.value;const p=q.selectionStart;m.draw();const n=$('#pk-q',el);n.focus();n.setSelectionRange(p,p)};

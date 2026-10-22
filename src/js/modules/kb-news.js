@@ -4,7 +4,8 @@
 const NEWS_T={'Обновление':'blue','Нововведение':'green','Исправление':'orange','Объявление':'purple'};
 const NEWS_ST=['Черновик','Опубликовано'];
 const NEWS=DB.ref.news;
-const NEWS_READ=dbSets(DB.newsRead);const newsRead=u=>NEWS_READ[u||S.me]=NEWS_READ[u||S.me]||new Set(NEWS.filter(n=>+n.ver<=28).map(n=>n.id));
+// Новому пользователю прочитанными считаются новости версий прототипа v1–v28 (целые номера), а не любые с номером меньше 29: «1.4» — новая версия
+const NEWS_READ=dbSets(DB.newsRead);const newsRead=u=>NEWS_READ[u||S.me]=NEWS_READ[u||S.me]||new Set(NEWS.filter(n=>/^\d+$/.test(n.ver||'')&&+n.ver<=28).map(n=>n.id));
 const newsLive=n=>n.status==='Опубликовано'&&!n.off&&(n.date<TODAY||(n.date===TODAY&&bishkekNow().hm>='09:00'));
 const newsVis=()=>NEWS.filter(n=>newsLive(n)&&(n.aud==='all'||isAdmin()));
 const newsUnread=()=>{const r=newsRead();return newsVis().filter(n=>!r.has(n.id)).length};
@@ -53,7 +54,9 @@ function newsOpen(n){newsRead().add(n.id);renderSide();renderSheetDot();
     mount(el,m){const b=$('#nw-more',el);if(b)b.onclick=()=>{m.close();n.link.k==='art'?kbArtDlg(KB_ARTS.find(a=>a.id===n.link.id)):go(n.link.id)}}}),onClose:()=>{if(S.mod==='kb')renderPage()}});if(S.mod==='kb')setTimeout(renderPage,0)}
 /* Окно «Что нового» (ТЗ, «Новости» → «Окно «Что нового» при входе»): при каждом входе в систему, не при перезагрузке страницы.
    В прототипе входом считаются открытие прототипа в новой вкладке браузера, «Войти как» и вход по логину и паролю. */
-const newsSort=(a,b)=>b.date.localeCompare(a.date)||(+b.ver||0)-(+a.ver||0);
+// От новых к старым: по дате выхода, в один день — по времени публикации (последняя запись «Опубликовано» в истории), затем по номеру версии
+const newsPubAt=n=>((n.hist||[]).filter(h=>h.to==='Опубликовано').pop()||{}).at||n._ua||'';
+const newsSort=(a,b)=>b.date.localeCompare(a.date)||newsPubAt(b).localeCompare(newsPubAt(a))||(+b.ver||0)-(+a.ver||0);
 function whatsNew(how){if(navigator.webdriver&&!store.get('wntest',false))return;
   if(how==='open'){let seen=null;try{seen=sessionStorage.getItem('bu.wn.'+S.me)}catch(e){}if(seen)return}
   try{sessionStorage.setItem('bu.wn.'+S.me,'1')}catch(e){}
@@ -70,11 +73,11 @@ function whatsNew(how){if(navigator.webdriver&&!store.get('wntest',false))return
 const newsLinkOk=l=>l.k==='art'?kbArts().some(a=>a.id===l.id):mods().some(m=>m.id===l.id);
 const NF={type:'',ver:'',q:''};
 function renderNews(body){const all=newsVis();const r=newsRead();const q=NF.q.trim().toLowerCase();
-  const l=all.filter(n=>(!NF.type||n.type===NF.type)&&(!NF.ver||n.ver===NF.ver)&&(!q||(n.t+' '+newsShort(n)+' '+(n.md||'')).toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date));
+  const l=all.filter(n=>(!NF.type||n.type===NF.type)&&(!NF.ver||n.ver===NF.ver)&&(!q||(n.t+' '+newsShort(n)+' '+(n.md||'')).toLowerCase().includes(q))).sort(newsSort);
   const vers=[...new Set(all.map(n=>n.ver).filter(Boolean))].sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
   const item=n=>{const t=newsShort(n);return `<button class="kb-a nw ${r.has(n.id)?'':'unread'}" data-news="${n.id}"><span class="row" style="gap:8px;flex-wrap:wrap">${newsPill(n.type)}<span class="muted">${fmtD(n.date)}${n.ver?' · версия '+esc(n.ver):''}</span>${r.has(n.id)?'':'<span class="pill sm red">Новое</span>'}${n.pin?`<span class="tag">${ic('star','sm')}Закреплено</span>`:''}</span><b>${esc(n.t)}</b><span class="hint">${esc(t.slice(0,170))}${t.length>170?'…':''}</span></button>`};
+  // Группы версий идут в порядке ленты: выше та, в которой новость вышла позже
   const pins=l.filter(n=>n.pin),rest=l.filter(n=>!n.pin);const groups=[];rest.forEach(n=>{const k=n.ver||'';let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,l:[]});g.l.push(n)});
-  groups.sort((a,b)=>!a.k?1:!b.k?-1:b.k.localeCompare(a.k,undefined,{numeric:true}));
   body.innerHTML=`<div class="box"><div class="row" style="flex-wrap:wrap"><span class="kb-search">${ic('search','sm')}<input class="inp" id="nw-q" placeholder="Поиск по новостям" value="${esc(NF.q)}" aria-label="Поиск по новостям"></span>${sel('nw-type',[['','Все типы'],...Object.keys(NEWS_T).map(x=>[x,x])],NF.type,'aria-label="Тип"')}${sel('nw-ver',[['','Все версии'],...vers.map(v=>[v,'Версия '+v])],NF.ver,'aria-label="Версия"')}<span class="muted">${l.length} ${plural(l.length,'новость','новости','новостей')}${r.size||all.length?` · непрочитанных ${all.filter(n=>!r.has(n.id)).length}`:''}</span>${all.some(n=>!r.has(n.id))?'<button class="linkbtn" id="nw-all">Отметить все прочитанными</button>':''}</div></div>
   ${!l.length?`<div class="state">${ic('bell','lg')}<b>${all.length?'Ничего не найдено':'Новостей пока нет'}</b>${all.length?'<button class="linkbtn" id="nw-x">Сбросить фильтры</button>':'<span>Здесь появятся новости об обновлениях платформы.</span>'}</div>`:''}
   ${pins.length?`<div class="box"><h3>Закреплено</h3><div class="kb-list">${pins.map(item).join('')}</div></div>`:''}

@@ -4,6 +4,8 @@
 // Indicators are the organisation's own setting (not a platform dictionary). One value per contractor × indicator × month;
 // empty ≠ 0. Month status per contractor: Не заполнено → Заполнено (auto, all required filled) → Проверено (right «Проверять показатели»).
 const KST=DB.ref.statuses.indicator;
+// Статусы месяца показателей — во вкладке «Статусы» справочников платформы вместе с остальными: администратор меняет название и цвет
+STATUS_GROUPS.push(['Статусы показателей',KST,'ind']);
 const IND=DB.indicators,IVALS=DB.indicatorValues,KMS=DB.indicatorMonths,IHIST=DB.indicatorHistory;
 let IV={},KMI={};
 const KTYPES={int:'Целое число',dec:'Число с копейками',som:'Сумма в сом',pct:'Процент'};

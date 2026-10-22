@@ -5,15 +5,17 @@ function plate({icon,color,label,value,unit,sub,on,id}){return `<button class="p
 function homeTabs(){return [{id:'today',label:'Сводка',icon:'home'},feat('fee')&&can('fee')?{id:'analytics',label:'Аналитика',icon:'chart'}:null]}
 function renderHome(body,tab){
   if(tab==='analytics')return renderAnalytics(body);
-  if(!CPS.length){body.innerHTML=`<div class="state">${ic('building','lg')}<b>Добавьте первого контрагента</b><span>Сводка на сегодня появится, когда в организации будут контрагенты и их отчёты.</span><button class="btn cta" data-goto="cps.all">${ic('plus')}Перейти к контрагентам</button></div>`;
-    body.onclick=e=>{const b=e.target.closest('[data-goto]');if(b){const[a,t]=b.dataset.goto.split('.');go(a,t)}};return}
   const u=me();const vr=visReports();const[w0,w1]=weekRange();
+  // Как во вкладке «На неделе»: у приостановленных контрагентов сроков нет, у отчётов «Уплата» сдавать нечего, оплатить можно только указанную сумму
+  const live=r=>!CPM[r.cp].paused;
   const ovRep=vr.filter(r=>r.overdue),ovPay=vr.filter(r=>r.payOverdue);
-  const wkSub=vr.filter(r=>OPEN.has(r.status)&&r.due>=w0&&r.due<=w1),wkPay=vr.filter(r=>feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue>=w0&&r.payDue<=w1);
+  const wkSub=vr.filter(r=>live(r)&&!tR(r).payOnly&&OPEN.has(r.status)&&r.due>=w0&&r.due<=w1),wkPay=vr.filter(r=>live(r)&&feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue>=w0&&r.payDue<=w1);
   const waiting=vr.filter(r=>r.status==='Сдан');
   const myTasks=feat('tasks')?allTasks().filter(t=>t.exec===S.me&&taskOpen(t)&&t.date<=TODAY):[];
   const d=D(TODAY);
   let h=`<div class="hello"><span>Сегодня <b>${d.getUTCDate()} ${MONTHS_G[d.getUTCMonth()]}, ${DOW[d.getUTCDay()]}</b></span><span>·</span><span>${seeAll('reports')?'Вы видите всю организацию':'Вы видите только своих контрагентов и свои отчёты'}</span><span>·</span><span>неделя ${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}${isWeekend()?' (сегодня выходной, показана ближайшая рабочая неделя)':''}</span></div>`;
+  // Организация без контрагентов: та же сводка с нулями и одна строка-подсказка
+  if(!CPS.length)h+=`<div class="note fe-note">${ic('building')}<span class="grow">Добавьте контрагентов, чтобы здесь появились сроки и суммы.</span>${can('createCp')||can('cpImport')?`<button class="btn cta sm" data-goto="cps.all">${ic('plus','sm')}Перейти к контрагентам</button>`:''}</div>`;
   h+=`<div class="plates">
    ${plate({id:'ovr',icon:'alert',color:ovRep.length?'red':'green',label:'Просрочено отчётов',value:ovRep.length,sub:ovRep.length?'срок прошёл, отчёт не сдан':'всё сдано в срок'})}
    ${feat('taxpay')?plate({id:'ovp',icon:'wallet',color:ovPay.length?'red':'green',label:'Просрочено оплат',value:ovPay.length,sub:ovPay.length?som(ovPay.reduce((a,r)=>a+r.sum-r.paid,0))+' не оплачено':'долгов в бюджет нет'}):''}
@@ -23,7 +25,7 @@ function renderHome(body,tab){
    ${feat('tasks')&&can('tasksConfirm')?(()=>{const pd=allTasks().filter(t=>taskPend(t)&&t.exec!==S.me);return plate({id:'tpend',icon:'hourglass',color:pd.length?'purple':'green',label:'Ждут подтверждения',value:pd.length,sub:pd.length?'выполненные задачи сотрудников':'подтверждать нечего'})})():''}
    ${feat('tasks')?plate({id:'tsk',icon:'task',color:'purple',label:'Мои задачи на сегодня',value:myTasks.length,sub:myTasks.filter(t=>t.date<TODAY).length?myTasks.filter(t=>t.date<TODAY).length+' просрочено':'включая просроченные'}):''}
   </div>`;
-  const upcoming=vr.filter(r=>OPEN.has(r.status)&&r.due>=TODAY).sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:0).slice(0,9);
+  const upcoming=vr.filter(r=>live(r)&&!tR(r).payOnly&&OPEN.has(r.status)&&r.due>=TODAY).sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:0).slice(0,9);
   const month=ym(TODAY);
   const people=(seeAll('reports')?EMP.filter(e=>e.active&&e.role!=='owner'):[u]);
   const prog=people.map(e=>{const rs=REPORTS.filter(r=>!r.superseded&&r.resp===e.id&&ym(r.due)===month&&r.status!=='Не требуется');const done=rs.filter(r=>r.status==='Сдан'||r.status==='Принят').length;return {e,done,all:rs.length}}).filter(x=>x.all);
@@ -36,7 +38,7 @@ function renderHome(body,tab){
   body.onclick=e=>{let b;
     if(b=e.target.closest('[data-plate]')){const id=b.dataset.plate;
       if(id==='ovr')go('reports','overdue',{ovk:{type:'enum',vals:['Сдача','Сдача и оплата']}});if(id==='ovp')go('reports','overdue',{ovk:{type:'enum',vals:['Оплата','Сдача и оплата']}});
-      if(id==='wks')go('reports','week',{status:{type:'enum',vals:['К сдаче','В работе','Требует исправления']}});if(id==='wkp')go('reports','week',{paystatus:{type:'enum',vals:['Не оплачено','Оплачено частично']}});
+      if(id==='wks')go('reports','week',{status:{type:'enum',vals:['К сдаче','В работе','Требует исправления']},due:{type:'date',from:w0,to:w1}});if(id==='wkp')go('reports','week',{paystatus:{type:'enum',vals:['Не оплачено','Оплачено частично']},paydue:{type:'date',from:w0,to:w1},sum:{type:'num',from:0.01}});
       if(id==='wait')go('reports','waiting');if(id==='tpend'){go('tasks',can('tasksAll')?'all':'mine',{status:{type:'enum',vals:['На подтверждении']}});return}if(id==='tsk'){S.taskView='day';go('tasks','mine',{date:{type:'date',from:null,to:TODAY},open:{type:'enum',vals:['Да']}})}return}
     if(b=e.target.closest('[data-goto]')){const[a,t]=b.dataset.goto.split('.');go(a,t);return}
     if(b=e.target.closest('[data-rep]')){openReport(REPORTS.find(r=>r.id===+b.dataset.rep));return}

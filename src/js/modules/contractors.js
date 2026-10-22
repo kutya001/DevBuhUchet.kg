@@ -83,12 +83,14 @@ function renderCps(body,tab,fresh){
 }
 function respDlg(cs,done){
   openModal({form:true,render:()=>({title:cs.length>1?`Ответственный для ${cs.length} контрагентов`:'Сменить ответственного',sub:cs.length>1?'':esc(cs[0].name),
-    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} · ${ROLES.find(r=>r.id===e.role).name}`]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Новый ответственный получит все несданные отчёты и открытые задачи этих контрагентов, а также остаток денег на их налоги. Сданные отчёты остаются за тем, кто их сдал.</span></div>`,
+    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} · ${ROLES.find(r=>r.id===e.role).name}`]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Новый ответственный получит все незавершённые отчёты (ещё не «Принят» или налог не оплачен) и открытые задачи этих контрагентов, а также остаток денег на их налоги. Завершённые отчёты остаются за тем, кто их сдал.</span></div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="rs-ok">Назначить</button>',
     mount(el,m){$('#rs-ok',el).onclick=()=>{const to=val(el,'rs-e');cs.forEach(c=>transferCp(c,to));m.close();done&&done();refreshAll();toast(cs.length>1?`Ответственный назначен: ${cs.length} контрагентов`:'Ответственный изменён','user')}}})});
 }
+// Незавершённый отчёт — ещё не «Принят» или налог по нему не оплачен: при передаче контрагента переходит к новому ответственному
+const repUnfinished=r=>!r.superseded&&r.status!=='Не требуется'&&(r.status!=='Принят'||(feat('taxpay')&&!!tR(r).sum&&r.sum>0&&r.paid<r.sum));
 function transferCp(c,to){const from=c.resp;if(from===to)return;c.resp=to;
-  REPORTS.filter(r=>r.cp===c.id&&!DONE.has(r.status)&&(r.resp===from||!r.resp)).forEach(r=>r.resp=to);
+  REPORTS.filter(r=>r.cp===c.id&&repUnfinished(r)&&(r.resp===from||!r.resp)).forEach(r=>r.resp=to);
   TASKS.filter(t=>t.cp===c.id&&t.exec===from&&taskOpen(t)).forEach(t=>t.exec=to);
   if(c.paysTo==='emp')OPS.filter(o=>o.cp===c.id).forEach(o=>o.holder=to);
   log('cp',c.id,`Ответственный: ${empName(from)||'—'} → ${empName(to)}`,c.id)}

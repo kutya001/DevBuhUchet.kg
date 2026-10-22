@@ -10,7 +10,7 @@ function gst(cfg){let s=GS[cfg.id];if(!s){const sv=store.get('g5.'+cfg.id,{});s=
 /* Видимые по умолчанию столбцы по спискам (ТЗ, «Столбцы, видимые по умолчанию»); остальные — в меню «Столбцы» */
 const SHOW={'cp-rep':['type','act','period','due','status','sum','paystatus','resp'],'rep-':['cp','type','act','period','due','status','wait','sum','paystatus','resp'],
  'cps-':['name','inn','regime','resp','over','svc'],'tasks-':['title','cp','exec','date','status'],'staff':['fio','role','phone','cps','over','active','kb'],
- 'fin-journal':['date','cp','total','tax','adv','files'],'cp-fin':['date','cat','what','amount','acc'],'fin-svc':null,'fin-':['date','cp','cat','what','amount','acc'],
+ 'fin-journal':['date','cp','total','dist','adv','files'],'cp-fin':['date','cat','what','amount','acc'],'fin-svc':null,'fin-':['date','cp','cat','what','amount','acc'],
  'proj-':['name','cp','from','to','resps','status','paid'],'files':['name','cp','src','by','date'],'dict-types':['on','name','act','pays','organ','per','rule','file','rcpt','used'],
  'bonus':['month','emp','cp','sum'],'an-cps':['cp','feeCh','fee','debt','total'],'adm-users':['login','fio','org','role','last','active'],'adm-orgs':['name','inn','owner','cps','staff','active']};
 function defHidden(cfg){const k=Object.keys(SHOW).find(k=>cfg.id===k)||Object.keys(SHOW).find(k=>k.endsWith('-')&&cfg.id.startsWith(k));const sh=k&&SHOW[k];

@@ -141,7 +141,7 @@ function bindParts(el,id,r){const ps=T[r.t].pays||[];const tot=el.querySelector(
   const f=()=>{const v=ps.map((p,k)=>{const x=val(el,`${id}-p${k}`);return x===''?0:parseNum(x)});tot.value=ps.every((p,k)=>val(el,`${id}-p${k}`)==='')?'':v.some(isNaN)?'':String(Math.round(v.reduce((a,b)=>a+b,0)*100)/100)};
   ps.forEach((p,k)=>el.querySelector(`#${id}-p${k}`).addEventListener('input',f))}
 function readParts(el,id,r){const ps=T[r.t].pays||[];if(ps.length<2||!el.querySelector(`#${id}-p0`))return null;return ps.map((p,k)=>{const x=val(el,`${id}-p${k}`);return x===''?0:parseNum(x)})}
-function headHint(r){const t=T[r.t];if(t.id==='tbo')return 'Вносится одной общей суммой. Справочно: 100 сом на сотрудника в год.';return '';return c.staff?`Подсказка: ${c.staff} ${plural(c.staff,'сотрудник','сотрудника','сотрудников')} × ${t.perHead} сом = <b>${som(c.staff*t.perHead)}</b> · <button type="button" class="linkbtn" data-head="${c.staff*t.perHead}">подставить</button>`:'Укажите число сотрудников в карточке контрагента — система подскажет сумму (100 сом на сотрудника).'}
+function headHint(r){const t=T[r.t];return t.id==='tbo'?'Вносится одной общей суммой. Справочно: 100 сом на сотрудника в год.':''}
 function bindHead(el,id){$$('[data-head]',el).forEach(b=>b.onclick=()=>{el.querySelector('#'+id).value=b.dataset.head})}
 function repeatBox(r,id){const a=assignOf(r);return `<div class="fld full"><label class="row" style="gap:8px;min-height:30px"><input type="checkbox" id="${id}" ${a&&a.fixed!=null?'checked':''}> ${ic('repeat','sm')} Повторять эту сумму в следующих отчётах</label><div class="hint">Сумма сохранится в назначении «${esc(T[r.t].short)}» и будет подставляться во все следующие отчёты этого контрагента, пока её не изменят. В конкретном отчёте её можно поправить, повторяющаяся от этого не меняется.${a&&a.fixed!=null?` Сейчас повторяется: <b>${som(a.fixed)}</b>.`:''}</div></div>`}
 function applyRepeat(r,n,on){const a=assignOf(r);if(!a)return;const was=a.fixed;
@@ -171,8 +171,8 @@ function waDlg({r,cp,fee}){
   const wallets=c.paysTo==='org'?ORG.accounts.map(a=>({prov:a.bank,num:`р/с ${a.acc}, БИК ${a.bik}`,main:a.main})):holderEmp?(holderEmp.wallets||[]):[];
   const st={on:new Set(wallets.map((w,i)=>w.main?i:-1).filter(i=>i>=0))};
   const build=()=>{const req=wallets.filter((w,i)=>st.on.has(i)).map(w=>`${w.prov}: ${w.num}`).join('; ');
-    if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-(c.feePaid[m]||0))>0);const m=months[months.length-1];return TPL.waFee.replace('{контрагент}',c.name).replace('{месяц}',months.map(ymLabel).join(', ')).replace('{сумма}',som(c.feeDebt)).replace('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})())}
-    return TPL.waTax.replace('{контрагент}',c.name).replace('{отчёт}',T[r.t].name).replace('{период}',r.phuman).replace('{срок}',fmtD(r.due)).replace('{сумма}',som(r.sum-r.paid)).replace('{дата}',fmtD(r.payDue<TODAY?addDays(TODAY,1):addDays(r.payDue,-2)<TODAY?r.payDue:addDays(r.payDue,-2))).replace('{реквизиты}',req||'—')};
+    if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-(c.feePaid[m]||0))>0);const m=months[months.length-1];return TPL.waFee.replaceAll('{контрагент}',c.name).replaceAll('{месяц}',months.map(ymLabel).join(', ')).replaceAll('{сумма}',som(c.feeDebt)).replaceAll('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})())}
+    return TPL.waTax.replaceAll('{контрагент}',c.name).replaceAll('{отчёт}',T[r.t].name).replaceAll('{период}',r.phuman).replaceAll('{срок}',fmtD(r.due)).replaceAll('{сумма}',som(r.sum-r.paid)).replaceAll('{дата}',fmtD(r.payDue<TODAY?addDays(TODAY,1):addDays(r.payDue,-2)<TODAY?r.payDue:addDays(r.payDue,-2))).replaceAll('{реквизиты}',req||'—')};
   openModal({form:true,size:'mid',render:m=>{
     const noPhone=!c.phone||!c.phone.digits;const noReq=!fee&&!wallets.length;
     return {title:'Напомнить в WhatsApp',sub:`${esc(c.name)} · ${esc(fmtPhone(c.phone))}`,body:`
@@ -188,6 +188,6 @@ function waDlg({r,cp,fee}){
       a.onclick=e=>{if(noPhone||noReq){e.preventDefault();return}if(r)log('r',r.id,'Напоминание в WhatsApp отправлено контрагенту',c.id);else log('cp',c.id,'Напоминание в WhatsApp о долге за обслуживание',c.id);setTimeout(()=>{mm.close();toast('Записано в историю','chat')},150)}}};
   }});
 }
-const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок']};
+const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок'],tgFee:['список','сумма']};
 const TPL=DB.ref.messageTemplates;
 
