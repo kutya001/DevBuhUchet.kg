@@ -94,6 +94,10 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     sync(db.ref.reportTypes,r.reportTypes,x=>x.id);sync(db.ref.taxes,r.taxes,x=>x.code);sync(db.ref.enRates,r.enRates,x=>x.code);
     Object.keys(r.dictionaries||{}).forEach(k=>{const d=db.ref.dictionaries&&db.ref.dictionaries[k];if(d)sync(d.items,r.dictionaries[k].items,x=>x.code||x.id||x.name)});
     (db.ref.dictGroups||[]).forEach(g=>{const fg=(r.dictGroups||[]).find(x=>x.group===g.group);(g.tabs||[]).forEach(t=>{const ft=fg&&fg.tabs.find(x=>x.tab===t.tab);if(ft&&/8 платежей вне НК/.test(t.about||''))t.about=ft.about})})}
+  // ПВТ и патент (v54): у данных, сохранённых в браузере раньше, — новые тексты и перечни ГКЭД этих записей refDB.json, если администратор их не менял (метка изменения та же, что в v53)
+  if(!db.meta.v54){db.meta.v54=1;const V53={'ЛЬГ-02':'2026-10-18 09:54','РЕЖ-02':'2026-10-18 09:54','РЕЖ-05':'2026-10-18 09:54','НАЛ-14':'2026-10-18 09:54','ПЛТ-03':'2026-10-18 09:54',pvtd:'2025-01-15 10:35',pat:'2025-01-15 10:35',patw:'2025-01-15 10:24'};
+    const put=(a,b,key)=>{if(a&&b)a.forEach((x,i)=>{const k=key(x),f=V53[k]&&b.find(y=>key(y)===k);if(f&&(x._ua||'')===V53[k])a[i]=structuredClone(f)})};
+    put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);['regimes','benefits'].forEach(k=>{const d=db.ref.dictionaries&&db.ref.dictionaries[k];if(d&&r.dictionaries&&r.dictionaries[k])put(d.items,r.dictionaries[k].items,x=>x.code)})}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}
