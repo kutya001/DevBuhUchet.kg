@@ -188,6 +188,6 @@ function waDlg({r,cp,fee}){
       a.onclick=e=>{if(noPhone||noReq){e.preventDefault();return}if(r)log('r',r.id,'Напоминание в WhatsApp отправлено контрагенту',c.id);else log('cp',c.id,'Напоминание в WhatsApp о долге за обслуживание',c.id);setTimeout(()=>{mm.close();toast('Записано в историю','chat')},150)}}};
   }});
 }
-const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок'],tgFee:['список','сумма']};
+const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок']};
 const TPL=DB.ref.messageTemplates;
 

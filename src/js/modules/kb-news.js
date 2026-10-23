@@ -12,10 +12,10 @@ const newsUnread=()=>{const r=newsRead();return newsVis().filter(n=>!r.has(n.id)
 const newsPill=t=>`<span class="pill sm ${NEWS_T[t]||'blue'}">${esc(t)}</span>`;
 const newsLinkTxt=l=>!l?'':l.k==='art'?((KB_ARTS.find(a=>a.id===l.id)||{}).t||''):kbModT(l.id);
 /* Markdown подробного описания (ТЗ, «База знаний (содержимое)» → «Новости»): заголовки двух уровней, жирный и курсив, списки,
-   ссылки (в том числе на модуль #mod:id и статью #art:id), картинки, цитата, разделитель, простая таблица; HTML не выполняется */
+   ссылки (в том числе на модуль #mod:id, его вкладку #mod:id.вкладка и статью #art:id), картинки, цитата, разделитель, простая таблица; HTML не выполняется */
 function mdInline(t){return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>')
   .replace(/!\[([^\]]*)\]\(((?:https?:|data:image\/)[^)\s]+)\)/g,'<img src="$2" alt="$1">')
-  .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(x,a,h)=>{const m=/^#(mod|art):([\w-]+)$/.exec(h);if(m)return `<a href="#" data-md${m[1]}="${m[2]}">${a}</a>`;return /^https?:/.test(h)?`<a href="${h}" target="_blank" rel="noopener">${a}</a>`:a})
+  .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(x,a,h)=>{const m=/^#(mod|art):([\w-]+(?:\.[\w-]+)?)$/.exec(h);if(m)return `<a href="#" data-md${m[1]}="${m[2]}">${a}</a>`;return /^https?:/.test(h)?`<a href="${h}" target="_blank" rel="noopener">${a}</a>`:a})
   .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[\s(«])[*_]([^*_\s][^*_]*?)[*_](?=[\s.,;:!?)»]|$)/g,'$1<i>$2</i>')}
 function mdHtml(src){const L=String(src||'').replace(/\r/g,'').split('\n');let h='',i=0;
   const cells=l=>l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
@@ -38,7 +38,7 @@ const newsShort=n=>n.short||mdText(n.md||stripTags(n.html||'')).slice(0,200);
 // Ссылки на модули и статьи из markdown (в ленте, окне «Что нового», предпросмотре)
 document.addEventListener('click',e=>{const a=e.target.closest('[data-mdmod],[data-mdart]');if(!a)return;e.preventDefault();
   if(a.closest('.md-edit'))return toast('Ссылка сработает у пользователя после публикации','info');
-  if(a.dataset.mdmod){const id=a.dataset.mdmod;if(!mods().some(m=>m.id===id))return toast('Этот модуль вам недоступен','lock');MODALS.slice().forEach(m=>m.close());go(id);return}
+  if(a.dataset.mdmod){const [id,tab]=a.dataset.mdmod.split('.');if(!mods().some(m=>m.id===id))return toast('Этот модуль вам недоступен','lock');MODALS.slice().forEach(m=>m.close());go(id,tab||null);return}
   const art=kbArts().find(x=>x.id===a.dataset.mdart);if(!art)return toast('Статья недоступна','lock');kbArtDlg(art)});
 /* Новости, сохранённые в браузере до версии 33 (текст в html, без markdown), берут подробное описание из refDB.json; недостающие новости добавляются */
 function newsSync(){const fresh=(DBSRC.ref.db.news||[]);

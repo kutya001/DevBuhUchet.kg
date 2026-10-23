@@ -64,7 +64,7 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     const arts=db.ref.kbArticles||[];(r.kbArticles||[]).forEach(b=>{const i=arts.findIndex(x=>x.id===b.id);if(i<0)arts.push(structuredClone(b));else if(!arts[i]._ub||arts[i]._ub==='system')arts[i]=structuredClone(b)});
     const nw=db.ref.news||[];(r.news||[]).forEach(x=>{const i=nw.findIndex(y=>y.id===x.id);if(i<0)nw.push(structuredClone(x));else if(nw[i].status==='Черновик'&&nw[i]._cb==='admin')nw[i]=structuredClone(x)});
     const o=db.organization;if(db.meta.mode==='empty'&&o&&!o.onboard&&!(db.contractors||[]).length&&!(db.history||[]).some(h=>h.who!=='system')){o.onboard={state:'new'};Object.assign(o.features,(r.onboarding||{}).base||{})}}
-  // Сверка с прототипом (v51): статьи, облачка показов и подсказки «Базы знаний» с новыми названиями прав и кнопок, шаблон Telegram «Должники по обслуживанию», описания прав «Просматривать финансовые операции» и «Просматривать отчёты» —
+  // Сверка с прототипом (v51): статьи, облачка показов и подсказки «Базы знаний» с новыми названиями прав и кнопок, недостающие шаблоны сообщений, описания прав «Просматривать финансовые операции» и «Просматривать отчёты» —
   // у данных, сохранённых в браузере раньше, берутся из refDB, если администратор их не менял (статья без его правки, облачко со старым текстом, подсказки, которых ещё не было, в том числе подсказки админки)
   if(!db.meta.v51){db.meta.v51=1;const arts=db.ref.kbArticles||[];
     ['a_kbadm','a14','a12','a7','a_kb','a3','a15'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
@@ -80,6 +80,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       if(u.acts['Заблокировать']==='Запрещает вход; данные сотрудника сохраняются.')u.acts['Заблокировать']=ru.acts['Заблокировать']}
     [['finView',/«Финансы»/],['repView',/вкладку «Отчёты» в/]].forEach(([id,re])=>{const a=(db.ref.permissions||[]).find(x=>x.id===id),b=(r.permissions||[]).find(x=>x.id===id);if(a&&b&&re.test(a.desc||''))a.desc=b.desc});
     ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k])Object.entries(r[k]).forEach(([n,v])=>{if(a[n]==null)a[n]=v})})}
+  // Без уведомления «Должники по обслуживанию» (v52, решение заказчика 23.10.2026): у данных, сохранённых в браузере раньше, убираются его шаблон Telegram, подсказка и отметка переключателя
+  if(!db.meta.v52){db.meta.v52=1;['messageTemplates','templateNotes'].forEach(k=>{if(db.ref[k])delete db.ref[k].tgFee});const u=db.ref.kbUi;if(u&&u.fields)delete u.fields['Должники по обслуживанию'];
+    (db.employees||[]).forEach(e=>{if(e.notify&&e.notify.off)delete e.notify.off.fee})}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}
