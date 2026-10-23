@@ -22,10 +22,10 @@ function txGroups(){const L=RT.filter(t=>t.active&&t.group!=='disabled');const G
 const txMain=()=>RT.filter(t=>t.active&&((t.kind==='regime'&&(t.regimes||[]).some(r=>r==='ОНР'||r==='Единый налог')&&t.preselect&&t.group==='regime'&&!(t.basis||[]).length&&!(t.regimes||[]).includes('Патент'))||['endo','endi','soc'].includes(t.id))).map(t=>t.id);
 // Состояние выбора: sel — отмеченные; open — раскрытые группы; row — раскрытое описание
 const txState=o=>({sel:new Set(o&&o.cur?Object.keys(ORG.types).filter(txOn):[]),q:'',open:new Set(isMobile()?[]:[(txGroups()[0]||{}).id]),row:null,cur:!!(o&&o.cur)});
-function txHtml(st){const q=norm(st.q).trim();const hit=t=>!q||[t.short,t.name,t.code].some(x=>norm(x||'').includes(q));const G=txGroups();
+function txHtml(st){const q=norm(st.q).trim();const hit=t=>!q||[t.short,t.name,t.code,t.index].some(x=>norm(x||'').includes(q));const G=txGroups();
   const row=t=>{const on=st.sel.has(t.id),was=st.cur&&txOn(t.id),lock=was&&on&&txUsed(t.id),open=st.row===t.id;
     return `<div class="pk-row ${on?'on':''}" data-txr="${t.id}"><input type="checkbox" class="pk-cb" data-txc="${t.id}" ${on?'checked':''} ${lock?'disabled title="Назначен действующим контрагентам — снять нельзя"':''} aria-label="${esc(t.short)}">
-      <div class="pk-main"><div class="pk-t"><b>${esc(t.short)}</b>${actPill(t.act,1)}<span class="muted">${esc(t.organ)} · ${perOwn(t)?'по назначению':(PER_LABEL[t.per]||'').toLowerCase()}</span></div>${t.code?`<div class="pk-why">${esc(t.code)}</div>`:''}</div>
+      <div class="pk-main"><div class="pk-t"><b>${esc(t.short)}</b>${actPill(t.act,1)}<span class="muted">${esc(t.organ)} · ${perTxt(t)}</span></div>${t.code?`<div class="pk-why">${esc(t.code)}</div>`:''}</div>
       <span class="pk-st">${was?'<span class="tag">Подключён</span>':''}</span><span class="tx-chev" aria-hidden="true">${ic(open?'up':'down','sm')}</span></div>${open?`<div class="pk-inl">${pkDescHtml(t,{},{})}</div>`:''}`};
   const groups=G.map(g=>{const ids=[...new Set(g.subs.flatMap(s=>s.ids))];const vis=ids.filter(id=>hit(T[id]));if(q&&!vis.length)return '';const n=ids.filter(id=>st.sel.has(id)).length;const op=q||st.open.has(g.id);
     return `<div class="tx-g ${op?'op':''}"><div class="tx-gh"><button type="button" class="tx-gt" data-txg="${g.id}" aria-expanded="${!!op}"><span class="ck-chev ${op?'op':''}">${ic('right','sm')}</span><span class="grow"><b>${esc(g.t)}</b><span class="hint">${esc(g.who)}</span></span></button>

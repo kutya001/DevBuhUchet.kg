@@ -51,20 +51,31 @@ const gkFitType=(t,c)=>{const f=gkFit(t.gked,cpCodes(c),c);return !!(f&&f.length
 // Перечень помечен «сверить» — к предупреждению добавляется оговорка; verify — перечень по документу, сверяются отдельные позиции
 const gkVer=r=>!r?'':r.verify?' (часть перечня ещё сверяется)':/сверить/i.test(r.note||'')?' (перечень ещё сверяется)':'';
 const gkToVerify=r=>!!r&&(!!r.verify||/сверить/i.test(r.note||''));
-function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],ben:[],rate:[],types:[],off:codes.filter(gkOff)};if(!codes.length)return out;
+/* Общие группы кодов (gkedGroups): {id, name, codes, en, spino, why, ask}; en и spino — действие в едином налоге (ст. 419) и в тарифе СПиНО (ЛЬГ-29):
+   'ex' — запрет, 'warn' — предупреждение, пусто — ничего; строка — для всей группы, объект {код: действие} — по кодам */
+const GKG=DB.ref.gkedGroups;
+const gkGrpAct=(g,k,code)=>!g||!g[k]?'':typeof g[k]==='string'?g[k]:g[k][code]||'';
+const gkGrpOf=code=>GKG.find(g=>(g.codes||[]).some(p=>gkHit(code,p)))||null;
+// «Предупреждать при ГКЭД» у режима (единый налог): подтверждение привязано к основному ГКЭД и режимам
+const gkEnSig=c=>JSON.stringify([c.gked||'',regsOf(c)]);
+function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],rwarn:[],ben:[],rate:[],types:[],off:codes.filter(gkOff)};if(!codes.length)return out;
   regsOf(c).forEach(n=>{const r=DICT.regimes.items.find(x=>x.name===n);if(!r||gkEmpty(r.gked))return;const g=r.gked;
     // who:'org' — перечень задан только для организаций (у ИП — по другому перечню), ИП не проверяется
     if(g.who==='org'&&formEnd(c)==='ip')return;
     if(g.strict==='main'&&c.gked&&(g.ex||[]).some(p=>gkHit(c.gked,p))){out.block.push(`Режим «${n}» нельзя применять при основном ГКЭД ${c.gked}: этот вид деятельности запрещён для него (${((g.note||'').match(/ст\. \d+/)||[])[0]||r.art||'НК КР'})`);return}
+    // Основной ГКЭД из «Предупреждать при ГКЭД»: код не отличает запрещённую деятельность от разрешённой — вопрос с подтверждением, после него жёлтая отметка
+    const wc=c.gked&&(g.warn||[]).find(p=>gkHit(c.gked,p));if(wc){const grp=gkGrpOf(c.gked);const ok=c.gkOk&&c.gkOk.sig===gkEnSig(c)?c.gkOk:null;const art=((g.note||'').match(/ст\. \d+/)||[])[0]||r.art||'НК КР';
+      out.rwarn.push({n,code:c.gked,grp,ask:grp&&grp.ask||'',art});out.regime.push(`Режим «${n}» при основном ГКЭД ${c.gked}${grp?` (${grp.name.replace(/ \(.*$/,'').toLowerCase()})`:''}: код не отличает запрещённую деятельность от разрешённой (${art})${ok?` — подтвердил ${whoName(ok.by)} ${fmtD(ok.at)}${ok.ask?`: «${ok.ask}» — нет`:''}`:' — нужно подтверждение'}${gkVer(g)}`)}
     const bad=codes.filter(k=>(g.ex||[]).some(p=>gkHit(k,p)));const f=gkFit(g,codes,c);
     if(!f.length)out.regime.push(`Режим «${n}» не подходит к видам деятельности контрагента${gkVer(g)}`);else if(bad.length)out.regime.push(`Режим «${n}» не применяется к ГКЭД ${bad.join(', ')}: по этим видам деятельности — другой режим${gkVer(g)}`)});
-  benOf(c).forEach(b=>{const f=gkFit(b.gked,codes,c);if(f&&!f.length)out.ben.push(`Виды деятельности контрагента не соответствуют статусу «${b.name}»${gkVer(b.gked)}`)});
+  // Правило «только подсказка» (gked.hint): несовпадение не даёт ни предупреждения, ни подтверждения, ни жёлтой отметки
+  benOf(c).forEach(b=>{if(b.gked&&b.gked.hint)return;const f=gkFit(b.gked,codes,c);if(f&&!f.length)out.ben.push(`Виды деятельности контрагента не соответствуют статусу «${b.name}»${gkVer(b.gked)}`)});
   if(regsOf(c).includes('Единый налог')&&c.gked){const ms=gkEnRows(c.gked,c),m=ms[0];if(m)out.rate.push(`Ставка единого налога по основному ГКЭД ${c.gked}: ${ms.map(x=>`${x.rate} (${x.activity})`).join(' или ')}`);
     // ЕНС-01, ЕНС-13, ЕНС-15 — одна ставка на всю деятельность: по дополнительным ГКЭД налог отдельно не считается
     const one=ms.filter(x=>GK_EN_ONE.includes(x.code));
     if(one.length===ms.length){if((c.gked2||[]).length)out.rate.push(`При этой ставке налог считается по ней со всей деятельности, дополнительные виды отдельно не облагаются (ст. 423 ч. 7)`)}
     else (c.gked2||[]).forEach(k=>{const x=gkEnRow(k,c);if(x&&m&&x.rate!==m.rate)out.rate.push(`ГКЭД ${k}: ставка ${x.rate} (${x.activity}) — налог считается отдельно по каждому виду деятельности (ст. 423 ч. 7)${one.length?`; при ставке ${one.map(o=>o.rate).join(', ')} — одна ставка на всю деятельность`:''}`)})}
-  const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
+  const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];if(t&&t.gked&&t.gked.hint)return;const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
   return out}
 // Ставка ЕН из каталога видов, которая соответствует основному ГКЭД (если такая есть в списке ставок вида)
 function gkEnRate(c,t){const m=c&&c.gked&&gkEnRow(c.gked,c);const r=m&&(String(m.rate).match(/\d+(,\d+)? %/)||[])[0];return r&&t&&t.rates&&t.rates.includes(r)?r:null}

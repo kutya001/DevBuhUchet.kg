@@ -13,7 +13,11 @@ function gkActions(x){const u=gkUsed(x.code),kids=gkKids(x.code).length;return [
 function renderGked(body,fresh){gkIndex();const view=store.get('gk.view','tree');const nSel=GK.filter(gkLeaf).length,nOff=GK.filter(x=>x.active===false).length;
   body.innerHTML=`<div class="note">${ic('info')}<span>Государственный классификатор видов экономической деятельности КР, ред. 2022 (файл gkedDB.json): ${GK.length} ${plural(GK.length,'код','кода','кодов')}, из них ${nSel} подклассов — их выбирают у контрагентов. Связь с налогами задаётся не здесь, а полем «Виды деятельности (ГКЭД)» у режимов, ставок единого налога, льгот и статусов и видов отчётов. Код, который где-то указан, удалить нельзя — только снять «Действует».${nOff?` Снято с действия: ${nOff}.`:''}</span></div>
     <div class="row"><span class="muted">Выгрузка и загрузка через Excel: сопоставление по коду, перед применением — сравнение.</span><div class="grow"></div><div class="seg" role="group" aria-label="Вид" id="gk-view">${[['tree','Дерево'],['list','Список']].map(([k,l])=>`<button type="button" data-v="${k}" class="${view===k?'on':''}">${l}</button>`).join('')}</div><button class="btn sm" data-exp="gked">${ic('download','sm')}Выгрузить</button><button class="btn sm" data-imp="gked">${ic('upload','sm')}Загрузить</button></div>
+    <div class="box"><div class="row"><h3 style="margin:0">Группы кодов</h3><span class="hint grow">Общие наборы кодов: что каждый делает в едином налоге (ст. 419) и в тарифе СПиНО (ЛЬГ-29). Изменение группы сразу меняет «Кроме» и «Предупреждать при ГКЭД» у обоих</span><button class="btn sm" data-exp="gkgroups">${ic('download','sm')}Выгрузить</button><button class="btn sm" data-imp="gkgroups">${ic('upload','sm')}Загрузить</button></div><div id="gk-grp"></div></div>
     <div id="pg"></div>${pdHistHtml('gked')}`;
+  grid($('#gk-grp',body),{id:'adm-gkgrp',rid:g=>g.id,fixedView:'table',audit:false,cols:[{key:'name',label:'Группа',type:'text',w:280,val:g=>g.name,html:g=>`<span class="strong">${esc(g.name)}</span>`},{key:'codes',label:'Коды',type:'text',w:220,val:g=>(g.codes||[]).join(', '),cls:'mono'},
+    {key:'en',label:'Единый налог',type:'text',w:220,val:g=>gkActTxt(g,'en')},{key:'spino',label:'СПиНО',type:'text',w:200,val:g=>gkActTxt(g,'spino')},{key:'why',label:'Почему',type:'text',w:360,val:g=>g.why||'',hide:true}],
+    rows:()=>GKG,title:'name',noun:['группа','группы','групп'],open:gkGrpDlg,actions:g=>[{label:'Изменить',icon:'edit',run:()=>gkGrpDlg(g)}]});
   $('#gk-view',body).onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;store.set('gk.view',b.dataset.v);renderPage()};
   if(view==='tree')return gkTree($('#pg',body));
   grid($('#pg',body),{id:'adm-gked',rid:x=>x.code,bulk:[{label:'Снять «Действует»',icon:'ban',run:(rs,done)=>{rs.forEach(x=>{x.active=false;touch(x)});pdLog(`ГКЭД: снято с действия ${rs.length} ${plural(rs.length,'код','кода','кодов')}`,'gked');done();refreshAll()}},{label:'Вернуть «Действует»',icon:'check',run:(rs,done)=>{rs.forEach(x=>{x.active=true;touch(x)});pdLog(`ГКЭД: возвращено в действие ${rs.length} ${plural(rs.length,'код','кода','кодов')}`,'gked');done();refreshAll()}}],
@@ -47,6 +51,38 @@ function gkEditDlg(x){const isNew=!x;const e=x?Object.assign({},x):{code:'',name
         setErr(el,'gke-parent',v.level==='section'?(v.parent?'У секции нет верхнего уровня':''):!v.parent?'Укажите код верхнего уровня':!GKM[v.parent]?'Такого кода нет в справочнике':v.parent===v.code?'Код не может входить сам в себя':GK_LVS.indexOf(GKM[v.parent].level)>=GK_LVS.indexOf(v.level)?'Верхний уровень должен быть выше по классификатору':'')].every(Boolean);if(!ok)return;
       if(isNew){GK.push(born(v));pdLog(`ГКЭД: добавлен код ${v.code} «${v.name}»`,'gked')}else{const ch=['name','level','parent','note','active'].filter(k=>(v[k]??'')!==(x[k]??''));Object.assign(x,v);touch(x);if(ch.length)pdLog(`ГКЭД: ${x.code} изменён`,'gked')}
       gkIndex();m.close();refreshAll();toast('Сохранено')}}})})}
+/* ═════════════ Группы кодов (gkedGroups): действие в едином налоге и в тарифе СПиНО ═════════════ */
+const GK_ACT={ex:'Запрет',warn:'Предупреждение'};
+const gkActTxt=(g,k)=>!g[k]?'—':typeof g[k]==='string'?GK_ACT[g[k]]||g[k]:Object.entries(g[k]).map(([c,a])=>`${c} — ${(GK_ACT[a]||a).toLowerCase()}`).join('; ')||'—';
+// Excel: «запрет», «предупреждение», пусто — для всей группы; «64.91 — предупреждение; 66.12.9 — запрет» — по кодам
+function gkActIn(v){const s=norm(String(v||'')).trim();const one=x=>/запрет/.test(x)?'ex':/предупр/.test(x)?'warn':'';if(!s||s==='—'||s==='-')return '';
+  if(!/[—:]/.test(s)){const a=one(s);return a||{err:'действие: запрет, предупреждение или пусто'}}const m={};
+  for(const part of s.split(';').map(x=>x.trim()).filter(Boolean)){const[c,a]=part.split(/\s*[—:]\s*/);const act=one(a||'');if(!c||!act||!GKM[c.toUpperCase()])return {err:'по кодам: «64.91 — предупреждение; 66.12.9 — запрет»'};m[c.toUpperCase()]=act}return m}
+// Правила, которые меняет группа: единый налог — режим с запретом по основному ГКЭД и записи с тем же перечнем (виды отчётов, налог); СПиНО — статус ЛЬГ-29
+function gkGrpTargets(k){if(k==='spino'){const b=sfSpBen();return b?[b]:[]}const r=DICT.regimes.items.find(x=>x.gked&&x.gked.strict==='main');if(!r)return [];
+  const sig=x=>JSON.stringify([(x.gked||{}).ex||[],(x.gked||{}).warn||[]]),s=sig(r);return [r,...RT.filter(x=>x.gked&&sig(x)===s),...TAXES.filter(x=>x.gked&&sig(x)===s)]}
+const gkTgName=x=>x.short&&x.id?`вид «${x.short}»`:x.code&&/^НАЛ|^ПЛТ/.test(x.code)?`налог «${x.name}»`:x.code&&/^ЛЬГ/.test(x.code)?`статус «${x.name}»`:`режим «${x.name}»`;
+// Коды прежней группы убираются из «Кроме» и «Предупреждать при ГКЭД», коды новой добавляются по действию
+function gkGrpApply(old,g){['en','spino'].forEach(k=>gkGrpTargets(k).forEach(x=>{const r=x.gked=x.gked||{in:[],ex:[]};const drop=new Set(old?old.codes||[]:[]);
+  const ex=new Set((r.ex||[]).filter(c=>!drop.has(c))),wr=new Set((r.warn||[]).filter(c=>!drop.has(c)));(g.codes||[]).forEach(c=>{const a=gkGrpAct(g,k,c);if(a==='ex')ex.add(c);else if(a==='warn')wr.add(c)});
+  r.ex=[...ex];if(wr.size)r.warn=[...wr];else delete r.warn;touch(x)}))}
+function gkGrpDlg(g){const st={codes:(g.codes||[]).join(', '),act:{en:{},spino:{}}};(g.codes||[]).forEach(c=>['en','spino'].forEach(k=>st.act[k][c]=gkGrpAct(g,k,c)));
+  const opts=[['','—'],['ex','Запрет'],['warn','Предупреждение']];
+  openModal({form:true,size:'mid',render:m=>{const cs=gkParse(st.codes);const list=cs.v||[];
+    const used=['en','spino'].map(k=>`<div><span class="k">${k==='en'?'Единый налог (ст. 419)':'Тариф СПиНО (ЛЬГ-29)'}</span><span class="v">${gkGrpTargets(k).map(gkTgName).map(esc).join(', ')||'—'}</span></div>`).join('');
+    return {title:esc(g.name),sub:'Справочник платформы · ГКЭД · группа кодов',body:`<div class="form">
+      ${fld('Название',inp('gg-name',g.name),{req:true,full:true,id:'gg-name'})}
+      ${fld('Коды',inp('gg-codes',st.codes,'class="inp mono"'),{req:true,full:true,id:'gg-codes',hint:'Коды или начала кодов через запятую'})}
+      <div class="fld full"><label>Что делает код</label><table class="mini"><thead><tr><th>Код</th><th>Единый налог</th><th>СПиНО</th></tr></thead><tbody>${list.map(c=>`<tr><td><span class="mono strong">${esc(c)}</span> <span class="faint">${esc(gkName(c))}</span></td>${['en','spino'].map(k=>`<td>${sel(`gg-${k}-${c.replace(/\./g,'_')}`,opts,st.act[k][c]||'',`data-ga="${k}" data-gc="${esc(c)}"`)}</td>`).join('')}</tr>`).join('')}</tbody></table><div class="hint">«Предупреждение» — вопрос с подтверждением при выборе режима или тарифа, после него в карточке жёлтая отметка</div></div>
+      ${fld('Вопрос при предупреждении',inp('gg-ask',g.ask||'','placeholder="Например: Оказывает услуги интернета?"'),{full:true,id:'gg-ask'})}
+      ${fld('Почему (со ссылкой на закон)',`<textarea class="inp" id="gg-why" style="min-height:56px">${esc(g.why||'')}</textarea>`,{full:true,id:'gg-why'})}
+      <div class="kv full" style="grid-column:1/-1">${used}</div></div>`,
+      foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="gg-ok">Сохранить</button>',
+      mount(el){$('#gg-codes',el).onchange=e=>{st.codes=e.target.value;m.draw()};$$('[data-ga]',el).forEach(s=>s.onchange=()=>{st.act[s.dataset.ga][s.dataset.gc]=s.value});
+        $('#gg-ok',el).onclick=()=>{const name=val(el,'gg-name').trim(),p=gkParse(val(el,'gg-codes'));if(![setErr(el,'gg-name',name?'':'Введите название'),setErr(el,'gg-codes',p.err||(p.v.length?'':'Укажите коды'))].every(Boolean))return;
+          const old=structuredClone(g);const pack=k=>{const a=p.v.map(c=>st.act[k][c]||'');return a.every(x=>x===a[0])?(a[0]||null):Object.fromEntries(p.v.filter((c,i)=>a[i]).map((c,i)=>[c,st.act[k][c]]))};
+          Object.assign(g,{name,codes:p.v,en:pack('en'),spino:pack('spino'),ask:val(el,'gg-ask').trim(),why:val(el,'gg-why').trim()});if(!g.ask)delete g.ask;touch(g);gkGrpApply(old,g);
+          pdLog(`ГКЭД: группа кодов «${g.name}» изменена — коды ${g.codes.join(', ')}; единый налог: ${gkActTxt(g,'en')}; СПиНО: ${gkActTxt(g,'spino')}`,'gked');m.close();refreshAll();toast('Сохранено: перечни единого налога и СПиНО обновлены')}}}}})}
 // Ставка единого налога: виды деятельности (ГКЭД) для подбора ставки по основному ГКЭД контрагента
 function enRateDlg(x){openModal({form:true,size:'mid',render:()=>({title:`${esc(x.code)} · ${esc(x.activity)}`,sub:`Ставка ${esc(x.rate)} · ${esc(x.art||'ст. 423 НК КР')}`,body:`${x.explain?`<div class="note">${ic('info')}<span><b>Когда применяется.</b> ${esc(x.explain)}</span></div>`:''}<div class="form">${gkRuleFields('er',x.gked)}<div class="hint full" style="grid-column:1/-1">Ставка подбирается по основному ГКЭД контрагента: из подходящих ставок берётся та, где код указан точнее. Пустой перечень — ставка не подбирается по виду деятельности.</div></div>`,
   foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="er-ok">Сохранить</button>',

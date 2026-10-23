@@ -47,6 +47,7 @@ const instIn=v=>{if(!v||!v.trim())return [];const a=v.split(/[;,]/).map(x=>x.tri
 function payRuleText(t){if(Array.isArray(t.inst)&&t.inst.length)return `${t.inst.length} ${plural(t.inst.length,'платёж','платежа','платежей')}: до ${instTxt(t)}`;if(!t.pay)return 'как срок сдачи';return ruleText(Object.assign({},t,t.pay,{payOnly:false}))}
 function typeNorm(x){if(x.from==='end')delete x.from;if('payday' in x){x.pay=x.payday?{day:x.payday,after:x.after,ym:x.ym}:null;delete x.payday}if(Array.isArray(x.inst)&&!x.inst.length)delete x.inst;return x}
 function ruleText(t){
+  if(t.oneOff) return `в течение ${t.day} ${plural(t.day,'дня','дней','дней')} после события`;
   const dd=t.day>=31?'последнего дня':`${t.day}-го числа`;
   if(t.payOnly&&t.after===0) return `оплата до ${dd} месяца, за который платится`;
   if(t.per==='Y') return `до ${t.day} ${MONTHS_G[t.ym-1]} ${t.from==='start'?'того же':'следующего'} года`;
@@ -55,15 +56,17 @@ function ruleText(t){
   const w=t.per==='M'?'месяца':t.per==='Q'?'квартала':'полугодия';
   return t.after===1?`до ${dd} месяца после ${t.per==='M'?'отчётного':w}`:`до ${dd} ${t.after}-го месяца после ${w}`;
 }
-function plabel(t,p){return t.per==='M'?`${String(p.m).padStart(2,'0')}.${p.y}`:t.per==='Q'?`${ROM[p.q-1]} кв. ${p.y}`:t.per==='H'?`${ROM[p.h-1]} пол. ${p.y}`:`${p.y}`}
-function phuman(t,p){return t.per==='M'?`${MONTHS[p.m-1]} ${p.y}`:t.per==='Q'?`${ROM[p.q-1]} квартал ${p.y}`:t.per==='H'?`${ROM[p.h-1]} полугодие ${p.y}`:`${p.y} год`}
-function pstart(t,p){return t.per==='M'?mkDate(p.y,p.m,1):t.per==='Q'?mkDate(p.y,(p.q-1)*3+1,1):t.per==='H'?mkDate(p.y,(p.h-1)*6+1,1):mkDate(p.y,1,1)}
-function pend(t,p){return t.per==='M'?mkDate(p.y,p.m+1,0):t.per==='Q'?mkDate(p.y,p.q*3+1,0):t.per==='H'?mkDate(p.y,p.h*6+1,0):mkDate(p.y,12,31)}
+/* Отчёт разового вида: p = {y, m, ev} — период — месяц даты события ev, срок — t.day дней от неё; отчётов за месяц может быть несколько, ключ — дата события */
+const evName=t=>((t&&t.evLabel)||'Дата события').replace(/^./,s=>s.toLowerCase());
+function plabel(t,p){if(p&&p.ev)return `${String(p.m).padStart(2,'0')}.${p.y} · ${p.ev.slice(8,10)}.${p.ev.slice(5,7)}`;return t.per==='M'?`${String(p.m).padStart(2,'0')}.${p.y}`:t.per==='Q'?`${ROM[p.q-1]} кв. ${p.y}`:t.per==='H'?`${ROM[p.h-1]} пол. ${p.y}`:`${p.y}`}
+function phuman(t,p){if(p&&p.ev)return `${MONTHS[p.m-1]} ${p.y} · ${evName(t)} ${fmtD(p.ev)}`;return t.per==='M'?`${MONTHS[p.m-1]} ${p.y}`:t.per==='Q'?`${ROM[p.q-1]} квартал ${p.y}`:t.per==='H'?`${ROM[p.h-1]} полугодие ${p.y}`:`${p.y} год`}
+function pstart(t,p){if(p&&p.ev)return p.ev;return t.per==='M'?mkDate(p.y,p.m,1):t.per==='Q'?mkDate(p.y,(p.q-1)*3+1,1):t.per==='H'?mkDate(p.y,(p.h-1)*6+1,1):mkDate(p.y,1,1)}
+function pend(t,p){if(p&&p.ev)return p.ev;return t.per==='M'?mkDate(p.y,p.m+1,0):t.per==='Q'?mkDate(p.y,p.q*3+1,0):t.per==='H'?mkDate(p.y,p.h*6+1,0):mkDate(p.y,12,31)}
 function ruleDate(r,p,per){const md=(y,m,d)=>d>=31?mkDate(y,m+1,0):mkDate(y,m,d);const st=r.from==='start';const last=per==='M'?p.m:per==='Q'?p.q*3:per==='H'?p.h*6:12;const first=per==='M'?p.m:per==='Q'?p.q*3-2:per==='H'?p.h*6-5:1;
   if(per==='Y')return md(p.y+(st?0:1),r.ym,r.day);return md(p.y,(st?first:last)+r.after,r.day)}
-function dueOf(t,p){const base=ruleDate(t,p,t.per);return {base,due:t.shift?shiftWork(base):base}}
+function dueOf(t,p){const base=p&&p.ev?addDays(p.ev,t.day):ruleDate(t,p,t.per);return {base,due:t.shift?shiftWork(base):base}}
 /* Срок оплаты: своё правило вида (t.pay) или как срок сдачи */
-function payDueOf(t,p,due){if(!t.pay)return due;const b=ruleDate(Object.assign({from:t.from,ym:t.ym,after:t.after},t.pay),p,t.per);return t.shift?shiftWork(b):b}
+function payDueOf(t,p,due){if(!t.pay||(p&&p.ev))return due;const b=ruleDate(Object.assign({from:t.from,ym:t.ym,after:t.after},t.pay),p,t.per);return t.shift?shiftWork(b):b}
 function periodList(t,ahead=1){
   const[y,m]=TODAY.split('-').map(Number);const out=[];
   if(t.per==='M')for(let k=-3;k<=ahead;k++){const d=new Date(Date.UTC(y,m-1+k,1));out.push({y:d.getUTCFullYear(),m:d.getUTCMonth()+1})}
@@ -74,9 +77,18 @@ function periodList(t,ahead=1){
 }
 /* Внутренняя фин. отчётность: периодичность и срок задаются в назначении конкретного контрагента */
 const perOwn=t=>!!t&&(t.kind==='internal'||!!t.perAssign);
-function tEff(t,a){if(!t||!a)return t;if(!perOwn(t))return a.dueDay?Object.assign({},t,{day:a.dueDay}):t;if(!a.per)return t;return Object.assign({},t,{per:a.per,day:a.day,after:a.per==='Y'?0:a.mo,ym:a.per==='Y'?a.mo:t.ym})}
+// Разовый вид (oneOff): по периодам не назначается, каждый отчёт создаётся через «Разовый отчёт»
+const perTxt=t=>t.oneOff?'разовый':perOwn(t)?'по назначению':(PER_LABEL[t.per]||'').toLowerCase();
+/* Срок по статусу контрагента: у статуса dueOverride {вид: {day, after, pay}} — например, «Крупный налогоплательщик»: НДС до последнего дня следующего месяца, уплата до 25-го.
+   Действует, пока статус у контрагента не истёк (даты «Действует с / по»); «Вариант срока» в назначении важнее статуса */
+const ovDay=d=>d==='last'?31:d;
+const benLive=(cp,b)=>{const d=(cp.benDates||{})[b.name]||{};return (!d.from||d.from<=TODAY)&&(!d.to||d.to>=TODAY)};
+const dueBen=(t,cp)=>!t||!cp?null:benOf(cp).find(b=>b.active!==false&&b.dueOverride&&b.dueOverride[t.id]&&benLive(cp,b))||null;
+function tOv(t,cp){const b=dueBen(t,cp);if(!b)return t;const o=b.dueOverride[t.id];
+  return Object.assign({},t,{day:ovDay(o.day!=null?o.day:t.day),after:o.after!=null?o.after:t.after,ovBen:b.name},o.ym?{ym:o.ym}:{},o.pay?{pay:{day:ovDay(o.pay.day),after:o.pay.after!=null?o.pay.after:t.after}}:{})}
+function tEff(t,a,cp){if(!t)return t;t=tOv(t,cp);if(!a)return t;if(!perOwn(t))return a.dueDay?Object.assign({},t,{day:a.dueDay,ovBen:null}):t;if(!a.per)return t;return Object.assign({},t,{per:a.per,day:a.day,after:a.per==='Y'?0:a.mo,ym:a.per==='Y'?a.mo:t.ym})}
 const assignOfT=(cp,id)=>cp.assign.find(a=>a.t===id&&!a.to)||cp.assign.filter(a=>a.t===id).slice(-1)[0];
-const tFor=r=>tEff(T[r.t],assignOfT(CPM[r.cp],r.t));
+const tFor=r=>tEff(T[r.t],assignOfT(CPM[r.cp],r.t),CPM[r.cp]);
 const regsOf=cp=>[cp.regime,cp.regime2].filter(Boolean);
 const END_IDS=['endo','endi'],EN_ZERO=['0 %','0,1 %','0,5 %'];
 const formEnd=cp=>{const f=DICT.forms.items.find(x=>x.name===cp.form);return f&&f.end||(cp.form==='ИП'?'ip':'org')};
@@ -97,7 +109,13 @@ function benHint(cp,sel){const bs=benOf(cp);if(!bs.length)return '';const ids=[.
   const rates=bs.filter(b=>/Единый налог \d|ставк/i.test(b.gives)).map(b=>`«${esc(b.name)}»: ${esc(b.gives.split(';')[0])}`);
   if(!out.length&&!rates.length)return '';return `<div class="note">${ic('info')}<span>Подсказка по льготам — решение за бухгалтером.<br>${[...out,...rates].join('<br>')}</span></div>`}
 function benChips(id,arr){return `<div class="chipsel" id="${id}">${DICT.benefits.items.filter(b=>b.active||arr.includes(b.name)).map(b=>`<button type="button" data-b="${esc(b.name)}" class="${arr.includes(b.name)?'on':''}" title="${esc(b.gives)}">${arr.includes(b.name)?ic('check','sm'):''}${esc(b.name)}</button>`).join('')}</div>`}
-const benSoon=cp=>benOf(cp).filter(b=>b.until&&b.until>=TODAY&&diffDays(b.until,TODAY)<=60);
+// У статуса (тип «Статус», kind='status') льгот нет — нет и предупреждения об окончании
+const benSoon=cp=>benOf(cp).filter(b=>b.kind!=='status'&&b.until&&b.until>=TODAY&&diffDays(b.until,TODAY)<=60);
+// Статусы, которые отмечаются сами по УГНС контрагента (поле «Ставится по УГНС»)
+const ugBens=ug=>ug?DICT.benefits.items.filter(b=>b.active!==false&&b.suggest&&(b.suggest.ugns||[]).includes(ug)):[];
+// Срок по статусу словами: «Сдача — до последнего дня месяца после отчётного; уплата — до 25-го числа месяца после отчётного (статус «…»)»
+function ovText(t,cp){const e=tOv(t,cp);if(!e.ovBen)return '';const pay=t.act!=='sub'&&e.pay?payRuleText(e):'';
+  return `${t.act==='pay'?'Уплата':'Сдача'} — ${ruleText(t.act==='pay'&&e.pay?Object.assign({},e,e.pay):e)}${pay&&t.act!=='pay'?'; уплата — '+pay:''} (статус «${e.ovBen}»)`}
 const reg2Opts=(main,cur)=>[['','— нет —'],...DICT.regimes.items.filter(x=>(x.active||x.name===cur)&&x.name!==main).map(x=>[x.name,REGIME_FULL[x.name]||x.name])];
 
 /* ═════════════ Statuses (состав зашит, названия и цвета ведёт администратор) ═════════════ */

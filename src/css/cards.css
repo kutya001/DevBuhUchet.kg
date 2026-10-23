@@ -249,3 +249,4 @@
 .tx-sub{font-size:12px;font-weight:650;color:var(--muted);margin-top:10px!important;text-transform:uppercase;letter-spacing:.04em}
 .tx-chev{color:var(--faint);align-self:center}
 @media (max-width:767px){.tx-gh{padding-right:10px}.tx-gh .chk-n{margin-left:34px}}
+.pk-gt{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)}.pk-gt b{font-weight:700}.pk-gt:focus-visible{outline:2px solid var(--b-blue);outline-offset:2px}

@@ -51,7 +51,7 @@ function taxViewDlg(x){openModal({size:'mid',render:()=>({title:esc(x.name),sub:
 
 /* ═════════════ Вид отчёта: описание, налоги, к которым он относится, и настройки организации ═════════════ */
 function typeGuideHtml(t){const tx=taxesOfType(t.id);
-  const kv=tgKv([['Код формы',t.code?`<span class="mono">${esc(t.code)}</span>`:'—',1],['Орган',t.organ],['Периодичность',perOwn(t)?'задаётся в назначении':PER_LABEL[t.per]],['Срок сдачи',ruleText(t)],t.act!=='sub'?['Срок оплаты',payRuleText(t)]:null,['Что нужно сделать',actPill(t.act,1),1],t.act!=='sub'?['Что уплачивается',paysTxt(t)]:null,
+  const kv=tgKv([['Код формы',t.code?`<span class="mono">${esc(t.code)}</span>`:'—',1],['Орган',t.organ],t.index?['Индекс формы',`<span class="mono">${esc(t.index)}</span>`,1]:null,t.respondents?['Кто сдаёт',t.respondents]:null,['Периодичность',t.oneOff?'разовый — создаётся через «Разовый отчёт» на каждое событие':perOwn(t)?'задаётся в назначении':PER_LABEL[t.per]],['Срок сдачи',ruleText(t)],t.act!=='sub'?['Срок оплаты',payRuleText(t)]:null,['Что нужно сделать',actPill(t.act,1),1],t.act!=='sub'?['Что уплачивается',paysTxt(t)]:null,
     (t.rates||[]).length?['Ставки',t.rates.join(', ')]:null,['Тип',t.kind==='regime'?'Режимный: '+(t.regimes||[]).join(', '):KIND_L[t.kind]],(t.basis||[]).length?['Основание',(t.basis||[]).map(baseName).join('; ')]:null,
     !gkEmpty(t.gked)?['Виды деятельности (ГКЭД)',gkRuleTxt(t.gked)]:null,['Для кого',whoText(t.who)],t.art?['Статья НК КР',t.art]:null,t.note?['Примечание',t.note]:null]);
   return `<div class="tg">${tgSec('Что это за отчёт',`${t.desc?`<p class="pk-p">${esc(t.desc)}</p>`:''}${t.choice?`<div class="note">${ic('info')}<span>${esc(t.choice)}</span></div>`:''}${kv}${verifyNote(t.verify,t.verifyNote)}`,'file')}</div>

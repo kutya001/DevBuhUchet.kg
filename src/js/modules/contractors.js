@@ -109,28 +109,43 @@ function restDlg(cs){
     foot:`<div class="grow"></div><button class="btn cta" data-close>${left.length?'Решить позже':'Готово'}</button>`,
     mount(el){$$('[data-rf]',el).forEach(b=>b.onclick=()=>moneyOpDlg(CPM[+b.dataset.rf],'refund'));$$('[data-bn]',el).forEach(b=>b.onclick=()=>moneyOpDlg(CPM[+b.dataset.bn],'bonus'))}}}});
 }
-function assignTypes(c,ids,from,rates,fixed,quiet,cfgs){ids.forEach(id=>{let a=c.assign.find(a=>a.t===id&&!a.to);if(!a){a={t:id,from:from||TODAY,to:null,resp:null,rate:(rates&&rates[id])||(T[id].rates&&T[id].rates.length?T[id].rates[Math.min(1,T[id].rates.length-1)]:null)};c.assign.push(a)}if(fixed&&fixed[id]!=null)a.fixed=fixed[id];if(cfgs&&cfgs[id])Object.assign(a,cfgs[id]);const t=tEff(T[id],a);
+function assignTypes(c,ids,from,rates,fixed,quiet,cfgs){ids.forEach(id=>{let a=c.assign.find(a=>a.t===id&&!a.to);if(!a){a={t:id,from:from||TODAY,to:null,resp:null,rate:(rates&&rates[id])||(T[id].rates&&T[id].rates.length?T[id].rates[Math.min(1,T[id].rates.length-1)]:null)};c.assign.push(a)}if(fixed&&fixed[id]!=null)a.fixed=fixed[id];if(cfgs&&cfgs[id])Object.assign(a,cfgs[id]);const t=tEff(T[id],a,c);
+  // Разовый вид — отчёты только через «Разовый отчёт»; у отключённого вида новые отчёты не создаются
+  if(t.oneOff||t.active===false){if(!quiet)log('cp',c.id,`Назначен отчёт: ${t.name}${t.oneOff?' (разовый: создаётся через «Разовый отчёт»)':''}`,c.id);return}
   periodList(t).filter(p=>pend(t,p)>=TODAY.slice(0,8)+'01'||t.per!=='M').filter(p=>!a.until||ym(pstart(t,p))<=a.until).forEach(p=>{if(t.per==='M'&&pstart(t,p)<TODAY.slice(0,8)+'01')return;{const ex=REPORTS.find(r=>r.cp===c.id&&r.t===id&&r.pkey===pstart(t,p)&&!r.superseded);if(ex){if(ex.status==='Не требуется'&&!ex.subDate&&ex.due>=TODAY&&!c.archived&&inService(c,ym(ex.pkey))){ex.status='К сдаче';delete ex._paused;log('r',ex.id,'Статус: Не требуется → К сдаче (назначение восстановлено)',c.id)}return}}
     if(t.per!=='M'&&dueOf(t,p).due<TODAY)return;REPORTS.push(makeReport(c,t,p,a.resp||c.resp))});
   if(!quiet)log('cp',c.id,`Назначен отчёт: ${t.name}${perOwn(t)?', '+PER_LABEL[t.per].toLowerCase()+', '+ruleText(t):''}`,c.id)})}
 function perOfYm(t,k){const[y,mo]=k.split('-').map(Number);return t.per==='M'?{y,m:mo}:t.per==='Q'?{y,q:Math.ceil(mo/3)}:t.per==='H'?{y,h:Math.ceil(mo/6)}:{y}}
+/* Срок по статусу (ТЗ «Налоговые льготы и особые статусы» → «Меняет сроки»): при установке или снятии статуса несданные отчёты пересчитываются,
+   сроки, изменённые вручную, и разовые отчёты не трогаются. cpRedueList — что изменится при статусах ben и датах dates (для подсказки до сохранения) */
+function cpRedueList(c,ben,dates){const f=Object.assign({},c,{ben:ben||c.ben||[],benDates:dates!==undefined?dates:c.benDates});
+  return REPORTS.filter(r=>r.cp===c.id&&OPEN.has(r.status)&&!r.superseded&&!r.dueManual&&!r.ev&&T[r.t]).map(r=>{const t=tEff(T[r.t],assignOfT(c,r.t),f);const d=dueOf(t,r.p);return d.due!==r.due||d.base!==r.dueBase?{r,d,ben:t.ovBen||null}:null}).filter(Boolean)}
+const redueNote=l=>l.length?`Сроки по статусу изменятся у ${l.length} ${plural(l.length,'несданного отчёта','несданных отчётов','несданных отчётов')}: ${l.slice(0,4).map(x=>`${esc(T[x.r.t].short)} ${esc(x.r.plabel)} — ${fmtD(x.r.due)} → ${fmtD(x.d.due)}`).join('; ')}${l.length>4?'; …':''}`:'';
+// Какие несданные отчёты сейчас получают срок по статусу: {id отчёта: название статуса} — снимок до изменения статусов
+const cpOvMap=c=>Object.fromEntries(REPORTS.filter(r=>r.cp===c.id&&OPEN.has(r.status)&&T[r.t]).map(r=>[r.id,(tFor(r)||{}).ovBen]).filter(x=>x[1]));
+// «Ставится по УГНС»: статусы, которые отмечаются сами при этом УГНС (cx — контрагент или черновик формы); сами не снимаются
+function ugAuto(cx,ug){const add=ugBens(ug).filter(b=>!(cx.ben||[]).includes(b.name)).map(b=>b.name);if(add.length)cx.ben=[...(cx.ben||[]),...add];return add}
+const ugMsg=add=>add.map(n=>`Отмечен статус «${n}» по УГНС`).join('; ');
+// У сохранённого контрагента: отметить статусы по УГНС, записать в историю, пересчитать сроки
+function ugApply(c){const was=cpOvMap(c);const add=ugAuto(c,c.ugns);if(!add.length)return {add,n:0};add.forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));touch(c);return {add,n:cpRedue(c,was)}}
+function cpRedue(c,was){const l=cpRedueList(c);l.forEach(({r,d,ben})=>{r.dueBase=d.base;r.due=d.due;const wb=was&&was[r.id];log('r',r.id,ben?`Срок по статусу «${ben}»: ${fmtD(d.due)}`:`Срок по каталогу${wb?` (снят статус «${wb}»)`:''}: ${fmtD(d.due)}`,c.id)});return l.length}
 function periodsFrom(t,fromYm){const out=[],seen=new Set();for(let k=fromYm;k<=ym(TODAY);k=addMonths(k,1)){const p=perOfYm(t,k);const ps=pstart(t,p);if(seen.has(ps))continue;seen.add(ps);if(pend(t,p)<TODAY)out.push(p)}return out}
 function asgDlg(c,a){const t=T[a.t];const st={from:(a.from||TODAY).slice(0,7),until:a.until||'',resp:a.resp||'',dd:a.dueDay||'',note:a.note||'',mark:true};
-  const missing=()=>periodsFrom(tEff(t,a),st.from).filter(p=>!REPORTS.some(r=>r.cp===c.id&&r.t===t.id&&r.pkey===pstart(tEff(t,a),p)));
-  openModal({form:true,size:'mid',render:m=>{const miss=t.kind==='internal'?[]:missing();return {title:'Назначение: '+esc(t.short),sub:`${esc(c.name)} · ${esc(t.name)}`,body:`<div class="form">
+  const missing=()=>periodsFrom(tEff(t,a,c),st.from).filter(p=>!REPORTS.some(r=>r.cp===c.id&&r.t===t.id&&r.pkey===pstart(tEff(t,a,c),p)));const noPer=t.kind==='internal'||t.oneOff||t.active===false;
+  openModal({form:true,size:'mid',render:m=>{const miss=noPer?[]:missing();return {title:'Назначение: '+esc(t.short),sub:`${esc(c.name)} · ${esc(t.name)}`,body:`<div class="form">
     ${fld('С какого периода',inp('ag-from',st.from,'type="month"'),{req:true,id:'ag-from'})}${fld('До какого периода',inp('ag-until',st.until,'type="month"'),{id:'ag-until',hint:'Пусто — бессрочно'})}
     ${fld('Ответственный',sel('ag-resp',[['','Ответственный контрагента: '+empName(c.resp)],...EMP.filter(e=>e.active).map(e=>[e.id,e.fio])],st.resp),{id:'ag-resp',hint:'Например, Соцфонд ведёт кадровик; деньги остаются на счёте ответственного контрагента'})}
-    ${t.kind!=='internal'&&t.per!=='Y'?fld('Вариант срока',sel('ag-dd',[['','Как в каталоге: '+ruleText(t)],...[10,15,20,25].filter(d=>d!==t.day).map(d=>[String(d),'до '+d+'-го числа']),['31','до последнего дня месяца']],String(st.dd)),{id:'ag-dd',full:true,hint:'Если у контрагента срок отличается от каталога, например НДС до 25-го или до последнего дня месяца'}):''}
+    ${t.kind!=='internal'&&t.per!=='Y'&&!t.oneOff?fld('Вариант срока',sel('ag-dd',[['',(dueBen(t,c)?`По статусу «${dueBen(t,c).name}»: `+ruleText(tOv(t,c)):'Как в каталоге: '+ruleText(t))],...[10,15,20,25].filter(d=>d!==t.day).map(d=>[String(d),'до '+d+'-го числа']),['31','до последнего дня месяца']],String(st.dd)),{id:'ag-dd',full:true,hint:'Если у контрагента срок отличается от каталога, например НДС до 25-го или до последнего дня месяца'}):''}
     ${fld('Примечание',inp('ag-note',st.note),{id:'ag-note',full:true})}</div>
     ${miss.length?`<div class="note warn">${ic('history')}<span>Назначение начинается в прошлом: нет отчётов за ${miss.length} ${plural(miss.length,'прошлый период','прошлых периода','прошлых периодов')} (${miss.map(p=>plabel(tEff(t,a),p)).join(', ')}). Они будут созданы.</span></div><label class="check-row"><input type="checkbox" class="sw" id="ag-mark" ${st.mark?'checked':''}><span class="grow">Сразу отметить прошлые периоды сданными и принятыми</span></label>`:''}`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ag-ok">Сохранить</button>',
     mount(el){const snap=()=>{st.from=val(el,'ag-from')||st.from;st.until=val(el,'ag-until');st.resp=val(el,'ag-resp');st.dd=$('#ag-dd',el)?val(el,'ag-dd'):'';st.note=val(el,'ag-note');if($('#ag-mark',el))st.mark=$('#ag-mark',el).checked};
       $('#ag-from',el).onchange=()=>{snap();m.draw()};
-      $('#ag-ok',el).onclick=()=>{snap();if(!setErr(el,'ag-until',st.until&&st.until<st.from?'Период окончания раньше начала':''))return;const ch=[];const miss=t.kind==='internal'?[]:missing();
+      $('#ag-ok',el).onclick=()=>{snap();if(!setErr(el,'ag-until',st.until&&st.until<st.from?'Период окончания раньше начала':''))return;const ch=[];const miss=noPer?[]:missing();
         if(st.from!==(a.from||TODAY).slice(0,7))ch.push('с '+ymG(st.from));if((st.until||'')!==(a.until||''))ch.push(st.until?'по '+ymLabel(st.until):'бессрочно');
         if((st.resp||'')!==(a.resp||''))ch.push('ответственный: '+empName(st.resp||c.resp));if(String(st.dd||'')!==String(a.dueDay||''))ch.push('срок: '+(st.dd?(+st.dd>=31?'до последнего дня':'до '+st.dd+'-го'):'как в каталоге'));if((st.note||'')!==(a.note||''))ch.push('примечание');
-        a.from=st.from+'-01';a.until=st.until||null;a.resp=st.resp||null;a.dueDay=st.dd?+st.dd:null;a.note=st.note;touch(c);const te=tEff(t,a);
-        REPORTS.filter(r=>r.cp===c.id&&r.t===t.id&&OPEN.has(r.status)).forEach(r=>{r.resp=a.resp||c.resp;if(!r.dueManual){const d=dueOf(te,r.p);r.dueBase=d.base;r.due=d.due}});
+        a.from=st.from+'-01';a.until=st.until||null;a.resp=st.resp||null;a.dueDay=st.dd?+st.dd:null;a.note=st.note;touch(c);const te=tEff(t,a,c);
+        REPORTS.filter(r=>r.cp===c.id&&r.t===t.id&&OPEN.has(r.status)).forEach(r=>{r.resp=a.resp||c.resp;if(!r.dueManual&&!r.ev){const d=dueOf(te,r.p);r.dueBase=d.base;r.due=d.due}});
         if(a.until)REPORTS.filter(r=>r.cp===c.id&&r.t===t.id&&OPEN.has(r.status)&&ym(r.pkey)>a.until).forEach(r=>{r.status='Не требуется';log('r',r.id,`Статус: ${'К сдаче'} → Не требуется (назначение до ${ymLabel(a.until)})`,c.id)});
         miss.forEach(p=>{const r=born(makeReport(c,te,p,a.resp||c.resp));if(st.mark){r.status='Принят';r.subDate=r.dueBase;r.accDate=r.dueBase;r.sum=r.sum??0;r.paid=r.sum||0}REPORTS.push(r);log('r',r.id,st.mark?'Создан за прошлый период и отмечен сданным и принятым при назначении':'Создан за прошлый период при назначении',c.id)});
         if(miss.length)ch.push(`отчётов за прошлые периоды: ${miss.length}${st.mark?' (отмечены сданными)':''}`);

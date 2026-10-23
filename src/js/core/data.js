@@ -34,7 +34,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     if(tx&&ftx&&ftx.guide&&ftx.guide.tariffs&&!(tx.guide&&tx.guide.tariffs)&&tx._ua<='2026-10-18 09:54')['base','rates','art','verify','guide','_ua'].forEach(k=>{if(ftx[k]!==undefined)tx[k]=structuredClone(ftx[k])});
     const rt=pick(db.ref.reportTypes,'id','soc'),frt=pick(r.reportTypes,'id','soc');if(rt&&frt&&/27,25 % от фонда оплаты \(17,25/.test(rt.desc||''))['desc','verifyNote'].forEach(k=>rt[k]=frt[k]);
     const og=db.ref.dictionaries&&pick(db.ref.dictionaries.organs.items,'code','ОРГ-02'),fog=r.dictionaries&&pick(r.dictionaries.organs.items,'code','ОРГ-02');if(og&&fog&&fog.contacts&&!og.contacts&&og._ua<='2026-10-18 09:54')['note','contacts','hours','site','contactsNote'].forEach(k=>{if(fog[k]!==undefined)og[k]=structuredClone(fog[k])})}
-  ['dictGroups','statusNotes','templateNotes'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='dictGroups'?[]:{}))});
+  ['dictGroups','statusNotes','templateNotes','gkedGroups'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='dictGroups'?[]:{}))});
+  // Общие группы кодов ГКЭД (v53): в refDB.json — объект {id: группа}, в работе — список с полем id
+  if(!Array.isArray(db.ref.gkedGroups))db.ref.gkedGroups=Object.entries(db.ref.gkedGroups||{}).map(([id,g])=>Object.assign({id},g));
   {const cs=db.ref.dictionaries&&db.ref.dictionaries.cats;const o=cs&&cs.items.find(x=>x.name==='Другое'&&x.code==='КАТ-005');if(o&&cs.items.some(x=>x!==o&&x.code==='КАТ-005'))o.code='КАТ-007'}
   // Подтверждение задач и права по модулям (v47): у данных, сохранённых в браузере раньше, — новые статусы задач, право «Подтверждать задачи» у главного бухгалтера, шаг урока, справочник «Права ролей» и тексты статей из refDB.json
   if(!db.meta.v47){db.meta.v47=1;const ts=db.ref.statuses&&db.ref.statuses.task;if(ts)Object.entries(r.statuses.task).forEach(([k,v])=>{if(!ts[k])ts[k]=structuredClone(v)});
@@ -83,6 +85,15 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   // Без уведомления «Должники по обслуживанию» (v52, решение заказчика 23.10.2026): у данных, сохранённых в браузере раньше, убираются его шаблон Telegram, подсказка и отметка переключателя
   if(!db.meta.v52){db.meta.v52=1;['messageTemplates','templateNotes'].forEach(k=>{if(db.ref[k])delete db.ref[k].tgFee});const u=db.ref.kbUi;if(u&&u.fields)delete u.fields['Должники по обслуживанию'];
     (db.employees||[]).forEach(e=>{if(e.notify&&e.notify.off)delete e.notify.off.fee})}
+  // Налоги, статусы и формы Нацстаткома (v53): у данных, сохранённых в браузере раньше, — новые и изменённые записи refDB.json (виды отчётов, налоги, органы, статусы,
+  // основания, поле gked по ГКЭД v7), если администратор не менял их после выгрузки v52 (20.10.2026 09:40); новые записи встают на своё место по порядку refDB
+  if(!db.meta.v53){db.meta.v53=1;const OLD='2026-10-20 09:40';
+    const sync=(a,b,key)=>{if(!a||!b)return;b.forEach((x,i)=>{const k=key(x),j=a.findIndex(y=>key(y)===k);
+      if(j<0){const pk=i?key(b[i-1]):null,pj=pk!=null?a.findIndex(y=>key(y)===pk):-1;a.splice(pj+1,0,structuredClone(x));return}
+      if(JSON.stringify(a[j])!==JSON.stringify(x)&&(!a[j]._ua||a[j]._ua<=OLD))a[j]=structuredClone(x)})};
+    sync(db.ref.reportTypes,r.reportTypes,x=>x.id);sync(db.ref.taxes,r.taxes,x=>x.code);sync(db.ref.enRates,r.enRates,x=>x.code);
+    Object.keys(r.dictionaries||{}).forEach(k=>{const d=db.ref.dictionaries&&db.ref.dictionaries[k];if(d)sync(d.items,r.dictionaries[k].items,x=>x.code||x.id||x.name)});
+    (db.ref.dictGroups||[]).forEach(g=>{const fg=(r.dictGroups||[]).find(x=>x.group===g.group);(g.tabs||[]).forEach(t=>{const ft=fg&&fg.tabs.find(x=>x.tab===t.tab);if(ft&&/8 платежей вне НК/.test(t.about||''))t.about=ft.about})})}
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}

@@ -40,7 +40,8 @@ function importDlg(){
     const g2=(v.gked2||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);g2.forEach(k=>{if(!GKM[k])e.push(`ГКЭД «${k}» нет в справочнике`);else if(!gkLeaf(GKM[k]))e.push(`ГКЭД «${k}» — не подкласс`)});r.gked2=[...new Set(g2.filter(k=>GKM[k]&&gkLeaf(GKM[k])&&k!==r.gked))];
     // Признаки для тарифа Соцфонда: Да / Нет, пусто — не указано (ТЗ «Тариф страховых взносов в Соцфонд»)
     r.sf={};[['sfc','cashless'],['sfr','registry'],['sfp','confirmed'],['sfg','gov']].forEach(([k,f])=>{const x=norm(v[k]||'').trim();if(!x)return;if(['да','yes','1','true'].includes(x))r.sf[f]=true;else if(['нет','no','0','false'].includes(x))r.sf[f]=false;else e.push(`«${IMP_COLS.find(c=>c[0]===k)[1]}»: только Да или Нет`)});
-    if(v.regime&&!DICT.regimes.items.some(x=>x.name===v.regime))e.push('режима нет в справочнике');if(v.form&&!DICT.forms.items.some(x=>x.name===v.form))e.push('формы нет в справочнике');
+    if(v.regime&&!DICT.regimes.items.some(x=>x.name===v.regime))e.push('режима нет в справочнике');
+    else if(v.regime&&r.gked)gkCheck({gked:r.gked,gked2:r.gked2,regime:v.regime,form:v.form||''}).rwarn.forEach(w=>r.warn.push(`${w.ask||`Проверьте право на режим «${w.n}»`} (ГКЭД ${w.code}) — подтвердите в «Изменить» после загрузки`));if(v.form&&!DICT.forms.items.some(x=>x.name===v.form))e.push('формы нет в справочнике');
     // Пустая колонка «Виды отчётов»: назначаются «Обязательно по режиму», «По статусу» и «Для всех» (ТЗ «Подбор отчётов…»)
     if(!ts.length){const cx={form:v.form||'',regime:v.regime||'',regime2:'',ben:[],bases:[],size:'small',gked:r.gked,gked2:r.gked2,assign:[]};const rec=pkCalc(cx).rec;tt=Object.keys(rec).filter(id=>rec[id].pre&&['regime','status','all'].includes(rec[id].grp)).map(id=>T[id]);
       if(tt.length){r.autoT=true;r.warn.push('Отчёты подобраны автоматически: '+tt.map(t=>t.short).join(', '))}else e.push('нет видов отчётов: укажите их или режим налогообложения')}
@@ -65,7 +66,7 @@ function importDlg(){
       if(q('#im-check'))q('#im-check').onclick=()=>{check();m.draw()};
       if(q('#im-ok'))q('#im-ok').onclick=()=>{check();const good=st.rows.filter(r=>!r.errs.length);let n=0;
         good.forEach(r=>{const v=r.v;const c={id:CPID++,name:v.name,inn:v.inn,phone:r.ph,form:v.form||(v.name.startsWith('ИП')?'ИП':'ОсОО'),regime:v.regime||'',gked:r.gked,gked2:r.gked2,resp:r.emp.id,head:v.head||'',contact:v.contact||'',start:TODAY.slice(0,8)+'01',contract:'—',note:v.note||'',paysTo:'emp',archived:false,assign:[],tariffs:feat('fee')&&can('fee')&&!isNaN(r.fee)?[{amount:r.fee,per:'M',from:ym(TODAY),by:S.me,at:TODAY,note:'Загрузка из Excel'}]:[],feeDay:10,feePaid:{},first:'full',files:[],kind:'regular',ugns:r.ugns,periods:[{from:ym(TODAY),to:null}]};
-          born(c);CPS.push(c);CPM[c.id]=c;assignTypes(c,r.types.map(t=>t.id),TODAY);log('cp',c.id,'Создан загрузкой из Excel',c.id);
+          const ugb=ugAuto(c,c.ugns);born(c);CPS.push(c);CPM[c.id]=c;assignTypes(c,r.types.map(t=>t.id),TODAY);log('cp',c.id,'Создан загрузкой из Excel',c.id);ugb.forEach(b=>log('cp',c.id,`Отмечен статус «${b}» по УГНС`,c.id));
           if(Object.keys(r.sf||{}).length||c.assign.some(a=>a.t==='soc')){if(c.assign.some(a=>a.t==='soc')||Object.keys(r.sf).length)c.bases=[...new Set([...(c.bases||[]),'employees'])];sfApply(c,{sf:r.sf||{},sfT:''})}n++});
         st.rows=st.rows.filter(r=>r.errs.length);HIST.push({at:TODAY+' '+bishkekNow().hm,who:S.me,ent:'import',id:0,what:`Загрузка контрагентов: создано ${n}, пропущено ${st.rows.length}`});
         refreshAll();toast(`Создано контрагентов: ${n}. Пропущено строк: ${st.rows.length}`,'building');if(!st.rows.length)m.close();else m.draw()};
