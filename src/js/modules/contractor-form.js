@@ -103,7 +103,7 @@ function addCpDlg(kind,pre){
       if($('#nc-reg2',el))$('#nc-reg2',el).onchange=e=>{snap();st.regime2=e.target.value;m.draw()};
       $('#nc-size',el).onclick=e=>{const b=e.target.closest('[data-sz]');if(!b)return;snap();st.size=b.dataset.sz;m.draw()};
       sfMount(el,'nc',st,snap,()=>m.draw());
-      $('#nc-ugns',el).onchange=e=>{snap();const add=ugAuto(st,e.target.value);if(add.length){st.ugAdd=[...st.ugAdd,...add];toast(ugMsg(add))}m.draw()};
+      $('#nc-ugns',el).onchange=e=>{const old=(st.d||{}).ugns;snap();const add=ugAuto(st,e.target.value),drop=ugDrop(st,old,e.target.value);st.ugAdd=[...st.ugAdd.filter(n=>!drop.includes(n)),...add];if(add.length||drop.length)toast(ugMsg(add,drop));m.draw()};
       $('#nc-benb',el).onclick=()=>{snap();benPickDlg({cx:fake,ben:st.ben,dates:st.benD,title:val(el,'nc-name')||'Новый контрагент',onApply:({ben,dates})=>{st.ben=ben;st.benD=dates;m.draw()}})};
       if($('#nc-bases',el))$('#nc-bases',el).onclick=e=>{const b=e.target.closest('[data-base]');if(!b)return;snap();const k=b.dataset.base;st.bases=st.bases.includes(k)?st.bases.filter(x=>x!==k):[...st.bases,k];m.draw()};
       const openPick=single=>{snap();pickDlg({cx:fake,sel:st.sel,single,title:val(el,'nc-name')||'Новый контрагент',onApply:({sel,bases,forced})=>{st.sel=new Set(sel);st.bases=[...bases];Object.assign(st.forced,forced);st.picked=true;m.draw()}})};
@@ -175,7 +175,7 @@ function editCpDlg(c){
       const snap=()=>{st.d={name:val(el,'ec-name'),inn:val(el,'ec-inn'),ph:readPhone(el,'ec-ph').ph||st.d.ph,head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),cno:val(el,'ec-cno'),cdate:val(el,'ec-cdate'),feeDay:$('#ec-fday',el)?val(el,'ec-fday'):st.d.feeDay};st.reg=regRead(el,'ec')};
       $('#ec-reg',el).onchange=e=>{snap();st.regime=e.target.value;if(st.regime2===st.regime||!st.regime)st.regime2='';m.draw();gkEnOk(Object.assign({},c,st),st,()=>m.draw())};if($('#ec-reg2',el))$('#ec-reg2',el).onchange=e=>{snap();st.regime2=e.target.value;m.draw()};
       $('#ec-form',el).onchange=e=>{snap();st.form=e.target.value;m.draw()};
-      $('#ec-ugns',el).onchange=e=>{snap();st.ugns=e.target.value;const add=ugAuto(st,st.ugns);if(add.length){st.ugAdd=[...st.ugAdd,...add];toast(ugMsg(add))}m.draw()};
+      $('#ec-ugns',el).onchange=e=>{snap();const old=st.ugns;st.ugns=e.target.value;const add=ugAuto(st,st.ugns),drop=ugDrop(st,old,st.ugns);st.ugAdd=[...st.ugAdd.filter(n=>!drop.includes(n)),...add];st.ugDrop=[...(st.ugDrop||[]).filter(n=>!add.includes(n)),...drop];if(add.length||drop.length)toast(ugMsg(add,drop));m.draw()};
       $('#ec-size',el).onclick=e=>{const b=e.target.closest('[data-sz]');if(!b)return;snap();st.size=b.dataset.sz;m.draw()};
       sfMount(el,'ec',st,snap,()=>m.draw());
       $('#ec-benb',el).onclick=()=>{snap();benPickDlg({cx:fake,cp:c,ben:st.ben,dates:st.benD,edit:can('createCp'),title:c.name,onApply:({ben,dates})=>{st.ben=ben;st.benD=dates;m.draw()}})};
@@ -199,7 +199,7 @@ function editCpDlg(c){
         const sfCh=JSON.stringify(st.sf||{})!==JSON.stringify(c.sf||{})||(st.sfTouch&&(st.sfT||'')!==(c.sfT||''))||sfManBad(fake,st);
         if(!ch.length&&!sfCh){m.close();return toast('Изменений нет')}
         const was=bad.length,ov=cpOvMap(c),ben0=c.ben||[];Object.assign(c,nv);if(!c.benDates)delete c.benDates;if(!c.ugns)delete c.ugns;if(reg)sfApply(c,st);touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);
-        gkEnSave(c,st);st.ugAdd.filter(n=>c.ben.includes(n)&&!ben0.includes(n)).forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));const nd=cpRedue(c,ov);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
+        gkEnSave(c,st);st.ugAdd.filter(n=>c.ben.includes(n)&&!ben0.includes(n)).forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));(st.ugDrop||[]).filter(n=>!c.ben.includes(n)&&ben0.includes(n)).forEach(n=>log('cp',c.id,`Снят статус «${n}» по УГНС`,c.id));const nd=cpRedue(c,ov);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
         const ndT=nd?`. Сроки по статусу изменены у ${nd} ${plural(nd,'отчёта','отчётов','отчётов')}`:'';
         toast(miss.length?`Контрагент сохранён${ndT}. Обязательны, но не назначены: ${miss.map(id=>T[id].short).join(', ')} — добавьте на вкладке «Подбор отчётов»`:'Контрагент сохранён'+ndT,miss.length?'alert':undefined,!!miss.length);if(ch.includes('gked')||ch.includes('gked2')){const k=gkCheck(c);const n=k.regime.length+k.ben.length+k.types.length;if(n)setTimeout(()=>toast(`Виды деятельности изменились: проверьте режим, льготы и отчёты в карточке (замечаний: ${n})`,'alert',true),1400)}
         if(was&&(ch.includes('regime')||ch.includes('regime2')||ch.includes('form')))setTimeout(()=>toast('Проверьте назначенные отчёты: часть не подходит к новому режиму или форме','alert',true),1400)}}}}});

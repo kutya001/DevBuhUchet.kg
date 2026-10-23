@@ -125,9 +125,13 @@ const redueNote=l=>l.length?`Сроки по статусу изменятся �
 const cpOvMap=c=>Object.fromEntries(REPORTS.filter(r=>r.cp===c.id&&OPEN.has(r.status)&&T[r.t]).map(r=>[r.id,(tFor(r)||{}).ovBen]).filter(x=>x[1]));
 // «Ставится по УГНС»: статусы, которые отмечаются сами при этом УГНС (cx — контрагент или черновик формы); сами не снимаются
 function ugAuto(cx,ug){const add=ugBens(ug).filter(b=>!(cx.ben||[]).includes(b.name)).map(b=>b.name);if(add.length)cx.ben=[...(cx.ben||[]),...add];return add}
-const ugMsg=add=>add.map(n=>`Отмечен статус «${n}» по УГНС`).join('; ');
-// У сохранённого контрагента: отметить статусы по УГНС, записать в историю, пересчитать сроки
-function ugApply(c){const was=cpOvMap(c);const add=ugAuto(c,c.ugns);if(!add.length)return {add,n:0};add.forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));touch(c);return {add,n:cpRedue(c,was)}}
+// Смена УГНС: снять статусы, которые ставит прежнее УГНС, а новое — нет (поставленные вручную при другом УГНС не трогаются)
+function ugDrop(cx,old,ug){const keep=new Set(ugBens(ug).map(b=>b.name));const drop=ugBens(old).map(b=>b.name).filter(n=>(cx.ben||[]).includes(n)&&!keep.has(n));
+  if(drop.length){cx.ben=cx.ben.filter(n=>!drop.includes(n));const bd=cx.benD||cx.benDates;if(bd)drop.forEach(n=>delete bd[n])}return drop}
+const ugMsg=(add,drop)=>[...add.map(n=>`Отмечен статус «${n}» по УГНС`),...(drop||[]).map(n=>`Снят статус «${n}» по УГНС`)].join('; ');
+// У сохранённого контрагента: отметить или снять статусы по УГНС, записать в историю, пересчитать сроки
+function ugApply(c,old){const was=cpOvMap(c);const add=ugAuto(c,c.ugns),drop=ugDrop(c,old,c.ugns);if(!add.length&&!drop.length)return {add,drop,n:0};
+  add.forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));drop.forEach(n=>log('cp',c.id,`Снят статус «${n}» по УГНС`,c.id));touch(c);return {add,drop,n:cpRedue(c,was)}}
 function cpRedue(c,was){const l=cpRedueList(c);l.forEach(({r,d,ben})=>{r.dueBase=d.base;r.due=d.due;const wb=was&&was[r.id];log('r',r.id,ben?`Срок по статусу «${ben}»: ${fmtD(d.due)}`:`Срок по каталогу${wb?` (снят статус «${wb}»)`:''}: ${fmtD(d.due)}`,c.id)});return l.length}
 function periodsFrom(t,fromYm){const out=[],seen=new Set();for(let k=fromYm;k<=ym(TODAY);k=addMonths(k,1)){const p=perOfYm(t,k);const ps=pstart(t,p);if(seen.has(ps))continue;seen.add(ps);if(pend(t,p)<TODAY)out.push(p)}return out}
 function asgDlg(c,a){const t=T[a.t];const st={from:(a.from||TODAY).slice(0,7),until:a.until||'',resp:a.resp||'',dd:a.dueDay||'',note:a.note||'',mark:true};
