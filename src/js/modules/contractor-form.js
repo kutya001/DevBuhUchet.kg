@@ -197,7 +197,8 @@ function editCpDlg(c){
         const L={name:'название',inn:'ИНН',phone:'телефон',form:'форма собственности',ugns:'налоговый орган (УГНС)',regime:'режим налогообложения',regime2:'дополнительный режим',ben:'льготы и особые статусы',benDates:'сроки льгот',bases:'основания для отчётов',size:'размер бизнеса',gked:'основной ГКЭД',gked2:'дополнительные ГКЭД',head:'руководитель',contact:'контактное лицо',note:'примечание',contract:'договор',feeDay:'день оплаты обслуживания',reg:'регистрационные данные'};
         const ch=Object.keys(nv).filter(k=>JSON.stringify(nv[k]??(k==='bases'?[]:k==='size'?'small':''))!==JSON.stringify(c[k]??(k==='bases'?[]:k==='size'?'small':'')));
         const sfCh=JSON.stringify(st.sf||{})!==JSON.stringify(c.sf||{})||(st.sfTouch&&(st.sfT||'')!==(c.sfT||''))||sfManBad(fake,st);
-        if(!ch.length&&!sfCh){m.close();return toast('Изменений нет')}
+        // новое подтверждение права на режим (вопрос по ГКЭД) сохраняется и без других правок — например, после загрузки из Excel
+        const gkNew=st.gkEnOk&&!(c.gkOk&&c.gkOk.sig===st.gkEnOk);if(!ch.length&&!sfCh&&!gkNew){m.close();return toast('Изменений нет')}
         const was=bad.length,ov=cpOvMap(c),ben0=c.ben||[];Object.assign(c,nv);if(!c.benDates)delete c.benDates;if(!c.ugns)delete c.ugns;if(reg)sfApply(c,st);touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);
         gkEnSave(c,st);st.ugAdd.filter(n=>c.ben.includes(n)&&!ben0.includes(n)).forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));(st.ugDrop||[]).filter(n=>!c.ben.includes(n)&&ben0.includes(n)).forEach(n=>log('cp',c.id,`Снят статус «${n}» по УГНС`,c.id));const nd=cpRedue(c,ov);m.close();refreshAll();const miss=reg?pkAuto(c).filter(id=>!before.has(id)):[];
         const ndT=nd?`. Сроки по статусу изменены у ${nd} ${plural(nd,'отчёта','отчётов','отчётов')}`:'';

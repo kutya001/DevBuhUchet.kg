@@ -26,7 +26,7 @@ function pkEn(cx){if(cx.enCode)return {code:cx.enCode,rate:''};const a=(cx.assig
 function pkEnNot(t,cx){if(!(t.enRatesNot||[]).length||!regsOf(cx).includes('Единый налог'))return false;const e=pkEn(cx);
   if(e.code)return t.enRatesNot.includes(e.code);return !!e.rate&&EN_TABLE.some(x=>t.enRatesNot.includes(x.code)&&String(x.rate).trim()===e.rate)}
 // Причина «Подходит по ГКЭД 94»: код или начало кода из перечня вида, под который попал ГКЭД контрагента
-function pkGkCode(t,cx){if(gkEmpty(t.gked)||!(t.gked.in||[]).length)return '';const f=gkFit(t.gked,cpCodes(cx),cx);if(!f||!f.length)return '';return t.gked.in.find(x=>gkHit(f[0],x))||f[0]}
+function pkGkCode(t,cx){const r=gkFor(t.gked,cx);if(gkEmpty(r)||!(r.in||[]).length)return '';const f=gkFit(t.gked,cpCodes(cx),cx);if(!f||!f.length)return '';return r.in.find(x=>gkHit(f[0],x))||f[0]}
 // Возвращает rec: {id: {grp, pre, why}} — «Рекомендуемые»; no: {id: [статусы]} — не нужен по статусу; off: {id: причина} — нельзя назначить;
 // stat: {id: 1} — форма Нацстаткома без основания «В списке Нацстаткома» (только во «Все», причина «Если в списке Нацстаткома»)
 function pkCalc(cx){const rs=regsOf(cx),bens=pkBens(cx),bases=new Set(cx.bases||[]),size=cx.size||'small';const out={rec:{},no:{},off:{},hidden:[],stat:{}};

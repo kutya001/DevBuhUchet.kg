@@ -23,8 +23,16 @@ const cpCodes=c=>[c&&c.gked,...((c&&c.gked2)||[])].filter(Boolean);
 // Код подходит под начало кода p: «47» — весь раздел, «47.1» — группа, «G» — вся секция
 const gkHit=(code,p)=>/^[A-Z]+$/.test(p)?code===p||gkUp(code).includes(p):code===p||code.startsWith(p);
 const gkEmpty=r=>!r||(!(r.in||[]).length&&!(r.ex||[]).length);
+/* Перечень по форме собственности (патент, ПКМ № 84): у организаций — «Виды деятельности» и «Кроме» (in, ex), у ИП — «Для ИП» без «Кроме, для ИП» (ip, ipEx),
+   у физлица на патенте (ИТД, форма собственности ФС-22) — «Для ИТД» (itd). gkFor — правило, которое применяется к контрагенту */
+const GK_ITD_FORM='ФС-22';
+const gkLists=r=>!!r&&!!((r.ip||[]).length||(r.itd||[]).length);
+const gkItd=c=>{const f=DICT.forms.items.find(x=>x.name===c.form);return !!f&&f.code===GK_ITD_FORM};
+const gkListKey=c=>formEnd(c)!=='ip'?'':gkItd(c)?'itd':'ip';
+const GK_LIST_L={'':'для организаций',ip:'для ИП',itd:'для физлиц на ИТД'};
+function gkFor(r,c){const k=c&&gkLists(r)?gkListKey(c):'';if(!k)return r;return Object.assign({},r,{in:r[k]||[],ex:k==='ip'?r.ipEx||[]:[]})}
 // Какие из кодов подходят под правило; null — правило пустое (без ограничения)
-function gkFit(r,codes,c){if(gkEmpty(r))return null;if(r.main&&c)codes=c.gked?[c.gked]:[];return codes.filter(c=>(!(r.in||[]).length||r.in.some(p=>gkHit(c,p)))&&!(r.ex||[]).some(p=>gkHit(c,p)))}
+function gkFit(r,codes,c){r=gkFor(r,c);if(gkEmpty(r))return null;if(r.main&&c)codes=c.gked?[c.gked]:[];return codes.filter(c=>(!(r.in||[]).length||r.in.some(p=>gkHit(c,p)))&&!(r.ex||[]).some(p=>gkHit(c,p)))}
 const gkRuleTxt=r=>gkEmpty(r)?'':[(r.in||[]).length?(r.in||[]).join(', '):'все',(r.ex||[]).length?'кроме '+r.ex.join(', '):''].filter(Boolean).join('; ');
 // Ввод перечня: коды через запятую, точку с запятой или пробел; каждый код должен быть в справочнике
 function gkParse(s){const a=String(s||'').split(/[,;\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean);const bad=a.filter(p=>!GKM[p]);
@@ -57,11 +65,16 @@ const GKG=DB.ref.gkedGroups;
 const gkGrpAct=(g,k,code)=>!g||!g[k]?'':typeof g[k]==='string'?g[k]:g[k][code]||'';
 const gkGrpOf=code=>GKG.find(g=>(g.codes||[]).some(p=>gkHit(code,p)))||null;
 // «Предупреждать при ГКЭД» у режима (единый налог): подтверждение привязано к основному ГКЭД и режимам
-const gkEnSig=c=>JSON.stringify([c.gked||'',regsOf(c)]);
+// у режима с перечнями по форме собственности (патент) — ещё все ГКЭД и форма собственности
+const gkRegOf=n=>DICT.regimes.items.find(x=>x.name===n);
+const gkEnSig=c=>JSON.stringify([c.gked||'',regsOf(c),...(regsOf(c).some(n=>gkLists((gkRegOf(n)||{}).gked))?[cpCodes(c),c.form||'']:[])]);
 function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],rwarn:[],ben:[],rate:[],types:[],off:codes.filter(gkOff)};if(!codes.length)return out;
-  regsOf(c).forEach(n=>{const r=DICT.regimes.items.find(x=>x.name===n);if(!r||gkEmpty(r.gked))return;const g=r.gked;
-    // who:'org' — перечень задан только для организаций (у ИП — по другому перечню), ИП не проверяется
-    if(g.who==='org'&&formEnd(c)==='ip')return;
+  regsOf(c).forEach(n=>{const r=gkRegOf(n);if(!r||gkEmpty(r.gked)&&!gkLists(r.gked))return;const g0=r.gked;
+    // who:'org' — перечень задан только для организаций: ИП проверяется по своему перечню («Для ИП», «Для ИТД»), без него — не проверяется
+    if(g0.who==='org'&&formEnd(c)==='ip'&&!gkLists(g0))return;const g=gkFor(g0,c);
+    // Перечень по форме собственности (патент): ни один ГКЭД не входит — вопрос с подтверждением, как у СПиНО; после него жёлтая отметка
+    if(gkLists(g0)){const f=gkFit(g,codes);if(f&&!f.length){const ok=c.gkOk&&c.gkOk.sig===gkEnSig(c)?c.gkOk:null;const art=r.art||'НК КР',lst=GK_LIST_L[gkListKey(c)];
+      out.rwarn.push({n,code:c.gked||codes[0],list:lst,art});out.regime.push(`Режим «${n}»: ни один вид деятельности контрагента не входит в перечень ${lst}${ok?` — подтвердил ${whoName(ok.by)} ${fmtD(ok.at)}`:' — нужно подтверждение'}${gkVer(g)}`);return}}
     if(g.strict==='main'&&c.gked&&(g.ex||[]).some(p=>gkHit(c.gked,p))){out.block.push(`Режим «${n}» нельзя применять при основном ГКЭД ${c.gked}: этот вид деятельности запрещён для него (${((g.note||'').match(/ст\. \d+/)||[])[0]||r.art||'НК КР'})`);return}
     // Основной ГКЭД из «Предупреждать при ГКЭД»: код не отличает запрещённую деятельность от разрешённой — вопрос с подтверждением, после него жёлтая отметка
     const wc=c.gked&&(g.warn||[]).find(p=>gkHit(c.gked,p));if(wc){const grp=gkGrpOf(c.gked);const ok=c.gkOk&&c.gkOk.sig===gkEnSig(c)?c.gkOk:null;const art=((g.note||'').match(/ст\. \d+/)||[])[0]||r.art||'НК КР';
@@ -75,7 +88,9 @@ function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],rwa
     const one=ms.filter(x=>GK_EN_ONE.includes(x.code));
     if(one.length===ms.length){if((c.gked2||[]).length)out.rate.push(`При этой ставке налог считается по ней со всей деятельности, дополнительные виды отдельно не облагаются (ст. 423 ч. 7)`)}
     else (c.gked2||[]).forEach(k=>{const x=gkEnRow(k,c);if(x&&m&&x.rate!==m.rate)out.rate.push(`ГКЭД ${k}: ставка ${x.rate} (${x.activity}) — налог считается отдельно по каждому виду деятельности (ст. 423 ч. 7)${one.length?`; при ставке ${one.map(o=>o.rate).join(', ')} — одна ставка на всю деятельность`:''}`)})}
-  const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];if(t&&t.gked&&t.gked.hint)return;const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
+  // Режимный вид при выбранном режиме с перечнем ГКЭД (патент) проверяется по перечню режима — второй раз не предупреждаем
+  const regRule=t=>t.kind==='regime'&&(t.regimes||[]).some(n=>regsOf(c).includes(n)&&gkRegOf(n)&&!gkEmpty(gkRegOf(n).gked));
+  const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];if(t&&t.gked&&t.gked.hint||t&&regRule(t))return;const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
   return out}
 // Ставка ЕН из каталога видов, которая соответствует основному ГКЭД (если такая есть в списке ставок вида)
 function gkEnRate(c,t){const m=c&&c.gked&&gkEnRow(c.gked,c);const r=m&&(String(m.rate).match(/\d+(,\d+)? %/)||[])[0];return r&&t&&t.rates&&t.rates.includes(r)?r:null}

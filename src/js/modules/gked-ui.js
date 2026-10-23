@@ -27,18 +27,24 @@ function gkFitHint(c,sel){const codes=cpCodes(c);if(!codes.length)return '';cons
   const miss=fit.filter(t=>!sel.has(t.id));return `<div class="hint">${ic('check','sm')} Подходит по ГКЭД: ${fit.map(t=>esc(t.short)).join(', ')}${miss.length?` · не выбраны: ${miss.map(t=>esc(t.short)).join(', ')}`:''}</div>`}
 // Ввод перечня «Виды деятельности (ГКЭД)» и «Кроме» в формах справочников
 // warnOn — у статусов: поле «Предупреждать при ГКЭД» (коды, при которых статус можно выбрать только с предупреждением)
-// Перечни, которые хранятся до сверки и в проверке не применяются (у патента: виды для ИП, исключения для ИП, виды для физлиц на ИТД)
-const GK_INFO=[['ip','Для ИП'],['ipEx','Кроме, для ИП'],['itd','Для физлиц на ИТД (форма ФС-22)']];
-function gkRuleFields(p,r,raw,warnOn){r=r||{};raw=raw||{};const note=(r.note?`<div class="note ${gkToVerify(r)&&!r.verify?'warn':''} full" style="grid-column:1/-1">${ic(gkToVerify(r)&&!r.verify?'alert':'info')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'')+(r.verify?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Сверить: ${esc(r.verify)}</span></div>`:'')
-    +GK_INFO.filter(([k])=>(r[k]||[]).length).map(([k,l])=>`<div class="fld full"><label>${l} <span class="pill orange sm">${ic('alert')}сверить</span></label><div class="mono" style="font-size:12.5px">${esc(r[k].join(', '))}</div><div class="hint">Хранится, но в проверке не применяется, пока перечень не сверен (${r[k].length} ${plural(r[k].length,'код','кода','кодов')})</div></div>`).join('');
+// Перечни по форме собственности (у патента): правятся в окне режима (lists), у видов отчётов и налогов показываются справочно
+const GK_INFO=[['ip','Для ИП (ГКЭД)','gip','Перечень для ИП; пусто — ИП с этим режимом не проверяются'],['ipEx','Кроме, для ИП (ГКЭД)','gipx','Виды деятельности, которых нет в перечне для ИП, хотя они входят в его коды'],['itd','Для ИТД (ГКЭД)','gitd','Перечень для физлиц на патенте (ИТД, форма собственности ФС-22)']];
+// lists — окно режима: перечни по форме собственности правятся, если они у режима есть или перечень задан только для организаций (who:'org')
+function gkRuleFields(p,r,raw,warnOn,lists){r=r||{};raw=raw||{};lists=lists&&(gkLists(r)||r.who==='org');const note=(r.note?`<div class="note ${gkToVerify(r)&&!r.verify?'warn':''} full" style="grid-column:1/-1">${ic(gkToVerify(r)&&!r.verify?'alert':'info')}<span>Примечание к перечню: ${esc(r.note)}</span></div>`:'')+(r.verify?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Сверить: ${esc(r.verify)}</span></div>`:'')
+    +(lists?'':GK_INFO.filter(([k])=>(r[k]||[]).length).map(([k,l])=>`<div class="fld full"><label>${l}</label><div class="mono" style="font-size:12.5px">${esc(r[k].join(', '))}</div><div class="hint">Справочно: контрагентов проверяет перечень режима (${r[k].length} ${plural(r[k].length,'код','кода','кодов')})</div></div>`).join(''));
   return `${note}${fld('Виды деятельности (ГКЭД)',inp(p+'-gin',raw.in!=null?raw.in:(r.in||[]).join(', '),'class="inp mono" placeholder="Например: 47, 56.10, G"'),{full:true,id:p+'-gin',hint:'Коды или начала кодов через запятую; секция — буквой. Пусто — для всех видов деятельности'})}
   ${fld('Кроме (ГКЭД)',inp(p+'-gex',raw.ex!=null?raw.ex:(r.ex||[]).join(', '),'class="inp mono" placeholder="Например: 47.26"'),{full:true,id:p+'-gex',hint:'Виды деятельности, для которых не подходит'})}
+  ${lists?GK_INFO.map(([k,l,s,h])=>fld(l,inp(p+'-'+s,raw[k]!=null?raw[k]:(r[k]||[]).join(', '),'class="inp mono"'),{full:true,id:p+'-'+s,hint:h})).join(''):''}
   ${warnOn||(r.warn||[]).length?fld('Предупреждать при ГКЭД',inp(p+'-gwarn',raw.warn!=null?raw.warn:(r.warn||[]).join(', '),'class="inp mono" placeholder="Например: 64.92.0, 05"'),{full:true,id:p+'-gwarn',hint:warnOn?'При таком основном ГКЭД статус предлагается с жёлтым предупреждением «Проверьте право по виду деятельности»':'При таком основном ГКЭД — вопрос с подтверждением; после него режим сохраняется с жёлтой отметкой в карточке'}):''}`}
 // undefined — ошибка в кодах, null — пусто (без ограничения), иначе {in, ex} с прежними признаками правила
-function gkRuleRead(el,p,old){const a=gkParse(val(el,p+'-gin')),b=gkParse(val(el,p+'-gex')),w=$('#'+p+'-gwarn',el)?gkParse(val(el,p+'-gwarn')):null;const ok=[setErr(el,p+'-gin',a.err||''),setErr(el,p+'-gex',b.err||''),w?setErr(el,p+'-gwarn',w.err||''):true].every(Boolean);
-  if(!ok)return undefined;const wv=w?w.v:(old&&old.warn)||[];if(!a.v.length&&!b.v.length&&!wv.length)return null;const r=gkRuleKeep(old,{in:a.v,ex:b.v});if(wv.length)r.warn=wv;else delete r.warn;return r}
-const gkRaw=(el,p)=>$('#'+p+'-gin',el)?{in:val(el,p+'-gin'),ex:val(el,p+'-gex'),warn:$('#'+p+'-gwarn',el)?val(el,p+'-gwarn'):undefined}:undefined;
-const gkRuleSame=(a,b)=>gkRuleTxt(a)===gkRuleTxt(b)&&((a||{}).warn||[]).join()===((b||{}).warn||[]).join();
+function gkRuleRead(el,p,old){const a=gkParse(val(el,p+'-gin')),b=gkParse(val(el,p+'-gex')),w=$('#'+p+'-gwarn',el)?gkParse(val(el,p+'-gwarn')):null;
+  const ls=GK_INFO.map(([k,,s])=>[k,s,$('#'+p+'-'+s,el)?gkParse(val(el,p+'-'+s)):null]);
+  const ok=[setErr(el,p+'-gin',a.err||''),setErr(el,p+'-gex',b.err||''),w?setErr(el,p+'-gwarn',w.err||''):true,...ls.map(([,s,x])=>x?setErr(el,p+'-'+s,x.err||''):true)].every(Boolean);
+  if(!ok)return undefined;const wv=w?w.v:(old&&old.warn)||[];const lv={};ls.forEach(([k,,x])=>lv[k]=x?x.v:(old&&old[k])||[]);
+  if(!a.v.length&&!b.v.length&&!wv.length&&!lv.ip.length&&!lv.itd.length)return null;const r=gkRuleKeep(old,{in:a.v,ex:b.v});if(wv.length)r.warn=wv;else delete r.warn;
+  Object.entries(lv).forEach(([k,v])=>{if(v.length)r[k]=v;else delete r[k]});return r}
+const gkRaw=(el,p)=>{if(!$('#'+p+'-gin',el))return undefined;const o={in:val(el,p+'-gin'),ex:val(el,p+'-gex'),warn:$('#'+p+'-gwarn',el)?val(el,p+'-gwarn'):undefined};GK_INFO.forEach(([k,,s])=>{if($('#'+p+'-'+s,el))o[k]=val(el,p+'-'+s)});return o};
+const gkRuleSame=(a,b)=>gkRuleTxt(a)===gkRuleTxt(b)&&['warn','ip','ipEx','itd'].every(k=>((a||{})[k]||[]).join()===((b||{})[k]||[]).join());
 // Льгота или статус не подходит к видам деятельности: сохранить можно после подтверждения, в карточке останется жёлтая отметка
 function gkBenOk(c,st,again){const b=gkCheck(c).ben;if(!b.length||st.gkBenOk===gkSig(c))return true;
   confirmDlg({title:'Сохранить с несоответствием?',text:esc(b.join('. '))+'. Перечни видов деятельности для статусов ещё сверяются с законами, поэтому сохранить можно; в карточке останется предупреждение.',ok:'Сохранить',run:()=>{st.gkBenOk=gkSig(c);again()}});return false}
@@ -46,11 +52,13 @@ const gkSig=c=>JSON.stringify([c.gked,c.gked2,c.ben]);
 // Режим с «Предупреждать при ГКЭД» (единый налог, ст. 419; СЭЗ, ст. 427): вопрос с подтверждением; после «Не оказывает» режим сохраняется, остаётся жёлтая отметка, в историю пишется, кто подтвердил
 function gkEnOk(c,st,again){const w=gkCheck(c).rwarn[0];if(!w)return true;const sig=gkEnSig(c);if(st.gkEnOk===sig||(c.gkOk&&c.gkOk.sig===sig))return true;
   const what=w.grp?w.grp.name.replace(/ \(.*$/,'').toLowerCase():'';
+  if(w.list){const cs=cpCodes(c);confirmDlg({title:`Проверьте право на режим «${esc(w.n)}»`,text:`Ни один вид деятельности контрагента (${cs.map(k=>`<b>${esc(k)}</b> «${esc(gkName(k))}»`).join(', ')}) не входит в перечень режима «${esc(w.n)}» ${esc(w.list)} (${esc(w.art)} НК КР). Если вида деятельности нет в перечне, режим применять нельзя.<br><br>Подтвердите: режим сохранится, в карточке останется предупреждение, в историю запишется, кто подтвердил.`,
+    ok:'Подтверждаю',run:()=>{st.gkEnOk=sig;st.gkEnAsk='';again&&again()}});return false}
   confirmDlg({title:esc(w.ask||`Проверьте право на режим «${w.n}»`),text:`Основной ГКЭД <b>${esc(w.code)}</b> «${esc(gkName(w.code))}»${what?` (${esc(what)})`:''} не отличает запрещённую для режима «${esc(w.n)}» деятельность от разрешённой (${esc(w.art)} НК КР). ${w.ask?'Если оказывает — режим применять нельзя.':'Если контрагент ведёт запрещённую деятельность, режим применять нельзя.'}<br><br>Подтвердите: режим сохранится, в карточке останется предупреждение, в историю запишется, кто подтвердил.`,
     ok:w.ask?'Нет, не оказывает':'Подтверждаю',run:()=>{st.gkEnOk=sig;st.gkEnAsk=w.ask||'';again&&again()}});return false}
 // После сохранения: подтверждение у контрагента и запись в историю
 function gkEnSave(c,st){if(!st.gkEnOk||st.gkEnOk!==gkEnSig(c))return;const w=gkCheck(c).rwarn[0];if(!w)return;c.gkOk={sig:st.gkEnOk,by:S.me,at:TODAY,ask:st.gkEnAsk||''};
-  log('cp',c.id,`Подтверждён режим «${w.n}» при основном ГКЭД ${w.code}${st.gkEnAsk?`: «${st.gkEnAsk}» — нет`:': запрещённой деятельности нет'}`,c.id)}
+  log('cp',c.id,w.list?`Подтверждён режим «${w.n}»: вид деятельности вне перечня ${w.list} (ГКЭД ${cpCodes(c).join(', ')})`:`Подтверждён режим «${w.n}» при основном ГКЭД ${w.code}${st.gkEnAsk?`: «${st.gkEnAsk}» — нет`:': запрещённой деятельности нет'}`,c.id)}
 // Карточка контрагента, «Основное»: основной ГКЭД первым, дополнительные списком ниже; без ГКЭД — предупреждение
 function gkKv(c){const off=k=>gkOff(k)?` <span class="pill yellow sm">${ic('alert')}Не действует — замените</span>`:'';const row=k=>`<div><span class="mono strong">${esc(k)}</span> ${esc(gkName(k))}${off(k)}</div>`;
   return `<div><span class="k">Основной вид деятельности (ГКЭД)</span><span class="v">${c.gked?row(c.gked):`<span class="pill yellow">${ic('alert')}Укажите основной вид деятельности (ГКЭД)</span>${can('createCp')&&!c.archived?` <button type="button" class="linkbtn" data-gkfix="${c.id}">Указать</button>`:''}`}</span></div>
