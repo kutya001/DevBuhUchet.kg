@@ -41,6 +41,7 @@ function cpActions(c){const it=[{label:'Открыть карточку',icon:'b
     if(can('cpArchive')){const linked=REPORTS.some(r=>r.cp===c.id)?'По контрагенту есть отчёты — его можно только отправить в архив':OPS.some(o=>o.cp===c.id)||FEEPAYS.some(f=>f.cp===c.id)?'По контрагенту есть деньги — его можно только отправить в архив':PROJECTS.some(p=>p.cp===c.id)||SERVICES.some(s=>s.cp===c.id)?'По контрагенту есть проекты или услуги — его можно только отправить в архив':'';
       c._del={label:'Удалить',icon:'trash',danger:true,disabled:!!linked,reason:linked,run:()=>confirmDlg({title:`Удалить ${esc(c.name)}?`,text:'По контрагенту нет отчётов, денег и проектов. Он будет удалён вместе с задачами и файлами карточки; вернуть его нельзя.',ok:'Удалить',danger:true,run:()=>{const i=CPS.indexOf(c);if(i>=0)CPS.splice(i,1);delete CPM[c.id];for(let k=TASKS.length-1;k>=0;k--)if(TASKS[k].cp===c.id)TASKS.splice(k,1);log('org','cps',`Удалён контрагент ${c.name} (ИНН ${c.inn})`);refreshAll();toast('Контрагент удалён','trash')}})}}
     if(feat('taxpay')&&can('money'))it.push({label:'Поступление денег',icon:'wallet',run:()=>inDlg(c)});
+    if(feeAccOk(c))it.push({label:'Принять оплату за обслуживание',icon:'coins',sub:c.feeDebt?'Долг '+som(c.feeDebt):'',run:()=>feePayDlg(c)});
     if(can('projects')&&feat('finops'))it.push({label:'Разовая услуга',icon:'coins',run:()=>serviceDlg(null,c)});if(can('projects')&&feat('projects'))it.push({label:'Новый проект',icon:'briefcase',run:()=>projectDlg(null,c)});
     if(feat('fee')&&can('fee')&&c.feeDebt>0)it.push({label:'Напомнить о долге в WhatsApp',icon:'chat',run:()=>waDlg({cp:c,fee:true})});
     if(can('createCp')||can('cpPause')||can('cpArchive')){it.push({sep:true});const l=lastPeriod(c);
@@ -212,7 +213,7 @@ function inDlg(c0,edit,pre){
     const c=CPM[st.cp];
     const reps=c?REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&(r.sum-already(r)>0||st.alloc[r.id]!=null)).sort((a,b)=>a.payDue<b.payDue?-1:1):[];
     const feeOk=c&&feat('fee')&&c.kind!=='oneoff'&&can('fee')&&c.paysTo==='org';
-    const fGot=mm=>(c.feePaid[mm]||0)-(prevFee[mm]||0);const fLeft=mm=>feeCharge(c,mm)-fGot(mm);
+    const fGot=mm=>feeGot(c,mm)-(prevFee[mm]||0);const fLeft=mm=>feeCharge(c,mm)-fGot(mm);
     const fms=feeOk?feeMonths(c).filter(mm=>fLeft(mm)>0||st.fee[mm]!=null):[];
     const left=r=>Math.max(0,r.sum-already(r));
     const one=!edit&&c&&c.oneSum&&feeOk;

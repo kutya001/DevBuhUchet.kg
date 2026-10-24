@@ -153,3 +153,6 @@
 .pg-p.pg-v{background:color-mix(in srgb,var(--blue-bg) 45%,transparent);margin:0 -14px;padding-left:14px;padding-right:14px}
 @media (max-width:767px){.kw-f{grid-template-columns:1fr 1fr}.kw-f input[type=search]{grid-column:1/-1}.pg-scw{padding-left:0}.pg-sc.seg{flex:1;display:flex}.pg-sc.seg button{flex:1}}
 .kt td.kno{background:var(--pane-alt);color:var(--faint)}
+/* Кнопка действия в шапке карточки (например, «Принять оплату» у контрагента): на телефоне — только значок */
+.mh .hd-btn{flex:none;align-self:center;margin-right:4px}
+@media (max-width:767px){.mh .hd-btn .bl{display:none}.mh .hd-btn{padding-inline:8px}}
