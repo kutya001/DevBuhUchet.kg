@@ -4,9 +4,10 @@
 /* Пункт показа: {s,m,t,x,in,txt,up,scr,ctx,pre,sub,kind,f}
    s/m — элемент на ПК и на телефоне (CSS-селектор), in — где искать (например '.modal' — верхнее окно), txt — найти элемент по тексту,
    scr — экран 'модуль.вкладка', ctx — контекст: пункты одного контекста идут без закрытия окон, pre — как открыть контекст с экрана
-   (открыть карточку, меню, форму), sub — что сделать внутри контекста (вкладка карточки, меню), kind — 'done' / 'doit' / 'end' / 'save' у последнего облачка.
+   (открыть карточку, меню, форму), sub — что сделать внутри контекста (вкладка карточки, меню), kind — 'done' / 'doit' / 'end' / 'save' у последнего облачка,
+   g — код общего элемента (одинаковый на всех экранах: поиск, «Столбцы», «На весь экран»…), common — признак «Общий элемент» у облачка сценария, mt — окно, в котором элемент.
    Тексты элементов — справочник refDB.kbUi, сценарии шагов — refDB.kbShows; в коде только движок. */
-const TOUR={on:false,list:[],i:0,key:'',kind:'',sid:null,ctx:null,scr:null,mbase:0,busy:false,form:false};
+const TOUR={on:false,list:[],i:0,key:'',kind:'',sid:null,ctx:null,scr:null,mbase:0,busy:false,form:false,o:null,all:false,skip:null};
 const KBUI=DB.ref.kbUi,KBSH=DB.ref.kbShows;
 const tVis=el=>!!(el&&el.isConnected&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden');
 const tWait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -74,25 +75,25 @@ function tExpAdd(){const m=curMod();const P=[];$$('#page .add-x').forEach(b=>{co
   return P}
 function tExpPlates(){return $$('#mbody .plates .plate').filter(tVis).map(b=>{const l=b.querySelector('.pl-top').textContent.trim();const v=b.querySelector('.pl-val');const sub=b.querySelector('.pl-sub');
   return {s:`#mbody .plate[data-plate="${b.dataset.plate}"]`,t:`Плашка «${l}»`,x:tPlateTxt(l,[v&&v.textContent.trim(),sub&&sub.textContent.trim()].filter(Boolean).join(' — '))}})}
-function tExpEls(at){const k=tScr();return (KBUI.els||[]).filter(e=>(e.at||'body')===at&&(e.scr===k||e.scr===S.mod||e.scr==='*')&&tFind(e)).map(e=>Object.assign({},e))}
+function tExpEls(at){const k=tScr();return (KBUI.els||[]).filter(e=>(e.at||'body')===at&&(e.scr===k||e.scr===S.mod||e.scr==='*')&&tFind(e)).map(e=>Object.assign(e.scr==='*'?{g:'el:'+e.id}:{},e))}
 // Блоки экрана с заголовком (кроме блока со списком — список разбирается отдельно)
 function tExpBoxes(sel){const inM=/^\.modal/.test(sel||'');return $$(sel||'#mbody .box').filter(b=>tVis(b)&&b.querySelector(':scope > h3')&&!b.querySelector('.grid')&&!b.closest('.grid')&&!b.closest('.pop')).map(b=>{const h=b.querySelector(':scope > h3');const t=(h.childNodes[0]&&h.childNodes[0].textContent||h.textContent).replace(/\s*·\s*\d+.*$/,'').trim();
   return {s:null,el:b,in:inM?'.modal':undefined,t:`Блок «${t}»`,x:tKey(KBUI.boxes,t)||tq('box')}}).filter(x=>x.t!=='Блок «»')}
 function tExpGrid(){const g=$('#mbody .grid');if(!g||!tVis(g))return [];const P=[];const sel=x=>'#mbody '+x;
   if($(sel('.state'),g)){const st=$('#mbody .grid .state');P.push({s:sel('.grid .state'),t:'Пока пусто',x:(st.querySelector('b')||st).textContent.trim()+'. '+tq('empty')});return P}
-  P.push({s:sel('.gcount'),t:'Число записей',x:tq('gcount')});
-  if($(sel('[data-view]')))P.push({s:sel('.seg[aria-label="Вид списка"]'),m:sel('[data-view]'),t:'«Таблица / Карточки»',x:tq('view')});
-  P.push({s:sel('[data-a=grp]'),t:'«Группировка»',x:tq('grp')});
-  P.push({s:sel('[data-a=cols]'),t:'«Столбцы»',x:tq('cols')});P.push({ctx:'cols',sub:['cols'],s:'.pop',t:'Меню «Столбцы»',x:tq('colsMenu')});
-  P.push({s:sel('[data-a=opts]'),t:'Настройки вида',x:tq('opts')});
-  if($(sel('[data-a=xls]')))P.push({s:sel('[data-a=xls]'),t:'«В Excel»',x:tq('xls')});
+  P.push({s:sel('.gcount'),t:'Число записей',x:tq('gcount'),g:'gcount'});
+  if($(sel('[data-view]')))P.push({s:sel('.seg[aria-label="Вид списка"]'),m:sel('[data-view]'),t:'«Таблица / Карточки»',x:tq('view'),g:'view'});
+  P.push({s:sel('[data-a=grp]'),t:'«Группировка»',x:tq('grp'),g:'grp'});
+  P.push({s:sel('[data-a=cols]'),t:'«Столбцы»',x:tq('cols'),g:'cols'});P.push({ctx:'cols',sub:['cols'],s:'.pop',t:'Меню «Столбцы»',x:tq('colsMenu'),g:'colsMenu'});
+  P.push({s:sel('[data-a=opts]'),t:'Настройки вида',x:tq('opts'),g:'opts'});
+  if($(sel('[data-a=xls]')))P.push({s:sel('[data-a=xls]'),t:'«В Excel»',x:tq('xls'),g:'xls'});
   const th=$$('#mbody .gt thead th[data-k]').map(x=>'«'+x.textContent.trim()+'»');
   if(th.length){P.push({s:sel('.gt thead tr'),t:'Столбцы списка',x:tq('thead').replace('{cols}',th.slice(0,8).join(', ')+(th.length>8?` и ещё ${th.length-8}`:''))});
-    P.push({s:sel('.gt thead .th-f'),t:'Фильтр столбца',x:tq('filterBtn')});P.push({ctx:'filter',sub:['filter'],s:'.pop',t:'Окно фильтра',x:tq('filter')})}
-  if($(sel('th.selc input, .gcard [data-sel]')))P.push({s:sel('th.selc'),m:sel('.gcard [data-sel]'),t:'Галочки выбора',x:tq('selall')});
+    P.push({s:sel('.gt thead .th-f'),t:'Фильтр столбца',x:tq('filterBtn'),g:'filterBtn'});P.push({ctx:'filter',sub:['filter'],s:'.pop',t:'Окно фильтра',x:tq('filter'),g:'filter'})}
+  if($(sel('th.selc input, .gcard [data-sel]')))P.push({s:sel('th.selc'),m:sel('.gcard [data-sel]'),t:'Галочки выбора',x:tq('selall'),g:'selall'});
   const k=tScr();P.push({s:[sel('tbody tr[data-id]:not(.muted)'),sel('.gcard:not(.muted)'),sel('tbody tr[data-id]'),sel('.gcard')].join(' || '),t:'Строка списка',x:(KBUI.rows||{})[k]||(KBUI.rows||{})[S.mod]||tq('row')});
-  if($(sel('[data-menu]'))){P.push({s:sel('[data-menu]'),t:'Кнопка «…» — действия',x:tq('rowMenu')});P.push({ctx:'menu',sub:['menu'],gen:'menu'})}
-  if($(sel('.gfoot')))P.push({s:sel('.gfoot'),t:'Низ списка',x:tq('foot')});
+  if($(sel('[data-menu]'))){P.push({s:sel('[data-menu]'),t:'Кнопка «…» — действия',x:tq('rowMenu'),g:'rowMenu'});P.push({ctx:'menu',sub:['menu'],gen:'menu'})}
+  if($(sel('.gfoot')))P.push({s:sel('.gfoot'),t:'Низ списка',x:tq('foot'),g:'foot'});
   return P}
 // Пункты меню «…» строки: по одному на действие (раскрываются, когда меню открыто)
 function tExpMenu(){if(!POP)return [];return $$('.mi',POP).filter(tVis).map(b=>{const sp=b.querySelector('span');const l=(sp.childNodes[0]||sp).textContent.trim();const sub=b.querySelector('.sub');
@@ -100,16 +101,18 @@ function tExpMenu(){if(!POP)return [];return $$('.mi',POP).filter(tVis).map(b=>{
 // Окно (карточка или форма): заголовок, вкладки, блоки, шкалы статусов, поля, кнопки внизу.
 // Окно, открытое только для просмотра (openModal({form:false}), например неподключённый вид отчёта), разбирается как карточка;
 // у окна с названием записи в заголовке текст берётся по его ключу kb (openModal({kb:…}))
-function tExpModal(o={}){const md=MODALS[MODALS.length-1];if(!md)return [];const el=md.el;const P=[];const c={ctx:o.ctx,pre:o.pre};const ttl=el.querySelector('.mh h2');
+function tExpModal(o={}){const md=MODALS[MODALS.length-1];if(!md)return [];const el=md.el;const P=[];const ttl=el.querySelector('.mh h2');
   o={...o,form:!!(o.form&&md.o.form!==false)};const kb=md.o.kb&&(KBUI.forms||{})[md.o.kb];
-  const kt=(ttl.childNodes[0]||ttl).textContent.trim();P.push({...c,in:'.modal',s:'.mh',t:o.form?`Окно «${kt}»`:`Карточка «${kt}»`,x:tKey(KBUI.forms,kt)||kb||(o.form?'':(KBUI.cards||{})[S.mod])||tq(o.form?'form':'card')});
-  if(el.querySelector('[data-max]'))P.push({...c,in:'.modal',s:'[data-max]',t:'«На весь экран»',x:tq('max')});
+  // Знакомые элементы окна запоминаются по окну: у формы — по её заголовку, у карточки записи — по модулю (название записи в заголовке разное)
+  const kt=(ttl.childNodes[0]||ttl).textContent.trim();const c={ctx:o.ctx,pre:o.pre,mt:o.form?kt:'card:'+(md.o.kb||S.mod)};
+  P.push({...c,in:'.modal',s:'.mh',t:o.form?`Окно «${kt}»`:`Карточка «${kt}»`,ck:o.form?'':'Карточка',x:tKey(KBUI.forms,kt)||kb||(o.form?'':(KBUI.cards||{})[S.mod])||tq(o.form?'form':'card')});
+  if(el.querySelector('[data-max]'))P.push({...c,in:'.modal',s:'[data-max]',t:'«На весь экран»',x:tq('max'),g:'max'});
   $$('.ctabs .tab',el).filter(tVis).forEach(t=>{const l=tLbl(t).replace(/\s*\d+ из \d+.*$/,'').replace(/\s*\d+$/,'');P.push({...c,in:'.modal',el:t,t:`Вкладка «${l}»`,x:tKey(KBUI.ctabs,l)||tq('ctab')})});
   if(!o.noBody){$$('.mb .scf-wrap',el).filter(tVis).forEach((w,k)=>{const t=(w.querySelector('.scf-t')||{}).textContent||'Статус';P.push({...c,in:'.modal',s:`.mb .scf-wrap:nth-of-type(${k+1})`,el:w,t:`Шкала «${t.trim()}»`,x:tq('scale')})});
     if(o.form)P.push(...tExpFields('.modal',c));
     else $$('.mb .box',el).filter(b=>tVis(b)&&b.querySelector(':scope > h3')).forEach(b=>{const h=b.querySelector(':scope > h3');const t=(h.childNodes[0]&&h.childNodes[0].textContent||'').replace(/\s*·\s*\d+.*$/,'').trim();if(!t)return;P.push({...c,el:b,in:'.modal',t:`Блок «${t}»`,x:tKey(KBUI.boxes,t)||tq('box')})})}
   // Кнопки внизу карточки повторяют действия меню «…» («Выполнена», «Подтвердить»): без своего текста кнопки берётся текст действия
-  $$('.mf .btn',el).filter(tVis).forEach(b=>{const l=tLbl(b);if(!l||(o.form&&!b.classList.contains('cta')))return;P.push({...c,in:'.modal',el:b,t:`Кнопка «${l}»`,x:tBtnTxt(l)||(!o.form&&(KBUI.acts||{})[l])||(b.classList.contains('cta')?tq(o.form?'save':'cta'):tq('btn')),kind:o.form&&b.classList.contains('cta')?'save':undefined})});
+  $$('.mf .btn',el).filter(tVis).forEach(b=>{const l=tLbl(b);if(!l||(o.form&&!b.classList.contains('cta')))return;P.push({...c,in:'.modal',el:b,t:`Кнопка «${l}»`,x:tBtnTxt(l)||(!o.form&&(KBUI.acts||{})[l])||(b.classList.contains('cta')?tq(o.form?'save':'cta'):tq('btn')),kind:o.form&&b.classList.contains('cta')?'save':undefined,g:o.form?'formBtn:'+l:undefined})});
   return P}
 function tExpFields(inSel,c={}){const r=$$(inSel).filter(tVis).pop();if(!r)return [];const P=[];
   $$('.fld',r).filter(f=>tVis(f)&&!f.closest('.pop')).forEach(f=>{const d=tFieldTxt(f);const lab=f.querySelector(':scope > label');if(!lab||!lab.textContent.trim())return;P.push({...c,in:inSel,el:f,t:d.t+(d.req?' · обязательно':''),x:d.x})});
@@ -117,7 +120,7 @@ function tExpFields(inSel,c={}){const r=$$(inSel).filter(tVis).pop();if(!r)retur
     P.push({...c,in:inSel,el:row,t:`Переключатель «${l}»`,x:tSwTxt(l)||(h?h.textContent.trim():tq('check'))})});
   return P}
 // Полный обзор текущего экрана
-function tExpScreen(){return [...tExpTitle(),...tExpTabs(),...tExpEls('top'),...tExpAdd(),{s:'.search',m:'#q-open',t:'Поиск',x:tq('search')},...($('#stat-btn')&&tVis($('#stat-btn'))?[{s:'#stat-btn',t:'Кнопка «Статистика»',x:tq('stats')}]:[]),
+function tExpScreen(){return [...tExpTitle(),...tExpTabs(),...tExpEls('top'),...tExpAdd(),{s:'.search',m:'#q-open',t:'Поиск',x:tq('search'),g:'search'},...($('#stat-btn')&&tVis($('#stat-btn'))?[{s:'#stat-btn',t:'Кнопка «Статистика»',x:tq('stats'),g:'stats'}]:[]),
   ...tExpPlates(),...tExpEls('body'),...tExpBoxes(),...tExpGrid(),...tExpEls('end')]}
 
 /* Сценарий показа: явный из kbShows или собранный по виду шага */
@@ -151,31 +154,51 @@ function tMarkIdx(el){if(el.id)return {s:'#'+CSS.escape(el.id)};const tag=el.tag
 function tFix(q){if(q.el){q.elIdx=tMarkIdx(q.el);delete q.el}return q}
 function tEl(p){if(p.elIdx){const r=tRoot(p);if(!r)return null;const l=[...r.querySelectorAll(p.elIdx.s)].filter(tVis);return l[p.elIdx.n||0]||l[0]||null}return tFind(p)}
 
+/* Знакомые элементы (умное обучение, решение заказчика 24.10.2026): облачко, с которого ушли кнопкой «Далее» или «Готово», в следующих показах пропускается.
+   Общие элементы (поиск, «Столбцы», «На весь экран», кнопки формы, облачка с признаком «Общий элемент») — один раз для всей системы,
+   свои — по экрану и окну. Список хранится у пользователя вместе с прогрессом обучения (kbProgress), последнее облачко шага показывается всегда */
+const tKnownMap=()=>{const u=ckU();return u.known=u.known||{}};
+function tKnownKey(p){if(!p||p.kind||!p.t)return null;if(p.g||p.common)return 'g:'+(p.g||p.t);return 's:'+(p.scr||TOUR.scr||tScr())+(p.mt?'|'+p.mt:'')+'|'+(p.ck||p.t)}
+const tKnown=p=>{p.kk=p.kk||tKnownKey(p);return !!p.kk&&!!tKnownMap()[p.kk]};
+function tKnow(p){const k=p&&(p.kk||tKnownKey(p));if(k&&!tKnownMap()[k])tKnownMap()[k]=nowStamp()}
+// Пропустить знакомые: счётчик считает только новые; если новых нет — сразу последнее облачко («Всё на этом экране вам уже знакомо» у «Посмотреть» и обзора)
+function tSmart(){TOUR.skip=null;if(TOUR.all)return;const keep=TOUR.list.filter(p=>!tKnown(p));const n=TOUR.list.length-keep.length;if(!n)return;
+  const mid=keep.filter(p=>p.kind!=='intro'&&!['done','doit','end','save'].includes(p.kind));
+  if(mid.length)TOUR.list=keep;else{const f={...keep[keep.length-1]};if(f.kind==='done'||f.kind==='end'){f.t=tq('allKnownT');f.x=tq('allKnown')}TOUR.list=[f]}
+  TOUR.skip={at:0,n}}
+// «Показывать всё заново» (вкладка «Мой уровень», «Мой профиль»): выполненные шаги и уровень не меняются
+function tKnownReset(after){const n=Object.keys(tKnownMap()).length;
+  confirmDlg({title:'Показывать всё заново?',text:`Показы «Показать как» и «Обзор экрана» снова пройдут по всем элементам${n?` — сейчас знакомых элементов ${n}`:''}. Выполненные шаги и уровень не меняются.`,ok:'Показывать всё заново',run:()=>{ckU().known={};toast('Показы снова проходят по всем элементам','grad');after&&after()}})}
+
 /* Запуск и навигация */
 function tourKey(kind,id){return 'show.'+S.me+'.'+kind+'.'+id}
 function tourOverlay(){let o=$('#tour');if(o)return o;o=document.createElement('div');o.id='tour';o.hidden=true;o.innerHTML='<div class="tour-hole"></div><div class="tour-bub" role="dialog" aria-live="polite"></div>';document.body.appendChild(o);
-  o.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b||TOUR.busy)return;const a=b.dataset.tour;if(a==='next')tourGo(1);if(a==='prev')tourGo(-1);if(a==='end')tourEnd(false)});
+  o.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b||TOUR.busy)return;const a=b.dataset.tour;if(a==='next')tourGo(1);if(a==='prev')tourGo(-1);if(a==='end')tourEnd(false);if(a==='all')tourAll()});
   addEventListener('resize',()=>TOUR.on&&tourPlace());return o}
 // Нажатия во время показа не доходят до экрана; меню, открытое показом, не закрывается от нажатия по облачку
 addEventListener('pointerdown',e=>{if(TOUR.on&&e.target.closest&&e.target.closest('#tour'))e.stopPropagation()},true);
 addEventListener('keydown',e=>{if(!TOUR.on)return;if(e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();if(!TOUR.busy)tourGo(1)}else if(e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();if(!TOUR.busy)tourGo(-1)}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();tourEnd(false)}},true);
 // «Показать как» шага урока
-function tourStep(i){const key=tourKey('step',i.id);tourAsk(key,n=>tourRun({kind:'step',sid:i.id,key,scr:tScrOfStep(i),items:tItemsForStep(i)},n))}
+function tourStep(i){const key=tourKey('step',i.id);tourAsk(key,(n,all)=>tourRun({kind:'step',sid:i.id,key,scr:tScrOfStep(i),items:tItemsForStep(i),all},n))}
 // «Обзор экрана» модуля: scr — 'модуль.вкладка' или текущий экран
 function tourScreen(scr){if(scr){const[m,t]=scr.split('.');if(!mods().some(x=>x.id===m))return toast('Этот модуль сейчас недоступен','lock',true);go(m,t||null)}
-  setTimeout(()=>{const k=tScr();const key=tourKey('scr',k);tourAsk(key,n=>tourRun({kind:'scr',sid:null,key,scr:k,items:tItemsForScreen()},n))},scr?260:0)}
-// Если прошлый показ закончили раньше — «Продолжить с N из M» или «Сначала»
+  setTimeout(()=>{const k=tScr();const key=tourKey('scr',k);tourAsk(key,(n,all)=>tourRun({kind:'scr',sid:null,key,scr:k,items:tItemsForScreen(),all},n))},scr?260:0)}
+// Если прошлый показ закончили раньше — «Продолжить с N из M» или «Сначала». Пройденные облачка уже знакомы и пропускаются,
+// поэтому «Продолжить» начинает показ без них; «Сначала» — показ целиком с первого элемента
 function tourAsk(key,run){const p=store.get(key,null);if(!p||!p.i||!p.n)return run(0);
   openModal({noMax:true,size:'mid',render:()=>({title:'Продолжить показ?',body:`<p style="margin:0;color:var(--muted);line-height:1.55">В прошлый раз вы закончили показ на облачке ${p.i+1} из ${p.n}.</p>`,foot:`<button class="btn ghost" id="tr-0">Сначала</button><button class="btn cta" id="tr-c">Продолжить с ${p.i+1} из ${p.n}</button>`,
-    mount(el,m){$('#tr-0',el).onclick=()=>{m.close();store.set(key,null);run(0)};$('#tr-c',el).onclick=()=>{m.close();run(p.i)}}})})}
+    mount(el,m){$('#tr-0',el).onclick=()=>{m.close();store.set(key,null);run(0,true)};$('#tr-c',el).onclick=()=>{m.close();run(p.all?p.i:0,!!p.all)}}})})}
 async function tourRun(o,from){MODALS.slice().forEach(m=>m.close());closeSheet();closePop();const ov=tourOverlay();
-  Object.assign(TOUR,{on:true,kind:o.kind,sid:o.sid,key:o.key,scr:o.scr,ctx:null,mbase:0,busy:true,form:false,list:[],i:0});ov.hidden=false;ckBar();
+  Object.assign(TOUR,{on:true,kind:o.kind,sid:o.sid,key:o.key,scr:o.scr,ctx:null,mbase:0,busy:true,form:false,list:[],i:0,o,all:!!o.all,skip:null});ov.hidden=false;ckBar();
   const bub=$('#tour .tour-bub');bub.innerHTML=`<b>Готовлю показ…</b><p>Нахожу на экране кнопки, вкладки и поля.</p>`;tourPlace();
-  if(o.scr)await tBase(o.scr);const items=typeof o.items==='function'?o.items():o.items;
+  // список мог ещё загружаться (скелетон): элементы собираются по готовому экрану, иначе первый показ короче следующего
+  if(o.scr)await tBase(o.scr);await tSettle(120);const items=typeof o.items==='function'?o.items():o.items;
   TOUR.list=await tExpand(items,o.scr||tScr());if(!TOUR.on)return;TOUR.busy=false;
-  if(!TOUR.list.length)return tourEnd(true);TOUR.i=Math.min(Math.max(0,from||0),TOUR.list.length-1);await tourShow()}
+  if(!TOUR.list.length)return tourEnd(true);tSmart();TOUR.i=Math.min(Math.max(0,from||0),TOUR.list.length-1);await tourShow()}
+// «Показать всё»: тот же показ целиком, с первого элемента
+async function tourAll(){const o=TOUR.o;if(!o)return;store.set(TOUR.key,null);await tourRun({...o,all:true},0)}
 function tourStart(){} // совместимость со старым вызовом
-async function tourGo(d){if(TOUR.busy)return;const p=TOUR.list[TOUR.i];
+async function tourGo(d){if(TOUR.busy)return;const p=TOUR.list[TOUR.i];if(d>0)tKnow(p);
   if(d>0&&p&&p.kind==='doit')return tourDoit();if(d>0&&p&&(p.kind==='done'||p.kind==='end'))return tourEnd(true);if(d>0&&p&&p.kind==='save')return tourEnd(true);
   const j=TOUR.i+d;if(j<0||j>=TOUR.list.length)return;TOUR.i=j;await tourShow()}
 // «Сделать сейчас»: открыть форму шага и продолжить показ по её полям
@@ -183,25 +206,29 @@ async function tourDoit(){TOUR.busy=true;const i=ckFind(TOUR.sid);const sh=i&&tS
   if(MODALS.length>n0){TOUR.mbase=MODALS.length;TOUR.form=true;CK.active=i.id;CK.bar=true;CK.barOff=false;
     // Открылась карточка без полей (например, задача): последнее облачко — про кнопки окна, а не «заполните и сохраните»
     const card=MODALS[MODALS.length-1].o.form===false;
-    const f=tExpModal({form:true}).map(tFix);const fin=f.find(x=>x.kind==='save');const rest=f.filter(x=>x.kind!=='save');
+    const f=tExpModal({form:true}).map(tFix);const fin=f.find(x=>x.kind==='save');let rest=f.filter(x=>x.kind!=='save');
+    // знакомые поля и кнопки формы тоже пропускаются; в первом облачке формы — сколько пропущено
+    if(!TOUR.all){const nw=rest.filter(x=>!tKnown(x));if(nw.length<rest.length){TOUR.skip={at:TOUR.i+1,n:rest.length-nw.length};rest=nw}}
     TOUR.list.splice(TOUR.i+1,TOUR.list.length,...rest,fin||(card?{t:tq('finCardT'),x:tq('finCard'),kind:'save'}:{t:tq('finFormT'),x:tq('finForm'),kind:'save'}));TOUR.busy=false;TOUR.i++;
     // пункты формы — внутри уже открытого окна, без возврата к экрану
     TOUR.list.slice(TOUR.i).forEach(x=>{x.ctx='form';x.pre=[];x.scr=tScr()});TOUR.ctx='form';await tourShow();return}
   TOUR.busy=false;tourEnd(true,true);if(i)ckGo(i.id)}
 async function tourShow(){TOUR.busy=true;const p=TOUR.list[TOUR.i];if(!p){TOUR.busy=false;return}
   if(p.ctx==='form'){TOUR.ctx='form';closePop()}else await tPrep(p);
-  if(TOUR.kind&&TOUR.i)store.set(TOUR.key,{i:TOUR.i,n:TOUR.list.length});
+  if(TOUR.kind&&TOUR.i)store.set(TOUR.key,{i:TOUR.i,n:TOUR.list.length,all:TOUR.all});
   const el=p.s||p.txt||p.elIdx?tEl(p):null;TOUR.el=el;
   if(el){const sc=el.closest('.mb,.gscroll,#pane,.pop,.tabs');el.scrollIntoView({block:'center',inline:'center',behavior:'instant'});if(sc&&sc.id!=='pane')await tWait(30)}
   const bub=$('#tour .tour-bub');const n=TOUR.list.length,k=TOUR.i;const last=k===n-1;
   const nextL=p.kind==='doit'?`${ic('play','sm')}Сделать сейчас`:p.kind==='done'||p.kind==='end'?'Готово':p.kind==='save'?'Понятно, заполню':last?'Готово':'Далее';
+  // «Пропущено знакомых элементов: N» и «Показать всё»; если новых нет, «Показать всё» — кнопкой рядом с «Готово»
+  const sk=TOUR.skip&&TOUR.skip.at===k?TOUR.skip:null;const solo=sk&&n===1;
   bub.innerHTML=`<div class="row tour-top"><span class="tour-n">${k+1} из ${n}</span><span class="grow"></span><button class="icon-btn sm" data-tour="end" aria-label="Закончить показ" title="Закончить показ (Esc)">${ic('x','sm')}</button></div><div class="bar tour-bar" aria-hidden="true"><i style="width:${Math.round((k+1)/n*100)}%"></i></div>
-    <b>${esc(p.t||'')}</b><p>${esc(p.x||'')}</p>${el||!p.s?'':''}<div class="row tour-nav"><button class="linkbtn" data-tour="end">Закончить показ</button><div class="grow"></div>${k?'<button class="btn sm ghost" data-tour="prev">Назад</button>':''}<button class="btn sm cta" data-tour="next">${nextL}</button></div>${isMobile()?'':`<div class="tour-keys">← → — листать, Esc — закончить</div>`}`;
+    <b>${esc(p.t||'')}</b><p>${esc(p.x||'')}</p>${sk?`<div class="row tour-skip">${ic('check','sm')}<span class="grow">${esc(tq('skipped','Пропущено знакомых элементов: {n}').replace('{n}',sk.n))}</span>${solo?'':`<button class="linkbtn" data-tour="all">${esc(tq('showAll','Показать всё'))}</button>`}</div>`:''}<div class="row tour-nav"><button class="linkbtn" data-tour="end">Закончить показ</button><div class="grow"></div>${k?'<button class="btn sm ghost" data-tour="prev">Назад</button>':''}${solo?`<button class="btn sm ghost" data-tour="all">${esc(tq('showAll','Показать всё'))}</button>`:''}<button class="btn sm cta" data-tour="next">${nextL}</button></div>${isMobile()?'':`<div class="tour-keys">← → — листать, Esc — закончить</div>`}`;
   TOUR.busy=false;requestAnimationFrame(tourPlace);setTimeout(tourPlace,260)}
 function tourEnd(full,quiet){if(!TOUR.on)return;const p=TOUR.list[TOUR.i];const done=full&&p&&['done','end','save','doit'].includes(p.kind);TOUR.on=false;const o=$('#tour');if(o)o.hidden=true;closePop();
   // Форма, открытая «Сделать сейчас», остаётся открытой — её заполняют; всё, что открыл сам показ, закрывается
   if(!TOUR.form)while(MODALS.length)MODALS[MODALS.length-1].close();else while(MODALS.length>TOUR.mbase)MODALS[MODALS.length-1].close();
-  if(done||full)store.set(TOUR.key,null);else if(TOUR.i>0)store.set(TOUR.key,{i:TOUR.i,n:TOUR.list.length});
+  if(done||full)store.set(TOUR.key,null);else if(TOUR.i>0)store.set(TOUR.key,{i:TOUR.i,n:TOUR.list.length,all:TOUR.all});
   // «Посмотреть» засчитывается только показом до конца; обзор экрана засчитывает шаги «Посмотреть» этого экрана
   if(done&&TOUR.kind==='step'){const i=ckFind(TOUR.sid);if(i&&i.learn){if(ckMark(i,'show')){CK.active=i.id;CK.bar=true;kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();if(S.mod==='kb')renderPage();setTimeout(()=>ckDoneDlg(i),120)}}}
   if(done&&TOUR.kind==='scr'){const k=TOUR.scr||tScr();const l=ckAll().filter(i=>i.learn&&i.at&&(i.at.includes(k)||i.at.includes(k.split('.')[0]))&&ckMark(i,'show'));if(l.length){kbSync(false);renderSide();toast(`База знаний: ${l.length===1?'шаг просмотрен — «'+l[0].t+'»':'просмотрено шагов: '+l.length}`,'grad')}}
