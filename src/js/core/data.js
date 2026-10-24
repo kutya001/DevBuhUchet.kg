@@ -118,7 +118,7 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     {const a=ps.find(x=>x.id==='changeStatus'),b=(r.permissions||[]).find(x=>x.id==='changeStatus');if(a&&b&&/«Принят»/.test(a.desc||''))a.desc=b.desc}
     const addP=x=>{if(!x.perms.includes('repConfirm')){const i=x.perms.indexOf('changeSum');x.perms.splice(i<0?x.perms.length:i+1,0,'repConfirm')}};
     (db.roles||[]).forEach(x=>{if(x.id==='chief'||x.id==='owner')addP(x)});(db.ref.roleTemplates||[]).forEach(x=>{if(x.id==='chief')addP(x)});
-    ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k])['tgConfWait','tgFix'].forEach(n=>{if(a[n]==null&&r[k][n]!=null)a[n]=r[k][n]})});
+    ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k])['tgConfWait','tgFix','waPage'].forEach(n=>{if(a[n]==null&&r[k][n]!=null)a[n]=r[k][n]})});
     {const ks=db.ref.kbSteps||[],rk=r.kbSteps||[];const a=ks.find(x=>x.id==='accept'),b=rk.find(x=>x.id==='accept');if(a&&b&&/«Принят»/.test(a.t||''))['t','w','perm'].forEach(k=>a[k]=b[k]);
       const v=ks.find(x=>x.id==='ver'),vb=rk.find(x=>x.id==='ver');if(v&&vb&&/принятого/.test(v.w||''))v.w=vb.w}
     {const a=(db.ref.kbShows||[]).find(x=>x.id==='sh-accept'),b=(r.kbShows||[]).find(x=>x.id==='sh-accept');if(a&&b&&a.items&&a.items[0]&&/орган ещё не подтвердил/.test(a.items[0].x||'')){a.items[0].t=b.items[0].t;a.items[0].x=b.items[0].x}}
@@ -132,7 +132,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
         ['forms','Оплата за обслуживание','Оплата за обслуживание: за какой месяц, сумма и дата. Долг уменьшится, оплата попадёт в «Финансовые операции».'],
         // «Вести с» и индикатор незаполненных показателей (пункт 5)
         ['tabs','kpi.month','Быстрый ввод значений за месяц: строка — контрагент, столбец — показатель. Можно вставить блок из Excel.'],['tabs','kpi.missing','Кто ещё не заполнил показатели и насколько просрочен срок заполнения.'],
-        ['ctabs','Показатели','Помесячные показатели: итоги «Сумма / Среднее / Максимум / Минимум» и график.']]
+        ['ctabs','Показатели','Помесячные показатели: итоги «Сумма / Среднее / Максимум / Минимум» и график.'],
+        // Страница контрагента по ссылке (пункт 2)
+        ['ctabs','Основное','Главные данные: статус обслуживания, ГКЭД, режим, ответственный, баланс и реквизиты.']]
         .forEach(([k,n,was])=>{if(u[k]&&ru[k]&&ru[k][n]!=null&&u[k][n]===was)u[k][n]=ru[k][n]});
       if(Array.isArray(u.els)&&!u.els.some(e=>e.id==='fin-del')){const e=(ru.els||[]).find(x=>x.id==='fin-del');if(e)u.els.push(structuredClone(e))}
       {const a=(u.els||[]).find(e=>e.id==='kpi-bar'),b=(ru.els||[]).find(e=>e.id==='kpi-bar');if(a&&b&&a.x==='За какой месяц вносить значения. Обычно — за прошлый: показатели вносят после окончания месяца.')a.x=b.x}
@@ -141,14 +143,26 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       if(u.fields){const f=u.fields['fp-sum'];if(f&&/долг за выбранный месяц/.test(f.x||''))u.fields['fp-sum']=structuredClone(ru.fields['fp-sum']);delete u.fields['fp-m']}}
     {const a=(db.ref.kbShows||[]).find(x=>x.id==='sh-feepay'),b=(r.kbShows||[]).find(x=>x.id==='sh-feepay');if(a&&b)(a.items||[]).forEach((it,i)=>{const nb=(b.items||[]).find(y=>y.s==='#cp-feepay');if(it.t==='Кнопка «Отметить оплату»'&&nb){it.t=nb.t;it.x=nb.x}})}
     {const a=(db.ref.kbSteps||[]).find(x=>x.id==='feepay'),b=(r.kbSteps||[]).find(x=>x.id==='feepay');if(a&&b&&a.w==='Оплата закрывает начисления по месяцам.')a.w=b.w}
-    const arts=db.ref.kbArticles||[];['a2','a3','a5','a6','a7','a8','a9','a11','a12','a13','a16','a17','a18','a20','a21','a22','a_kpi','a_kb','a_kbadm'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
+    const arts=db.ref.kbArticles||[];['a2','a3','a5','a6','a7','a8','a9','a11','a12','a13','a16','a17','a18','a20','a21','a22','a23','a_kpi','a_kb','a_kbadm'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
     const V55={nspm:'2026-08-28 15:40',nspq:'2026-08-28 15:40',roy:'2025-01-15 10:36',enq:'2026-10-23 15:45',enm:'2026-10-23 15:45',patw:'2026-10-23 15:50','НАЛ-10':'2026-10-18 09:54','НАЛ-15':'2026-10-23 15:45','ЕНС-02':'2026-10-18 09:54','ЕНС-03':'2026-10-18 09:54','ЕНС-04':'2026-10-18 09:54','ЕНС-16':'2026-10-18 09:54'};
     const put=(a,b,key)=>{if(a&&b)a.forEach((x,i)=>{const k=key(x),f=V55[k]&&b.find(y=>key(y)===k);if(f&&(x._ua||'')===V55[k])a[i]=structuredClone(f)})};
     put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);put(db.ref.enRates,r.enRates,x=>x.code);
     // Умное обучение (пункт 1): облачка сценариев про элементы, одинаковые на всех экранах, получают признак «Общий элемент»
     (db.ref.kbShows||[]).forEach(h=>(h.items||[]).forEach(it=>{if(['Галочки выбора','«Столбцы»'].includes(it.t)&&it.common==null)it.common=true}));
     // Показатели (пункт 5): «Вести с» — месяц создания показателя, но не раньше 12 месяцев назад: раньше незаполненными считались только последние 12 месяцев
-    {const[y,mo]=TODAY.split('-').map(Number),lo=new Date(Date.UTC(y-1,mo-1,1)).toISOString().slice(0,7);(db.indicators||[]).forEach(i=>{if(!i.start){const c=(i._ca||'').slice(0,7)||TODAY.slice(0,7);i.start=c>lo?c:lo}})}}
+    {const[y,mo]=TODAY.split('-').map(Number),lo=new Date(Date.UTC(y-1,mo-1,1)).toISOString().slice(0,7);(db.indicators||[]).forEach(i=>{if(!i.start){const c=(i._ca||'').slice(0,7)||TODAY.slice(0,7);i.start=c>lo?c:lo}})}
+    // Страница контрагента по ссылке (пункт 2): адрес страницы у организаций платформы — по названию, без повторов; разделы страницы — все; право «Управлять страницей контрагента» у владельца
+    // и главного бухгалтера; описание «Менять журнал тарифов», шаг урока, показ и основной набор — из refDB.json; в демо-данных функция включена и у двух контрагентов страницы — как в demoDB.json
+    {const o=db.organization,taken=[];(db.platformOrgs||[]).forEach(x=>{if(x.self)return;if(!x.slug)x.slug=slugFree(slugOf(x.name),taken);taken.push(x.slug)});
+      if(o){if(!o.slug)o.slug=slugFree(slugOf(o.name),taken);if(!o.pageSec)o.pageSec=['contacts','reports','money','kpi','fee'];if(o.features&&o.features.cppage==null)o.features.cppage=db.meta.mode==='demo'}
+      const pr=db.ref.permissions||[],fp=(r.permissions||[]).find(x=>x.id==='cpPage');if(fp&&!pr.some(x=>x.id==='cpPage')){const i=pr.findIndex(x=>x.id==='tariff');pr.splice(i<0?pr.length:i+1,0,structuredClone(fp))}
+      {const a=pr.find(x=>x.id==='tariff'),b=(r.permissions||[]).find(x=>x.id==='tariff');if(a&&b&&/записывать оплату обслуживания/.test(a.desc||''))a.desc=b.desc}
+      const addPg=x=>{if(!x.perms.includes('cpPage')){const i=x.perms.indexOf('tariff');x.perms.splice(i<0?x.perms.length:i+1,0,'cpPage')}};
+      (db.roles||[]).forEach(x=>{if(x.id==='chief'||x.id==='owner')addPg(x)});(db.ref.roleTemplates||[]).forEach(x=>{if(x.id==='chief')addPg(x)});
+      const ks=db.ref.kbSteps||[],nk=(r.kbSteps||[]).find(x=>x.id==='cppage');if(nk&&!ks.some(x=>x.id==='cppage')){const a=ks.find(x=>x.id==='balance');ks.forEach(x=>{if(a&&x.ord>a.ord)x.ord++});ks.splice(a?ks.indexOf(a)+1:ks.length,0,Object.assign(structuredClone(nk),{ord:a?a.ord+1:nk.ord}))}
+      const sh=db.ref.kbShows||[],ns=(r.kbShows||[]).find(x=>x.id==='sh-cppage');if(ns&&!sh.some(x=>x.id==='sh-cppage')){const i=sh.findIndex(x=>x.step==='balance');sh.splice(i<0?sh.length:i+1,0,structuredClone(ns))}
+      const ob=db.ref.onboarding&&db.ref.onboarding.base;if(ob&&ob.cppage==null)ob.cppage=false;
+      if(db.meta.mode==='demo'){const dc=DBSRC.demo.db.contractors||[];(db.contractors||[]).forEach(c=>{const f=dc.find(x=>x.id===c.id&&x.inn===c.inn);if(f&&f.page&&!c.page){c.page=structuredClone(f.page);(DBSRC.demo.db.history||[]).forEach(h=>{if(h.ent==='cp'&&h.id===c.id&&/^(Страница контрагента|Ссылка на страницу)/.test(h.what))db.history.push(structuredClone(h))})}})}}}
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};

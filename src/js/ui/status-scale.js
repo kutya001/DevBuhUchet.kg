@@ -202,28 +202,30 @@ function createRevision(r){
     const n=Object.assign({},r,{id:RID++,ver:r.ver+1,status:'К сдаче',subDate:null,subAt:null,subBy:null,confAt:null,confBy:null,confNote:'',fixWhy:'',fixBy:null,fixAt:null,sum:null,files:[],superseded:false,due:maxIso(r.due,addDays(TODAY,10)),dueBase:maxIso(r.due,addDays(TODAY,10))});
     born(n);r.superseded=true;REPORTS.push(n);log('r',r.id,`Создан уточнённый отчёт, версия ${n.ver}`,r.cp);log('r',n.id,`Уточнённый отчёт создан на основе версии ${r.ver||'первичной'}`,r.cp);refreshAll();openReport(n);toast(`Создан уточнённый отчёт ${n.ver}`,'repeat')}});
 }
-function waDlg({r,cp,fee}){
+// page — ссылка на страницу контрагента с кодом доступа
+function waDlg({r,cp,fee,page}){
   const c=cp||CPM[r.cp];const holderEmp=c.paysTo==='emp'?EM[c.resp]:null;
   const wallets=c.paysTo==='org'?ORG.accounts.map(a=>({prov:a.bank,num:`р/с ${a.acc}, БИК ${a.bik}`,main:a.main})):holderEmp?(holderEmp.wallets||[]):[];
   const st={on:new Set(wallets.map((w,i)=>w.main?i:-1).filter(i=>i>=0))};
   const build=()=>{const req=wallets.filter((w,i)=>st.on.has(i)).map(w=>`${w.prov}: ${w.num}`).join('; ');
+    if(page)return TPL.waPage.replaceAll('{контрагент}',c.name).replaceAll('{ссылка}','https://'+pgUrl(c)).replaceAll('{код}',c.page.code);
     if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-feeGot(c,m))>0);const m=months[months.length-1];return TPL.waFee.replaceAll('{контрагент}',c.name).replaceAll('{месяц}',months.map(ymLabel).join(', ')).replaceAll('{сумма}',som(c.feeDebt)).replaceAll('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})())}
     return TPL.waTax.replaceAll('{контрагент}',c.name).replaceAll('{отчёт}',T[r.t].name).replaceAll('{период}',r.phuman).replaceAll('{срок}',fmtD(r.due)).replaceAll('{сумма}',som(r.sum-r.paid)).replaceAll('{дата}',fmtD(r.payDue<TODAY?addDays(TODAY,1):addDays(r.payDue,-2)<TODAY?r.payDue:addDays(r.payDue,-2))).replaceAll('{реквизиты}',req||'—')};
   openModal({form:true,size:'mid',render:m=>{
-    const noPhone=!c.phone||!c.phone.digits;const noReq=!fee&&!wallets.length;
-    return {title:'Напомнить в WhatsApp',sub:`${esc(c.name)} · ${esc(fmtPhone(c.phone))}`,body:`
+    const noPhone=!c.phone||!c.phone.digits;const noReq=!fee&&!page&&!wallets.length;
+    return {title:page?'Отправить ссылку в WhatsApp':'Напомнить в WhatsApp',sub:`${esc(c.name)} · ${esc(fmtPhone(c.phone))}`,body:`
     ${noPhone?`<div class="note bad">${ic('alert')}<span>У контрагента нет номера телефона — сообщение отправить нельзя. Добавьте номер в карточке.</span></div>`:''}
     ${noReq?`<div class="note warn">${ic('alert')}<span>${holderEmp?`В профиле ${esc(holderEmp.short)} нет реквизитов для переводов.`:'Не указан ответственный.'} Без реквизитов сообщение не отправляется.</span>${holderEmp&&holderEmp.id===S.me?`<button class="btn sm" id="wa-addw">Добавить реквизиты</button>`:''}</div>`:''}
-    ${!fee&&wallets.length?`<div class="box flat"><h3>Куда переводить · ${c.paysTo==='org'?'счёт организации':'кошельки '+esc(holderEmp.short)}</h3>${wallets.map((w,i)=>`<label class="row"><input type="checkbox" data-w="${i}" ${st.on.has(i)?'checked':''}> <b>${esc(w.prov)}</b> <span class="mono">${esc(w.num)}</span>${w.main?' <span class="tag">основной</span>':''}</label>`).join('')}</div>`:''}
+    ${!fee&&!page&&wallets.length?`<div class="box flat"><h3>Куда переводить · ${c.paysTo==='org'?'счёт организации':'кошельки '+esc(holderEmp.short)}</h3>${wallets.map((w,i)=>`<label class="row"><input type="checkbox" data-w="${i}" ${st.on.has(i)?'checked':''}> <b>${esc(w.prov)}</b> <span class="mono">${esc(w.num)}</span>${w.main?' <span class="tag">основной</span>':''}</label>`).join('')}</div>`:''}
     ${fld('Текст сообщения',`<textarea class="inp" id="wa-text" style="min-height:150px">${esc(build())}</textarea>`,{full:true,id:'wa-text',hint:'Шаблон ведёт администратор платформы. Здесь текст можно поправить перед отправкой.'})}
     <div class="note">${ic('info')}<span>Сообщение откроется в WhatsApp на номер <span class="mono">${esc(fmtPhone(c.phone))}</span>, отправляете его вы сами. Нажатие записывается в историю.</span></div>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><a class="btn cta ${noPhone||noReq?'dis':''}" id="wa-go" target="_blank" rel="noopener" href="#">${ic('chat','sm')}Открыть WhatsApp</a>`,
     mount(el,mm){const ta=$('#wa-text',el),a=$('#wa-go',el);const upd=()=>{a.href=noPhone||noReq?'#':waLink(c.phone,ta.value)};upd();ta.oninput=upd;
       $$('[data-w]',el).forEach(x=>x.onchange=()=>{x.checked?st.on.add(+x.dataset.w):st.on.delete(+x.dataset.w);ta.value=build();upd()});
       const aw=$('#wa-addw',el);if(aw)aw.onclick=()=>walletDlg(holderEmp,()=>{wallets.push(...holderEmp.wallets.filter(w=>!wallets.includes(w)));mm.draw()});
-      a.onclick=e=>{if(noPhone||noReq){e.preventDefault();return}if(r)log('r',r.id,'Напоминание в WhatsApp отправлено контрагенту',c.id);else log('cp',c.id,'Напоминание в WhatsApp о долге за обслуживание',c.id);setTimeout(()=>{mm.close();toast('Записано в историю','chat')},150)}}};
+      a.onclick=e=>{if(noPhone||noReq){e.preventDefault();return}if(r)log('r',r.id,'Напоминание в WhatsApp отправлено контрагенту',c.id);else if(page)log('cp',c.id,'Ссылка на страницу контрагента с кодом отправлена в WhatsApp',c.id);else log('cp',c.id,'Напоминание в WhatsApp о долге за обслуживание',c.id);setTimeout(()=>{mm.close();toast('Записано в историю','chat')},150)}}};
   }});
 }
-const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок']};
+const TPL_VARS={waTax:['контрагент','отчёт','период','срок','сумма','дата','реквизиты'],waFee:['контрагент','месяц','сумма','дата'],waPage:['контрагент','ссылка','код'],tgConfWait:['дней','список'],tgFix:['отчёт','причина','автор'],tgBefore:['дней','список'],tgToday:['список'],tgOver:['список'],tgPay:['дней','список'],tgWeek:['даты','n1','n2','n3'],tgCode:['код'],tgTask:['автор','задача','срок']};
 const TPL=DB.ref.messageTemplates;
 

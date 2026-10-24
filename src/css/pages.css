@@ -61,3 +61,35 @@
 .kv>.sf-kv{grid-column:span 2}
 .sf-n{flex-wrap:wrap}.sf-n>.grow{flex:1 1 220px;min-width:0}.sf-n>.btn{margin-left:auto}
 @media (max-width:420px){.kv>.sf-kv{grid-column:auto}}
+/* Страница контрагента по ссылке: блок в карточке и сама страница поверх программы */
+.cp-page .pg-link{color:var(--link);overflow-wrap:anywhere}
+.cp-page .pg-code{font-size:16px;letter-spacing:.06em}
+.cp-page .kv>.pg-secs-row{grid-column:1/-1}
+.pg-secs{display:flex;flex-wrap:wrap;gap:4px 14px}.pg-secs .row{gap:6px;font-size:13px}
+.pg-pol{margin:-4px 0 6px 52px;display:flex;flex-direction:column;gap:2px}.pg-pol .check-row{padding:4px 0}
+.pub{position:fixed;inset:0;z-index:85;background:var(--frame);display:flex;flex-direction:column;overflow:hidden}
+.pub[hidden]{display:none}
+body.pub-on{overflow:hidden}
+.pub-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:var(--pane-alt);border-bottom:1px solid var(--border);font-size:12.5px}
+.pub-proto{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.pub-url{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--field);border:1px solid var(--border);overflow:hidden;white-space:nowrap}
+.pub-url .mono{overflow:hidden;text-overflow:ellipsis}
+.pub-page{flex:1;overflow:auto;padding:24px 16px 32px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.pub-gate{width:min(420px,100%);margin-top:8vh;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 24px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-l)}
+.pub-gate h1{margin:0;font-size:20px}.pub-gate p{margin:0}
+.pub-brand{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:15px}
+.pub-code{font-size:22px;letter-spacing:.3em;text-align:center}
+.pub-body{width:min(1080px,100%);display:flex;flex-direction:column;gap:16px}
+.pub-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.pub-org{display:flex;align-items:center;gap:10px}.pub-org>span{display:flex;flex-direction:column}
+.pub-logo{width:40px;height:40px;border-radius:10px;object-fit:contain;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;flex:none}
+img.pub-logo{background:none;border:1px solid var(--border)}
+.pub-title h1{margin:0 0 4px;font-size:24px;line-height:1.25}
+.pub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pub-wide{grid-column:1/-1}
+.pub-s h3 .ic{width:15px;height:15px}
+.pub-s h4{margin:6px 0 0;font-size:13px}
+.pub-person{display:flex;flex-direction:column;gap:2px}.pub-person a{color:var(--link)}
+.pub-file{display:inline-flex;align-items:center;gap:4px;color:var(--link);margin-right:10px;font-size:12.5px}
+.pub-foot{color:var(--faint);font-size:12px;text-align:center}
+@media (max-width:767px){.pub-grid{grid-template-columns:minmax(0,1fr)}.pub-proto span{display:none}.pub-bar{padding:8px 12px}.pub-title h1{font-size:20px}.pub-gate{margin-top:4vh;padding:22px 18px}.pg-pol{margin-left:0}}

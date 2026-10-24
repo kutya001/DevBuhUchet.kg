@@ -32,6 +32,8 @@ function modTabs(m){return m.tabs?m.tabs().filter(Boolean):[]}
 function parseHash(){const h=location.hash.replace(/^#/,'');const[a,b]=h.split('.');return {mod:a||'',tab:b||''}}
 function go(mod,tab,preset){S.preset=preset||null;const h='#'+mod+(tab?'.'+tab:'');if(location.hash===h)route();else location.hash=h}
 function route(){
+  // #/<адрес организации>/inn/<ИНН> — страница контрагента по ссылке, открывается поверх программы
+  if(pubRoute())return;if(PUB.open)pubHide();
   const {mod,tab}=parseHash();const l=mods();const m=l.find(x=>x.id===mod)||l[0];
   const tabs=modTabs(m);const t=tabs.find(x=>x.id===tab)||tabs[0];
   const changed=S.mod!==m.id||S.tab!==(t&&t.id);

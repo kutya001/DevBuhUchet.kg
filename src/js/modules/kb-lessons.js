@@ -36,7 +36,8 @@ const CKG=[
   {id:'oneoff',perm:'createCp',done:()=>CPS.some(c=>c.kind==='oneoff'),go:G('cps','all','#add-btn','#fab',()=>addCpDlg('oneoff'))},
   {id:'pause',learn:1,at:['cps.all'],go:G('cps','all','#mbody')},
   {id:'archive',learn:1,at:['cps.all'],go:G('cps','all','#mbody')},
-  {id:'balance',learn:1,staff:1,hit:'cp.hist',go:G('cps','mine','#mbody .gscroll, #mbody .gcards')}]},
+  {id:'balance',learn:1,staff:1,hit:'cp.hist',go:G('cps','mine','#mbody .gscroll, #mbody .gcards')},
+  {id:'cppage',perm:'cpPage',feat:()=>feat('cppage'),done:()=>CPS.some(c=>c.page&&c.page.on),go:G('cps','all','#mbody .gscroll, #mbody .gcards')}]},
  {id:'reports',items:[
   {id:'assign',star:1,perm:'assign',done:()=>CPS.some(c=>c.assign.length),go:G('reports','matrix','#add-btn','#fab',()=>massAssignDlg())},
   {id:'matrix',learn:1,at:['reports.matrix'],go:G('reports','matrix','#mbody')},
@@ -115,6 +116,7 @@ const KB_EV={
  'cp.resp':['назначен ответственный',h=>h.ent==='cp'&&/^(Ответственный:|Контрагент создан|Создан загрузкой|Создан из свидетельства)/.test(h.what)],
  'cp.tariff':['записан тариф',h=>h.ent==='cp'&&(/^Новая ставка/.test(h.what)||(/^(Контрагент создан|Создан загрузкой|Создан из свидетельства)/.test(h.what)&&((CPM[h.id]||{}).tariffs||[]).length>0))],
  'cp.oneoff':['создан разовый контрагент',h=>h.ent==='cp'&&/^Создан разовый/.test(h.what)],
+ 'cp.page':['включена страница контрагента по ссылке',h=>h.ent==='cp'&&/^Страница контрагента включена/.test(h.what)],
  'r.assign':['назначен отчёт',h=>h.ent==='cp'&&/^Назначен отчёт/.test(h.what)],
  'r.sub':['отчёт отмечен «Сдан»',h=>h.ent==='r'&&/→ Сдан|отмечен сданн/.test(h.what)],
  'r.acc':['сдача отчёта подтверждена',h=>h.ent==='r'&&/^Сдача подтверждена(?! \(Подтверждение выключено)/.test(h.what)],
@@ -138,7 +140,7 @@ const KB_EV={
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
  'open':['показ «Показать как» до конца или статья шага (Посмотреть)'],'use':['первое использование функции (раздел «Работа со списками»)'],'state':['выполнено условие в данных пользователя'],'hand':['только показом или статьёй']};
-const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kwho:'k.who',kval:'k.val',kxls:'k.xls',kchk:'k.check',upload:'f.upload'};
+const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',cppage:'cp.page',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kwho:'k.who',kval:'k.val',kxls:'k.xls',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
 const KBG=DB.ref.kbGroups;
