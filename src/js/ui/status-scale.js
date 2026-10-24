@@ -207,7 +207,7 @@ function waDlg({r,cp,fee}){
   const wallets=c.paysTo==='org'?ORG.accounts.map(a=>({prov:a.bank,num:`р/с ${a.acc}, БИК ${a.bik}`,main:a.main})):holderEmp?(holderEmp.wallets||[]):[];
   const st={on:new Set(wallets.map((w,i)=>w.main?i:-1).filter(i=>i>=0))};
   const build=()=>{const req=wallets.filter((w,i)=>st.on.has(i)).map(w=>`${w.prov}: ${w.num}`).join('; ');
-    if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-(c.feePaid[m]||0))>0);const m=months[months.length-1];return TPL.waFee.replaceAll('{контрагент}',c.name).replaceAll('{месяц}',months.map(ymLabel).join(', ')).replaceAll('{сумма}',som(c.feeDebt)).replaceAll('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})())}
+    if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-feeGot(c,m))>0);const m=months[months.length-1];return TPL.waFee.replaceAll('{контрагент}',c.name).replaceAll('{месяц}',months.map(ymLabel).join(', ')).replaceAll('{сумма}',som(c.feeDebt)).replaceAll('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})())}
     return TPL.waTax.replaceAll('{контрагент}',c.name).replaceAll('{отчёт}',T[r.t].name).replaceAll('{период}',r.phuman).replaceAll('{срок}',fmtD(r.due)).replaceAll('{сумма}',som(r.sum-r.paid)).replaceAll('{дата}',fmtD(r.payDue<TODAY?addDays(TODAY,1):addDays(r.payDue,-2)<TODAY?r.payDue:addDays(r.payDue,-2))).replaceAll('{реквизиты}',req||'—')};
   openModal({form:true,size:'mid',render:m=>{
     const noPhone=!c.phone||!c.phone.digits;const noReq=!fee&&!wallets.length;

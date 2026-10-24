@@ -41,7 +41,7 @@ function opView(d){const x=d.ref,k=opKind(d),c=CPM[opCpId(d)],m=opMeta(d);
   if(d.src==='op'){const r=x.report&&REPORTS.find(y=>y.id===x.report);v.rep=r;v.hist={ent:k==='in'?'in':'op',id:x.id};v.aud=x._cb?x:Object.assign({_cb:x.by,_ca:x.date+' 00:00'},x);
     v.what=k==='in'?(allocText(x)||'Аванс'):k==='pay'&&r?`${T[r.t].short} · ${r.plabel}`:k==='xfer'?'Со счёта организации на '+accName(x.holder):x.note||'—';
     v.src=r?[`Отчёт ${T[r.t].short} · ${r.plabel}`,()=>openReport(r)]:['Карточка контрагента, вкладка «Деньги»',()=>openCp(c,'money')]}
-  if(d.src==='fee'){const o=x.op&&OPS.find(y=>y.id===x.op);v.in=o;v.hist={ent:'fp',id:x.id};v.aud=x._cb?x:Object.assign({_cb:x.by,_ca:x._ca||x.date+' 10:00'},x);v.what='Обслуживание за '+ymLabel(x.month);
+  if(d.src==='fee'){const o=x.op&&OPS.find(y=>y.id===x.op);v.in=o;v.hist={ent:'fp',id:x.id};v.aud=x._cb?x:Object.assign({_cb:x.by,_ca:x._ca||x.date+' 10:00'},x);v.what=fpWhat(x);v.to=x.to;
     v.src=o?[`Общее поступление ${som(o.total??o.amount)} от ${fmtD(o.date)}`,()=>opWin({src:'op',ref:o})]:['Карточка контрагента, вкладка «Обслуживание»',()=>openCp(c,'fee')]}
   if(d.src==='pt'){const p=d.own;v.hist={ent:'p',id:p.id,sub:x.id};v.aud={_cb:x.by,_ca:x._ca||x.date+' 10:00',_ub:x._ub,_ua:x._ua};v.what=p.name+(x.note?' · '+x.note:'');v.src=[`Проект «${p.name}»`,()=>openProject(p)]}
   if(d.src==='sp'){const s=d.own;v.hist={ent:'s',id:s.id,sub:x.id};v.aud={_cb:x.by,_ca:x._ca||x.date+' 10:00',_ub:x._ub,_ua:x._ua};v.what=s.name;v.src=[`Разовая услуга «${s.name}»`,()=>serviceCard(s)]}
@@ -60,7 +60,7 @@ function opWin(d){if(!d)return;if(d.src==='svc')return serviceCard(d.ref);
     else kv.push(['За что',v.rep?`<button class="linkbtn" id="ow-rep">${esc(v.what)}</button>`:esc(v.what)]);
     if(d.src==='pt'){const p=d.own;kv.push(['Проект: получено',`<span class="tnum">${som(projPaid(p))}${p.plan?' из '+som(p.plan):''}</span>`])}
     if(d.src==='sp'){const s=d.own;kv.push(['Услуга: получено',`<span class="tnum">${som(svcPaid(s))} из ${som(s.amount)}</span>`])}
-    kv.push([k==='xfer'?'На счёт':'Счёт',v.acc==='org'?`${ic('building','sm')} организации`:`${ic('user','sm')} сотрудника ${esc(empName(v.acc))}`]);
+    kv.push(k==='fee'?['Куда поступили',`${ic(v.to==='owner'?'user':'building','sm')} ${esc(fpToName(v.to||'org'))}`]:[k==='xfer'?'На счёт':'Счёт',v.acc==='org'?`${ic('building','sm')} организации`:`${ic('user','sm')} сотрудника ${esc(empName(v.acc))}`]);
     if(v.note&&v.note!==v.what)kv.push(['Примечание',esc(v.note)]);
     const corr=k==='in'?OPS.filter(y=>y.kind==='corr'&&y.ref===x.id):[];
     const lockNote=!v.del&&(eL||dL)?`<div class="note">${ic('lock')}<span>${esc(eL||dL)}</span></div>`:'';
@@ -100,7 +100,7 @@ function opMax(d){const k=opKind(d),x=d.ref,c=CPM[opCpId(d)],a=opAmt(d);
 function opEditDlg(d){const k=opKind(d),x=d.ref;const L=opLock(d,'edit');if(L)return toast(L,'lock',true);
   if(k==='in')return inDlg(CPM[x.cp],x);
   if(k==='svc')return serviceDlg(x);
-  if(k==='fee'&&x.op)return inDlg(CPM[x.cp],OPS.find(y=>y.id===x.op));
+  if(k==='fee')return x.op?inDlg(CPM[x.cp],OPS.find(y=>y.id===x.op)):feePayDlg(CPM[x.cp],x);
   const v=opView(d),c=v.c,a0=v.amount,sg0=k==='corr'?(x.amount<0?'-':'+'):null;
   const note0=k==='xfer'?(x.note||'').replace(/^Со счёта организации на счёт [^.]*\.?\s*/,''):v.note;
   const hasAcc=['pay','bonus','refund','corr','xfer'].includes(k);
@@ -109,24 +109,23 @@ function opEditDlg(d){const k=opKind(d),x=d.ref;const L=opLock(d,'edit');if(L)re
   openModal({form:true,render:()=>({title:'Изменить: '+v.label.toLowerCase(),sub:`${esc(c.name)} · ${sgn(sg0)}${som(a0)} от ${fmtD(x.date)}`,body:`<div class="form">
     ${k==='corr'?fld('Что сделать',sel('oe-sign',[['-','Уменьшить: поступило меньше'],['+','Увеличить: поступило больше']],sg0),{id:'oe-sign',full:true}):''}
     ${fld('Сумма, сом',inp('oe-sum',String(a0),'inputmode="decimal" class="inp tnum"'),{req:true,id:'oe-sum',hint:lim.max!=null?'Не больше '+som(lim.max):''})}${fld('Дата',inp('oe-date',x.date,`type="date" max="${TODAY}"`),{req:true,id:'oe-date'})}
-    ${k==='fee'?fld('За месяц',sel('oe-month',[...new Set([x.month,...feeMonths(c)])].sort().reverse().map(mm=>[mm,ymLabel(mm)]),x.month),{req:true,id:'oe-month'}):''}
     ${hasAcc?fld(k==='xfer'?'Кому':'Счёт',sel('oe-acc',accs,x.holder),{id:'oe-acc'}):''}
     ${fld(k==='bonus'?'Причина списания':'Примечание',inp('oe-note',note0),{full:true,id:'oe-note'})}
     ${fld('Добавить файлы',`<input class="inp" type="file" id="oe-f" multiple>`,{full:true,id:'oe-f',hint:v.files.length?`Уже приложено: ${v.files.length}`:''})}
-    ${fld('Причина изменения',`<textarea class="inp" id="oe-why" style="min-height:56px" placeholder="Например: ошибка в сумме платёжки"></textarea>`,{full:true,id:'oe-why',hint:'Обязательна, если меняются сумма, дата'+(k==='fee'?', месяц':'')+(hasAcc?' или счёт':'')})}</div>
+    ${fld('Причина изменения',`<textarea class="inp" id="oe-why" style="min-height:56px" placeholder="Например: ошибка в сумме платёжки"></textarea>`,{full:true,id:'oe-why',hint:'Обязательна, если меняются сумма, дата'+(hasAcc?' или счёт':'')})}</div>
     <div class="note">${ic('info')}<span>Контрагента и тип операции поменять нельзя — такую операцию удаляют и вносят заново. Изменение попадёт в историю операции: было → стало, кто, когда, причина. Статусы оплаты, остаток и баланс счёта пересчитаются сами.</span></div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="oe-ok">Сохранить</button>',
-    mount(el,m){$('#oe-ok',el).onclick=()=>{const n=parseNum(val(el,'oe-sum')),dt=val(el,'oe-date'),sg=k==='corr'?val(el,'oe-sign'):null,mo=k==='fee'?val(el,'oe-month'):null,acc=hasAcc?val(el,'oe-acc'):null,note=val(el,'oe-note'),why=val(el,'oe-why');
+    mount(el,m){$('#oe-ok',el).onclick=()=>{const n=parseNum(val(el,'oe-sum')),dt=val(el,'oe-date'),sg=k==='corr'?val(el,'oe-sign'):null,acc=hasAcc?val(el,'oe-acc'):null,note=val(el,'oe-note'),why=val(el,'oe-why');
       const s0=k==='corr'?x.amount:a0,s1=k==='corr'?(sg==='-'?-n:n):n;
       const ch=[];if(Math.abs(s1-s0)>0.001)ch.push(`сумма ${sgn(sg0)}${fmtM(a0)} → ${sgn(sg)}${fmtM(n)} сом`);if(dt!==x.date)ch.push(`дата ${fmtD(x.date)} → ${fmtD(dt)}`);
-      if(mo&&mo!==x.month)ch.push(`месяц ${ymLabel(x.month)} → ${ymLabel(mo)}`);if(acc&&acc!==x.holder)ch.push(`счёт: ${accName(x.holder)} → ${accName(acc)}`);
+      if(acc&&acc!==x.holder)ch.push(`счёт: ${accName(x.holder)} → ${accName(acc)}`);
       const files=[...$('#oe-f',el).files].map(f=>f.name),nch=note!==note0;
       const ok=[setErr(el,'oe-sum',isNaN(n)||n<=0?'Введите сумму больше нуля':lim.max!=null&&n>lim.max+0.001?lim.msg:k==='corr'&&s1-s0<-0.001&&s0-s1>c.avail+0.001?`Уменьшить остаток можно не больше чем на ${som(c.avail)}: столько денег контрагента не потрачено`:''),
         setErr(el,'oe-date',!dt?'Укажите дату':dt>TODAY?'Дата не может быть позже сегодняшней':['pay','bonus','refund'].includes(k)&&CLOSED.has(ym(dt))?'Этот месяц закрыт: перенести операцию в него нельзя':''),
         setErr(el,'oe-why',ch.length&&!why?'Укажите причину: меняется '+ch.map(s=>s.split(/[ :]/)[0]).join(', '):'')].every(Boolean);if(!ok)return;
       if(!ch.length&&!nch&&!files.length){m.close();return toast('Без изменений')}
       if(k==='pay'){const r=REPORTS.find(y=>y.id===x.report);if(r)r.paid=Math.max(0,Math.round((r.paid-a0+n)*100)/100)}
-      if(k==='fee'){c.feePaid[x.month]=(c.feePaid[x.month]||0)-a0;c.feePaid[mo]=(c.feePaid[mo]||0)+n;x.month=mo}
+
       x.amount=s1;x.date=dt;if(acc)x.holder=acc;x.note=k==='xfer'?'Со счёта организации на счёт '+empName(acc)+(note?'. '+note:''):note;files.forEach(f=>FUP.add(f));x.files.push(...files);
       if(ch.length||nch)x.edited=true;touch(x);
       opLog(d,`Изменено: ${[...ch,nch?`примечание «${note0||'—'}» → «${note||'—'}»`:'',files.length?'добавлены файлы: '+files.join(', '):''].filter(Boolean).join('; ')}${why?`. Причина: ${why}`:''}`);
@@ -142,7 +141,7 @@ function opDelDlg(d){const L=opLock(d,'del');if(L)return toast(L,'lock',true);co
   const fa=k==='in'?(x.feeAlloc||[]).reduce((a,y)=>a+y.a,0):0;
   const cons=({in:()=>`Деньги уйдут из остатка контрагента${(x.alloc||[]).length?', отчёты из детализации снова будут ждать денег':''}.${fa?` Оплата за обслуживание из этого поступления (${som(fa)}) тоже удалится, долг пересчитается.`:''}`,
     pay:()=>`Сумма вернётся в остаток контрагента, статус оплаты ${v.rep?'отчёта '+esc(T[v.rep.t].short+' · '+v.rep.plabel):'отчёта'} пересчитается.`,bonus:()=>`Сумма вернётся в свободный остаток контрагента, бонус сотрудника ${esc(empName(x.holder))} уменьшится.`,refund:()=>'Сумма вернётся в свободный остаток контрагента.',
-    xfer:()=>'Деньги вернутся на счёт организации.',corr:()=>'Остаток контрагента пересчитается.',fee:()=>`Долг за обслуживание за ${esc(ymLabel(x.month))} пересчитается.`,pt:()=>'«Получено» по проекту уменьшится.',sp:()=>'Статус оплаты услуги пересчитается.',
+    xfer:()=>'Деньги вернутся на счёт организации.',corr:()=>'Остаток контрагента пересчитается.',fee:()=>fpAlloc(x).length?`Долг за обслуживание за ${esc(fpAlloc(x).map(y=>ymLabel(y.m)).join(', '))} пересчитается.`:'Аванс за обслуживание уменьшится.',pt:()=>'«Получено» по проекту уменьшится.',sp:()=>'Статус оплаты услуги пересчитается.',
     svc:()=>{const ps=x.pays.filter(p=>!p.del);return ps.length?`Оплаты по ней (${ps.length} на ${som(sumPays(ps))}) тоже уйдут из итогов.`:''}}[k]||(()=>''))();
   openModal({form:true,render:()=>({title:blk||neg?'Удалить нельзя':T_[0],sub:`${esc(v.label)} · ${esc(c.name)} · ${som(v.amount)} от ${fmtD(v.date)}`,
     body:blk?`<div class="note warn">${ic('lock')}<span>Из этого поступления уже оплачены налоги: не потрачено только ${som(c.avail)} из ${som(x.amount)}. Сначала измените или удалите оплату налога:</span></div>${blk.html}`
@@ -152,8 +151,8 @@ function opDelDlg(d){const L=opLock(d,'del');if(L)return toast(L,'lock',true);co
     mount(el,m){if(!$('#od-ok',el))return;$('#od-ok',el).onclick=()=>{const why=val(el,'od-why');if(!setErr(el,'od-why',why?'':'Укажите причину'))return;const mk={at:nowStamp(),by:S.me,why};
       if(d.src==='op'){x.kind=k+'_x';x.xAt=mk.at;x.xBy=S.me;x.xWhy=why;x.xDel=1;
         if(k==='pay'){const r=REPORTS.find(y=>y.id===x.report);if(r)r.paid=Math.max(0,Math.round((r.paid-x.amount)*100)/100)}
-        if(k==='in')FEEPAYS.filter(f=>f.op===x.id&&!f.del).forEach(f=>{f.del=mk;c.feePaid[f.month]=(c.feePaid[f.month]||0)-f.amount})}
-      else{x.del=mk;if(d.src==='fee')c.feePaid[x.month]=(c.feePaid[x.month]||0)-x.amount}
+        if(k==='in')FEEPAYS.filter(f=>f.op===x.id&&!f.del).forEach(f=>{f.del=mk;fpAlloc(f).forEach(y=>{c.feePaid[y.m]=(c.feePaid[y.m]||0)-y.a})})}
+      else{x.del=mk;if(d.src==='fee')fpAlloc(x).forEach(y=>{c.feePaid[y.m]=(c.feePaid[y.m]||0)-y.a})}
       opLog(d,`${T_[2]}: ${v.label.toLowerCase()} на ${som(v.amount)} от ${fmtD(v.date)}. Причина: ${why}`);m.close();refreshAll();toast(T_[2],'trash')}}})});
 }
 // Ссылки на операции в таблицах карточек: строка открывает окно операции, «…» — меню «Изменить / Удалить»

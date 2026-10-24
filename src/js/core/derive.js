@@ -3,10 +3,17 @@
 /* ═════════════ Derived state ═════════════ */
 const DONE=new Set(['Сдан','Не требуется']);
 const OPEN=new Set(['К сдаче','В работе','Требует исправления']);
+// Оплата за обслуживание: какие месяцы она закрывает (alloc; у старых записей — один month) и аванс — всё, что сверх них
+const fpAlloc=f=>f.alloc||(f.month?[{m:f.month,a:f.amount}]:[]);
+const fpAdv=f=>Math.max(0,Math.round((f.amount-fpAlloc(f).reduce((s,x)=>s+x.a,0))*100)/100);
+// Аванс сам засчитывается в неоплаченные начисления от старых к новым (решение заказчика 24.10.2026)
+function feeAdvSplit(c,adv,paidOf){const use={};feeMonths(c).forEach(m=>{const need=feeCharge(c,m)-paidOf(m);if(adv>0.001&&need>0){const x=Math.min(need,adv);use[m]=x;adv-=x}});return {use,left:Math.round(adv*100)/100}}
+const feeGot=(c,m)=>(c.feePaid[m]||0)+((c.feeAdvUse||{})[m]||0);
 function derive(){
   kpiIndex();
   CPS.forEach(c=>{c.overdue=0;c.avail=0;c.free=0;c.status=cpStatus(c);c.paused=c.status==='Приостановлен'});
   const recv={};OPS.forEach(o=>{if(o.kind==='in')(o.alloc||[]).forEach(x=>{recv[x.r]=(recv[x.r]||0)+x.a})});
+  const fadv={};FEEPAYS.forEach(f=>{if(f.del)return;const a=fpAdv(f);if(a>0)fadv[f.cp]=(fadv[f.cp]||0)+a});
   const by={};
   REPORTS.forEach(r=>{const t=tR(r);
     const sch=schedule(r);const u=sch.find(x=>x.paid<x.amount);r.payDue=t.sum?(u?u.due:(sch.length?sch[sch.length-1].due:r.due)):null;
@@ -30,7 +37,8 @@ function derive(){
       const need=r.sum-r.paid,rest=need-(ear[r.id]||0);if(left>=rest){r.money={s:'ok',need};left-=rest}else{r.money={s:'short',n:rest-left,need};left=0}
     });
     c.free=left;
-    let debt=0;feeMonths(c).forEach(m=>{const due=feeDue(c,m);if(due<=TODAY)debt+=Math.max(0,feeCharge(c,m)-(c.feePaid[m]||0))});c.feeDebt=debt;
+    const sp=feeAdvSplit(c,fadv[c.id]||0,m=>c.feePaid[m]||0);c.feeAdvUse=sp.use;c.feeAdv=sp.left;
+    let debt=0;feeMonths(c).forEach(m=>{const due=feeDue(c,m);if(due<=TODAY)debt+=Math.max(0,feeCharge(c,m)-feeGot(c,m))});c.feeDebt=debt;
   });
 }
 
