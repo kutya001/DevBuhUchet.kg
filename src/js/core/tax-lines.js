@@ -7,7 +7,7 @@
 const EN_IDS=['enq','enm'];
 const isEnT=t=>!!t&&EN_IDS.includes(typeof t==='string'?t:t.id);
 // При этих ставках налог считается по одной ставке со всей деятельности: дополнительные виды отдельных строк не дают (ст. 423 ч. 7)
-const EN_NO_EXTRA=[...GK_EN_ONE,'ЕНС-05'];
+const EN_NO_EXTRA=GK_EN_ONE;
 const enRow=code=>(EN_TABLE||[]).find(x=>x.code===code)||null;
 const RT_PCT=/\d+(?:,\d+)? %/;
 const pctNum=p=>parseFloat(String(p||'').replace(',','.'))||0;
