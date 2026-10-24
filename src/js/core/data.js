@@ -129,17 +129,24 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       // Окно операции с «Изменить» и «Удалить» (пункт 7): тексты, которые администратор не менял, заменяются новыми
       [['cards','fin','Карточка операции: сумма, детализация, файлы. «Обратная запись» исправляет ошибку без удаления.'],['rows','fin','Одна денежная операция. Нажмите — откроется её карточка с детализацией.'],['rows','staff.bonus','Одно списание остатка в бонус: дата, сотрудник, контрагент, сумма и причина. В меню «…» — карточка контрагента и «Отменить списание».'],
         ['boxes','Операции','Все деньги по контрагенту: поступления, оплаты, списания.'],['boxes','Оплаты (транши)','Оплаты по проекту частями.'],['acts','Удалить','Удаляет запись совсем — только если по ней ещё нет данных.'],['acts','Отменить списание','Возвращает списанный остаток обратно на счёт.'],
-        ['forms','Оплата за обслуживание','Оплата за обслуживание: за какой месяц, сумма и дата. Долг уменьшится, оплата попадёт в «Финансовые операции».']]
+        ['forms','Оплата за обслуживание','Оплата за обслуживание: за какой месяц, сумма и дата. Долг уменьшится, оплата попадёт в «Финансовые операции».'],
+        // «Вести с» и индикатор незаполненных показателей (пункт 5)
+        ['tabs','kpi.month','Быстрый ввод значений за месяц: строка — контрагент, столбец — показатель. Можно вставить блок из Excel.'],['tabs','kpi.missing','Кто ещё не заполнил показатели и насколько просрочен срок заполнения.'],
+        ['ctabs','Показатели','Помесячные показатели: итоги «Сумма / Среднее / Максимум / Минимум» и график.']]
         .forEach(([k,n,was])=>{if(u[k]&&ru[k]&&ru[k][n]!=null&&u[k][n]===was)u[k][n]=ru[k][n]});
       if(Array.isArray(u.els)&&!u.els.some(e=>e.id==='fin-del')){const e=(ru.els||[]).find(x=>x.id==='fin-del');if(e)u.els.push(structuredClone(e))}
+      {const a=(u.els||[]).find(e=>e.id==='kpi-bar'),b=(ru.els||[]).find(e=>e.id==='kpi-bar');if(a&&b&&a.x==='За какой месяц вносить значения. Обычно — за прошлый: показатели вносят после окончания месяца.')a.x=b.x}
+      {const a=(u.artForms||[]).find(x=>x.mod==='kpi');if(a&&a.fields&&!a.fields.includes('ki-st')){const i=a.fields.indexOf('ki-due');a.fields.splice(i<0?a.fields.length:i+1,0,'ki-st')}}
       // «Принять оплату за обслуживание» (пункт 6): сумма делится по месяцам, поля «За месяц» больше нет
       if(u.fields){const f=u.fields['fp-sum'];if(f&&/долг за выбранный месяц/.test(f.x||''))u.fields['fp-sum']=structuredClone(ru.fields['fp-sum']);delete u.fields['fp-m']}}
     {const a=(db.ref.kbShows||[]).find(x=>x.id==='sh-feepay'),b=(r.kbShows||[]).find(x=>x.id==='sh-feepay');if(a&&b)(a.items||[]).forEach((it,i)=>{const nb=(b.items||[]).find(y=>y.s==='#cp-feepay');if(it.t==='Кнопка «Отметить оплату»'&&nb){it.t=nb.t;it.x=nb.x}})}
     {const a=(db.ref.kbSteps||[]).find(x=>x.id==='feepay'),b=(r.kbSteps||[]).find(x=>x.id==='feepay');if(a&&b&&a.w==='Оплата закрывает начисления по месяцам.')a.w=b.w}
-    const arts=db.ref.kbArticles||[];['a2','a3','a5','a7','a8','a9','a11','a12','a13','a16','a17','a18','a20','a21','a22'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
+    const arts=db.ref.kbArticles||[];['a2','a3','a5','a6','a7','a8','a9','a11','a12','a13','a16','a17','a18','a20','a21','a22','a_kpi'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
     const V55={nspm:'2026-08-28 15:40',nspq:'2026-08-28 15:40',roy:'2025-01-15 10:36',enq:'2026-10-23 15:45',enm:'2026-10-23 15:45',patw:'2026-10-23 15:50','НАЛ-10':'2026-10-18 09:54','НАЛ-15':'2026-10-23 15:45','ЕНС-02':'2026-10-18 09:54','ЕНС-03':'2026-10-18 09:54','ЕНС-04':'2026-10-18 09:54','ЕНС-16':'2026-10-18 09:54'};
     const put=(a,b,key)=>{if(a&&b)a.forEach((x,i)=>{const k=key(x),f=V55[k]&&b.find(y=>key(y)===k);if(f&&(x._ua||'')===V55[k])a[i]=structuredClone(f)})};
-    put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);put(db.ref.enRates,r.enRates,x=>x.code)}
+    put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);put(db.ref.enRates,r.enRates,x=>x.code);
+    // Показатели (пункт 5): «Вести с» — месяц создания показателя, но не раньше 12 месяцев назад: раньше незаполненными считались только последние 12 месяцев
+    {const[y,mo]=TODAY.split('-').map(Number),lo=new Date(Date.UTC(y-1,mo-1,1)).toISOString().slice(0,7);(db.indicators||[]).forEach(i=>{if(!i.start){const c=(i._ca||'').slice(0,7)||TODAY.slice(0,7);i.start=c>lo?c:lo}})}}
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};

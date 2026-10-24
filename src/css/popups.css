@@ -65,6 +65,19 @@
 .kin:hover{border-color:var(--border)}.kin:focus{outline:none;border-color:var(--border-strong);background:var(--pane);box-shadow:0 0 0 3px var(--sel)}
 .kin[readonly]{cursor:default}.kin[readonly]:hover{border-color:transparent}
 .kt-card .kin{width:92px}
+.kin::placeholder{color:var(--faint);font-size:11.5px}
+.kt td.kearly{background:var(--pane-alt)}
+/* «Ввод за месяц»: выбор месяца со стрелками и списком; красная точка — есть незаполненные */
+.km-pick{display:inline-flex;align-items:center;gap:4px}
+.km-cur{gap:6px}
+.kdot{width:8px;height:8px;border-radius:50%;background:var(--red);flex:none;display:inline-block;align-self:center}.kdot.off{background:transparent}
+.km-pop{max-height:min(360px,60vh);overflow-y:auto}
+.km-list .mi{align-items:center}
+.kt-past td.kt-cp small{display:block;font-size:11px}
+.kw-from{gap:6px;flex:none}.kw-from .inp{width:auto;min-height:30px;padding:2px 8px}
+.kw-on{gap:8px;flex:none;cursor:pointer}
+.kc-miss{align-items:center}
+@media (max-width:767px){.kw-li{flex-wrap:wrap}.kw-list .kw-li>.grow{flex-basis:100%}.kc-miss{flex-wrap:wrap}.kc-miss>.grow{flex-basis:calc(100% - 30px)}.kc-miss .btn{width:100%;justify-content:center}}
 .kcell{background:none;border:0;padding:2px 4px;border-radius:5px;font:inherit;color:inherit;cursor:pointer;font-variant-numeric:tabular-nums}
 .kcell:hover{background:var(--row-hover)}.kcell.emp{color:var(--b-yellow);font-style:italic}
 .kset{display:flex;flex-direction:column;gap:8px}
@@ -126,6 +139,7 @@
 .kw-li{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--raised)}
 .kw-li:last-child{border-bottom:0}
 .kw-li small{display:block;font-size:12px;margin-top:1px}
+.kw-li>.grow{flex:1;min-width:0}
 .kw-card summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;margin-bottom:0}
 .kw-card summary::-webkit-details-marker{display:none}
 .kw-card[open] summary{margin-bottom:10px}

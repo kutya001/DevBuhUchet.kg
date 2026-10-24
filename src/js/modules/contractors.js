@@ -7,8 +7,10 @@ function cpsTabs(){const v=visCps(true);const a=v.filter(c=>!c.archived);return 
  feat('fee')&&can('fee')?{id:'debtors',label:'Должники',icon:'coins',count:a.filter(c=>c.feeDebt>0).length,red:true}:null,
 ]}
 function cpsAdd(){return [can('createCp')&&{label:'Контрагент',icon:'building',run:addCpDlg},can('cpImport')&&{label:'Загрузка из Excel',icon:'paste',run:importDlg},can('createCp')&&{label:'Из свидетельства и выписки',icon:'upload',run:regDocsDlg,beta:true,sub:'PDF Минюста: форма заполнится сама'}].filter(Boolean)}
+// Значок «Показатели не заполнены» у контрагента: в подсказке месяцы, красный — есть просроченные
+const cpKpiPill=c=>{const x=kMissOk()&&!c.archived&&kMissCnt().by[c.id];return x?` <span class="pill ${x.over?'red':'yellow'} sm" title="${esc(kMissTip(x))}" aria-label="${esc(kMissTip(x))}">${ic('gauge')}${x.ms.length}</span>`:''};
 function cpCols(){const fee=feat('fee')&&can('fee');return [
- {key:'name',label:'Название',type:'text',w:250,val:c=>c.name,html:c=>`<span class="strong">${esc(c.name)}</span>${!c.resp&&!c.archived?` <span class="pill orange sm">${ic('alert')}нет ответственного</span>`:''}`},
+ {key:'name',label:'Название',type:'text',w:250,val:c=>c.name,html:c=>`<span class="strong">${esc(c.name)}</span>${!c.resp&&!c.archived?` <span class="pill orange sm">${ic('alert')}нет ответственного</span>`:''}${cpKpiPill(c)}`},
  {key:'inn',label:'ИНН',type:'text',w:150,val:c=>c.inn,cls:'mono'},
  {key:'phone',label:'Телефон',type:'text',w:190,val:c=>fmtPhone(c.phone),html:c=>phoneHtml(c.phone),hide:true},
  {key:'form',label:'Форма',type:'enum',w:90,val:c=>c.form,hide:true},
@@ -29,6 +31,7 @@ function cpCols(){const fee=feat('fee')&&can('fee');return [
  {key:'head',label:'Руководитель',type:'text',w:190,val:c=>c.head||'',hide:true},
  {key:'contact',label:'Контактное лицо',type:'text',w:190,val:c=>c.contact||'',hide:true},
  {key:'nrep',label:'Видов отчётов',type:'int',w:112,num:true,val:c=>c.assign.filter(a=>!a.to).length,hide:true},
+ ...(kMissOk()?[{key:'kpin',label:'Не заполнены показатели',type:'enum',w:180,hide:true,val:c=>kMissCnt().by[c.id]?'Да':'Нет'}]:[]),
  {key:'over',label:'Просрочено',type:'int',w:110,num:true,val:c=>c.overdue,html:c=>c.overdue?`<span class="pill red sm">${ic('alert')}${c.overdue}</span>`:'<span class="faint">0</span>'},
  ...(feat('taxpay')&&can('money')?[{key:'free',label:'Свободный остаток',type:'money',w:140,num:true,val:c=>c.free,hide:true}]:[]),
  ...(fee?[{key:'fee',label:'Стоимость обслуживания',type:'money',w:185,num:true,hide:true,val:c=>curTariff(c)?curTariff(c).amount:null,html:c=>{const t=curTariff(c);return t?fmtM(t.amount)+` <span class="faint">/ ${t.per==='Y'?'год':'мес'}</span>`:'<span class="faint">—</span>'}},
@@ -61,6 +64,7 @@ function renderCps(body,tab,fresh){
   const all=visCps(true).filter(c=>!c.archived);
   const noResp=all.filter(c=>!c.resp).length,withOver=all.filter(c=>c.overdue>0).length,deb=all.filter(c=>c.feeDebt>0);
   const gid='cps-'+tab;
+  const kM=kMissOk()?kMissCnt():null,nKpi=kM?all.filter(c=>kM.by[c.id]).length:0;
   const vAll=visCps(true),nPau=all.filter(c=>c.paused).length,nOne=all.filter(c=>c.kind==='oneoff').length,nArc=vAll.filter(c=>c.archived).length,nNoGk=all.filter(c=>!c.gked).length,nSfq=all.filter(c=>{const x=sfState(c);return x&&x.ask}).length;
   body.innerHTML=(tab==='archive'?'':`<div class="plates">
     ${plate({id:'all',icon:'building',color:'blue',label:'На обслуживании',value:all.length,sub:seeAll('cps')?'вся организация':'закреплены за вами'})}
@@ -69,13 +73,14 @@ function renderCps(body,tab,fresh){
     ${feat('fee')&&can('fee')?plate({id:'deb',icon:'coins',color:deb.length?'red':'green',label:'Должники',value:deb.length,sub:deb.length?som(deb.reduce((a,c)=>a+c.feeDebt,0)):'долгов нет',on:tab==='debtors'}):''}
     ${plate({id:'nogk',icon:'alert',color:nNoGk?'yellow':'green',label:'Без ГКЭД',value:nNoGk,sub:nNoGk?'укажите вид деятельности':'у всех указан',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.gkno)})}
     ${plate({id:'sfq',icon:'shield',color:nSfq?'yellow':'green',label:'Тариф под вопросом',value:nSfq,sub:nSfq?'Соцфонд: не определён или выбран вопреки условиям':'у всех определён',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.sfq)})}
+    ${kM?plate({id:'kpin',icon:'gauge',color:nKpi?(all.some(c=>kM.by[c.id]&&kM.by[c.id].over)?'red':'yellow'):'green',label:'Не заполнены показатели',value:nKpi,sub:nKpi?'за текущий и прошлые месяцы':'всё внесено',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.kpin)}):''}
     ${plate({id:'pau',icon:'pause',color:'yellow',label:'Приостановлены',value:nPau,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('Приостановлен'))})}
     ${plate({id:'one',icon:'briefcase',color:'purple',label:'Разовые',value:nOne,on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.kind)})}
     ${plate({id:'arc',icon:'archive',color:'gray',label:'В архиве',value:nArc,sub:'показать в списке',on:!!(GS[gid]&&GS[gid].filters&&GS[gid].filters.svc&&GS[gid].filters.svc.vals.includes('В архиве'))})}
   </div>`)+`<div id="cg"></div>`;
   const pl=body.querySelector('.plates');if(pl)pl.onclick=e=>{const b=e.target.closest('[data-plate]');if(!b)return;const id=b.dataset.plate;const g=GS[gid];
     if(id==='deb'){go('cps','debtors');return}
-    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='nogk')g.filters.gkno={type:'enum',vals:['Нет']};if(id==='sfq')g.filters.sfq={type:'enum',vals:['Да']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
+    if(!g)return;g.filters={};if(id==='noresp')g.filters.resp={type:'enum',vals:['']};if(id==='nogk')g.filters.gkno={type:'enum',vals:['Нет']};if(id==='sfq')g.filters.sfq={type:'enum',vals:['Да']};if(id==='kpin')g.filters.kpin={type:'enum',vals:['Да']};if(id==='pau')g.filters.svc={type:'enum',vals:['Приостановлен']};if(id==='one')g.filters.kind={type:'enum',vals:['Разовое']};if(id==='arc')g.filters.svc={type:'enum',vals:['В архиве']};if(id==='over')g.filters.over={type:'num',from:1,to:null};g.page=0;renderPage()};
   const rows=()=>{const v=visCps(true);const g=GS[gid];const fs=g&&g.filters&&g.filters.svc;if(fs&&fs.vals&&fs.vals.includes('В архиве'))return v;const a=v.filter(c=>!c.archived);if(tab==='mine')return a.filter(c=>c.resp===S.me);if(tab==='debtors')return a.filter(c=>c.feeDebt>0);if(tab==='paused')return a.filter(c=>c.paused);if(tab==='oneoff')return a.filter(c=>c.kind==='oneoff');return a};
   grid($('#cg',body),{id:gid,cols:cpCols(),rows,title:'name',noun:['контрагент','контрагента','контрагентов'],rowClass:c=>!c.resp&&!c.archived?'warn':c.archived||c.paused?'muted':'',
     actions:cpActions,open:openCp,sort:{key:'name',dir:1},preset:S.preset,simulateLoad:fresh,
@@ -84,11 +89,11 @@ function renderCps(body,tab,fresh){
 }
 function respDlg(cs,done){
   openModal({form:true,render:()=>({title:cs.length>1?`Ответственный для ${cs.length} контрагентов`:'Сменить ответственного',sub:cs.length>1?'':esc(cs[0].name),
-    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} · ${ROLES.find(r=>r.id===e.role).name}`]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Новый ответственный получит все незавершённые отчёты (ещё не «Принят» или налог не оплачен) и открытые задачи этих контрагентов, а также остаток денег на их налоги. Завершённые отчёты остаются за тем, кто их сдал.</span></div>`,
+    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} · ${ROLES.find(r=>r.id===e.role).name}`]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Новый ответственный получит все незавершённые отчёты (ещё не сданы или налог не оплачен) и открытые задачи этих контрагентов, а также остаток денег на их налоги. Завершённые отчёты остаются за тем, кто их сдал.</span></div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="rs-ok">Назначить</button>',
     mount(el,m){$('#rs-ok',el).onclick=()=>{const to=val(el,'rs-e');cs.forEach(c=>transferCp(c,to));m.close();done&&done();refreshAll();toast(cs.length>1?`Ответственный назначен: ${cs.length} контрагентов`:'Ответственный изменён','user')}}})});
 }
-// Незавершённый отчёт — ещё не «Принят» или налог по нему не оплачен: при передаче контрагента переходит к новому ответственному
+// Незавершённый отчёт — ещё не «Сдан» или налог по нему не оплачен: при передаче контрагента переходит к новому ответственному
 const repUnfinished=r=>!r.superseded&&r.status!=='Не требуется'&&(r.status!=='Сдан'||(feat('taxpay')&&!!tR(r).sum&&r.sum>0&&r.paid<r.sum));
 function transferCp(c,to){const from=c.resp;if(from===to)return;c.resp=to;
   REPORTS.filter(r=>r.cp===c.id&&repUnfinished(r)&&(r.resp===from||!r.resp)).forEach(r=>r.resp=to);
