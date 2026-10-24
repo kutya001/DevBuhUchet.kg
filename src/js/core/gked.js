@@ -92,8 +92,6 @@ function gkCheck(c,sel){const codes=cpCodes(c);const out={block:[],regime:[],rwa
   const regRule=t=>t.kind==='regime'&&(t.regimes||[]).some(n=>regsOf(c).includes(n)&&gkRegOf(n)&&!gkEmpty(gkRegOf(n).gked));
   const ids=sel?[...sel]:(c.assign||[]).filter(a=>!a.to).map(a=>a.t);ids.forEach(id=>{const t=T[id];if(t&&t.gked&&t.gked.hint||t&&regRule(t))return;const f=t&&gkFit(t.gked,codes,c);if(f&&!f.length)out.types.push(t.short)});
   return out}
-// Ставка ЕН из каталога видов, которая соответствует основному ГКЭД (если такая есть в списке ставок вида)
-function gkEnRate(c,t){const m=c&&c.gked&&gkEnRow(c.gked,c);const r=m&&(String(m.rate).match(/\d+(,\d+)? %/)||[])[0];return r&&t&&t.rates&&t.rates.includes(r)?r:null}
 // Excel: «47, 56.10; кроме 47.26» ↔ {in, ex}; «все; кроме …» — только исключения; пусто — без ограничения
 function gkRuleIn(v){const s=String(v||'').trim();if(!s||norm(s)==='все')return {in:[],ex:[]};const[a,b]=s.split(/;\s*кроме\s*/i);const A=norm(a).trim()==='все'?{v:[]}:gkParse(a),B=gkParse(b||'');
   if(A.err||B.err)return {err:'«Виды деятельности (ГКЭД)»: '+(A.err||B.err)};return {in:A.v,ex:B.v}}

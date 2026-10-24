@@ -20,11 +20,10 @@ const pkBens=cx=>(cx.ben||[]).map(benByName).filter(Boolean);
 const pkOn=t=>!!(ORG.types[t.id]&&ORG.types[t.id].on)&&t.active!==false;
 const pkWho=(t,cx)=>!t.who||t.who==='all'||!cx.form||formEnd(cx)===t.who;
 const whoText=w=>w==='org'?'только организации':w==='ip'?'только ИП':'организации и ИП';
-// Ставка ЕН контрагента: выбранная в назначении, иначе подобранная по основному ГКЭД (ТЗ «Ставка единого налога по ГКЭД»)
-function pkEn(cx){if(cx.enCode)return {code:cx.enCode,rate:''};const a=(cx.assign||[]).find(a=>!a.to&&['enq','enm'].includes(a.t)&&a.rate);if(a)return {code:'',rate:a.rate};
-  const row=cx.gked&&typeof gkEnRow==='function'?gkEnRow(cx.gked,cx):null;return row?{code:row.code,rate:''}:{code:'',rate:''}}
-function pkEnNot(t,cx){if(!(t.enRatesNot||[]).length||!regsOf(cx).includes('Единый налог'))return false;const e=pkEn(cx);
-  if(e.code)return t.enRatesNot.includes(e.code);return !!e.rate&&EN_TABLE.some(x=>t.enRatesNot.includes(x.code)&&String(x.rate).trim()===e.rate)}
+// Строки ЕН контрагента (коды ЕНС): выбранные в назначении, иначе подобранные по ГКЭД и статусам (ТЗ «Ставка единого налога по ГКЭД»)
+function pkEn(cx){if(cx.enCode)return [cx.enCode];const a=(cx.assign||[]).find(a=>!a.to&&isEnT(a.t)&&(a.en||[]).length);return a?a.en.map(e=>e.code):enAuto(cx).map(e=>e.code)}
+// «Не для ставок ЕН»: вид не нужен, если все строки ЕНС контрагента из списка; добавочная строка (ЕНС-16) не считается
+function pkEnNot(t,cx){if(!(t.enRatesNot||[]).length||!regsOf(cx).includes('Единый налог'))return false;const cs=pkEn(cx).filter(c=>!(enRow(c)||{}).addTo);return !!cs.length&&cs.every(c=>t.enRatesNot.includes(c))}
 // Причина «Подходит по ГКЭД 94»: код или начало кода из перечня вида, под который попал ГКЭД контрагента
 function pkGkCode(t,cx){const r=gkFor(t.gked,cx);if(gkEmpty(r)||!(r.in||[]).length)return '';const f=gkFit(t.gked,cpCodes(cx),cx);if(!f||!f.length)return '';return r.in.find(x=>gkHit(f[0],x))||f[0]}
 // Возвращает rec: {id: {grp, pre, why}} — «Рекомендуемые»; no: {id: [статусы]} — не нужен по статусу; off: {id: причина} — нельзя назначить;
@@ -64,7 +63,7 @@ function pkCtxLine(cx){const bs=pkBens(cx);const parts=[cx.regime?`Режим: $
   return `<div class="pk-ctx">${parts.join('<span class="faint"> · </span>')}</div>${cx.regime?'':`<div class="hint">Укажите режим, чтобы увидеть обязательные отчёты</div>`}`}
 
 /* ── Описание вида отчёта ── */
-function pkDescHtml(t,cx,o){const en=['enq','enm'].includes(t.id)?gkEnRate(cx,t):null;const ab=DICT.benefits.items.filter(b=>(b.adds||[]).includes(t.id)),nb=DICT.benefits.items.filter(b=>(b.removes||[]).includes(t.id));
+function pkDescHtml(t,cx,o){const en=isEnT(t)&&(cx.gked||regsOf(cx).includes('Единый налог'))?aRateTxt({t:t.id,en:enAuto(cx)},t):'';const ab=DICT.benefits.items.filter(b=>(b.adds||[]).includes(t.id)),nb=DICT.benefits.items.filter(b=>(b.removes||[]).includes(t.id));
   const te=tOv(t,cx),ov=ovText(t,cx);
   const kv=[['Орган',esc(t.organ)],['Код формы',t.code?`<span class="mono">${esc(t.code)}</span>`:'—'],t.index?['Индекс формы',`<span class="mono">${esc(t.index)}</span>`]:null,t.respondents?['Кто сдаёт',esc(t.respondents)]:null,
     ['Периодичность',t.oneOff?'разовый — создаётся через «Разовый отчёт» на каждое событие':perOwn(t)?'задаётся в назначении':PER_LABEL[t.per]],[t.act==='pay'?'Срок':'Срок сдачи',esc(ruleText(t))],t.act!=='sub'&&!t.oneOff?['Срок оплаты',esc(payRuleText(t))]:null,

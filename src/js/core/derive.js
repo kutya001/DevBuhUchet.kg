@@ -10,7 +10,7 @@ const fpAdv=f=>Math.max(0,Math.round((f.amount-fpAlloc(f).reduce((s,x)=>s+x.a,0)
 function feeAdvSplit(c,adv,paidOf){const use={};feeMonths(c).forEach(m=>{const need=feeCharge(c,m)-paidOf(m);if(adv>0.001&&need>0){const x=Math.min(need,adv);use[m]=x;adv-=x}});return {use,left:Math.round(adv*100)/100}}
 const feeGot=(c,m)=>(c.feePaid[m]||0)+((c.feeAdvUse||{})[m]||0);
 function derive(){
-  kpiIndex();
+  kpiIndex();enNorm();
   CPS.forEach(c=>{c.overdue=0;c.avail=0;c.free=0;c.status=cpStatus(c);c.paused=c.status==='Приостановлен'});
   const recv={};OPS.forEach(o=>{if(o.kind==='in')(o.alloc||[]).forEach(x=>{recv[x.r]=(recv[x.r]||0)+x.a})});
   const fadv={};FEEPAYS.forEach(f=>{if(f.del)return;const a=fpAdv(f);if(a>0)fadv[f.cp]=(fadv[f.cp]||0)+a});

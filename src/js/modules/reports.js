@@ -15,14 +15,15 @@ function moneyHtml(r){const rb=canRecv(r)&&(r.recv||0)<r.sum?` <button class="bt
 function moneyHtml0(r){if(!r.money)return '<span class="faint">—</span>';if(r.money.s==='paid')return `<span class="pill faint">${ic('check')}Оплачено</span>`;if(r.money.s==='ok')return `<span class="pill green">${ic('ok')}Достаточно</span>`;return `<span class="pill red" title="Не хватает ${som(r.money.n)}">${ic('alert')}Недостача ${fmtM(r.money.n,false)}</span>`}
 function dueHtml(r){return `${r.overdue?`<span class="red" title="Просрочен">${ic('alert','sm')}</span> `:''}<span class="${r.overdue?'red strong':''}">${fmtD(r.due)}</span>${r.due!==r.dueBase?` <span class="tag" title="Перенесён с ${fmtD(r.dueBase)}: ${esc(holidayName(r.dueBase)||'выходной день')}">перенос</span>`:''}`}
 function daysHtml(r){if(isDone(r))return '<span class="faint">—</span>';const d=diffDays(r.due,TODAY);if(d<0)return `<span class="pill red sm">${d}</span>`;if(d===0)return '<span class="pill yellow sm">сегодня</span>';return d<=3?`<span class="yellow strong">${d}</span>`:String(d)}
-const rateOf=r=>{const a=CPM[r.cp].assign.find(a=>a.t===r.t);return a&&a.rate||''};
+// Ставка отчёта из назначения: у ЕН — строки ЕНС («ЕНС-04 · 4 % безнал + 6 % нал»; коротко, в столбце — «ЕНС-04 · 4 / 6 %»)
+const rateOf=(r,short)=>aRateTxt(assignOfT(CPM[r.cp],r.t),T[r.t],short,r.pkey);
 function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'cp',label:'Контрагент',type:'text',w:220,val:r=>CPM[r.cp].name,html:r=>`<span class="strong">${esc(CPM[r.cp].name)}</span>`},
  {key:'inn',label:'ИНН',type:'text',w:150,val:r=>CPM[r.cp].inn,cls:'mono',hide:true},
  {key:'ugns',label:'УГНС',type:'enum',w:200,val:r=>ugnsLabel(CPM[r.cp].ugns),hide:true},
  {key:'type',label:'Вид отчёта',type:'enum',w:140,val:r=>T[r.t].short,html:r=>`<span title="${esc(T[r.t].name)}">${esc(T[r.t].short)}</span>${r.ver?` <span class="tag blue">уточн. ${r.ver}</span>`:''}${isMobile()?' '+actPill(actOf(r),1):''}`},
  {key:'act',label:'Что сделать',type:'enum',w:175,deskOnly:true,val:r=>ACT_L[actOf(r)],html:r=>actPill(actOf(r),1)},
- {key:'rate',label:'Ставка',type:'enum',w:90,val:r=>rateOf(r),hide:true},
+ {key:'rate',label:'Ставка',type:'enum',w:130,val:r=>rateOf(r,true),hide:true},
  {key:'organ',label:'Орган',type:'enum',w:110,val:r=>T[r.t].organ,hide:!!o.compact},
  {key:'period',label:'Период',type:'enum',w:112,val:r=>r.plabel,sortVal:r=>r.pkey},
  {key:'due',label:'Срок сдачи',type:'date',w:176,val:r=>r.due,html:dueHtml},

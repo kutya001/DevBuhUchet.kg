@@ -1,11 +1,29 @@
 'use strict';
 // Добавление и изменение контрагента
 /* ── Add counterparty ── */
-/* Ставка по виду: выбирается из ставок каталога, если их несколько */
+/* Ставка по виду: выбирается из ставок каталога, если их несколько; у ЕН — строки ЕНС, у налога с продаж — ещё и добавляемые строки ставок */
 const DEF_RATE=DB.ref.defaultRates;const defRate=t=>DEF_RATE[t.id]&&t.rates.includes(DEF_RATE[t.id])?DEF_RATE[t.id]:t.rates[0];
-function rateRows(chosen,rates,fixed){const ids=[...chosen].filter(id=>T[id].rates&&T[id].rates.length);if(!ids.length)return '';
-  return `<div class="tbl-wrap"><table class="mini"><thead><tr><th>Вид отчёта</th><th>Ставка</th>${fixed?'<th class="num">Повторяющаяся сумма, сом</th>':''}</tr></thead><tbody>${ids.map(id=>{const t=T[id];return `<tr><td><b>${esc(t.short)}</b> <span class="faint">${esc(t.name)}</span></td><td>${t.rates.length>1?sel('rt-'+id,t.rates,rates[id]||defRate(t),`data-rate="${id}" style="min-height:30px;padding:3px 8px;width:auto"`):esc(t.rates[0])}</td>${fixed?`<td class="num">${t.sum?`<input class="inp tnum" data-fix="${id}" value="${fixed[id]??''}" inputmode="decimal" placeholder="нет" style="max-width:120px;margin-left:auto;text-align:right;min-height:30px;padding:3px 8px" aria-label="Повторяющаяся сумма ${esc(t.short)}">`:'<span class="faint">—</span>'}</td>`:''}</tr>`}).join('')}</tbody></table></div>`}
-const bindRates=(el,rates,fixed)=>{$$('[data-rate]',el).forEach(s=>s.onchange=()=>rates[s.dataset.rate]=s.value);if(fixed)$$('[data-fix]',el).forEach(i=>i.oninput=()=>{const n=parseNum(i.value);if(isNaN(n))delete fixed[i.dataset.fix];else fixed[i.dataset.fix]=n})};
+// rates: {id: ставка} у обычных видов, {id: [{code, v}]} у ЕН, {'add:id': [k]} — добавленные строки налога с продаж; cx — контрагент (ГКЭД, статусы, УГНС) для подбора строк ЕНС
+function rateRows(chosen,rates,fixed,cx){const ids=[...chosen].filter(id=>T[id].rates&&T[id].rates.length);if(!ids.length)return '';
+  return `<div class="tbl-wrap"><table class="mini rt-tbl"><thead><tr><th>Вид отчёта</th><th>Ставка</th>${fixed?'<th class="num">Повторяющаяся сумма, сом</th>':''}</tr></thead><tbody>${ids.map(id=>{const t=T[id];return `<tr><td><b>${esc(t.short)}</b> <span class="faint">${esc(t.name)}</span></td><td data-l="Ставка">${isEnT(t)?enEdHtml(id,rates,cx):`${t.rates.length>1?sel('rt-'+id,t.rates,rates[id]||defRate(t),`data-rate="${id}" style="min-height:30px;padding:3px 8px;width:auto"`):esc(t.rates[0])}${(t.rateAdd||[]).length?addEdHtml(id,t,rates):''}`}</td>${fixed?`<td class="num" data-l="Повторяющаяся сумма, сом">${t.sum?`<input class="inp tnum" data-fix="${id}" value="${fixed[id]??''}" inputmode="decimal" placeholder="нет" style="max-width:120px;margin-left:auto;text-align:right;min-height:30px;padding:3px 8px" aria-label="Повторяющаяся сумма ${esc(t.short)}">`:'<span class="faint">—</span>'}</td>`:''}</tr>`}).join('')}</tbody></table></div>`}
+// Строки ЕНС: предлагаются строки основного и дополнительных ГКЭД, остальные — через «Показать все ставки»; у общепита — вариант по месту
+function enEdHtml(id,rates,cx){const rows=rates[id]||(rates[id]=enAuto(cx));const sug=enSuggest(cx,rows);const ws=enWarn(rows);const all=EN_TABLE.filter(x=>x.active!==false).map(x=>x.code);
+  const opt=c=>{const y=enRow(c);return y?[c,`${c} · ${rtTxt(y)} — ${y.activity}`]:null};
+  return `<div class="en-ed">${rows.map((e,i)=>{const vs=rtVars(enRow(e.code));const cs=e.all?[...new Set([...all,e.code])]:[...new Set([...sug,e.code])];
+    return `<div class="en-row">${sel(`en-${id}-${i}`,[...cs.map(opt).filter(Boolean),...(e.all?[]:[['__all','Показать все ставки…']])],e.code,`data-enc="${id}:${i}" aria-label="Ставка единого налога, строка ${i+1}"`)}${vs.length>1?sel(`env-${id}-${i}`,vs.map((o,j)=>[String(j),`${o.n} — ${o.pct}`]),String(e.v||0),`data-env="${id}:${i}" aria-label="Вариант ставки ${esc(e.code)}"`):''}${rows.length>1?`<button type="button" class="icon-btn sm" data-endel="${id}:${i}" title="Убрать строку" aria-label="Убрать строку ${esc(e.code)}">${ic('x','sm')}</button>`:''}</div>`}).join('')}
+    <button type="button" class="linkbtn" data-enadd="${id}">${ic('plus','sm')}Добавить строку ставки</button>${ws.length?`<div class="en-warn">${ic('alert','sm')}<span>${ws.map(esc).join('<br>')}</span></div>`:''}</div>`}
+// Налог с продаж: к основной ставке — строки «1 % безнал + 2 % нал» (покупатели на патенте, ЕН 0,5 % и 0 %, ПКИ, зона торговли) и «2 %» (обезличенный покупатель)
+function addEdHtml(id,t,rates){const on=rates['add:'+id]||[];return `<div class="en-add">${t.rateAdd.map(x=>`<label class="row"><input type="checkbox" data-radd="${id}:${x.k}" ${on.includes(x.k)?'checked':''}><span>+ ${esc(rtTxt(x))} — ${esc(x.name)}${x.art?` <span class="faint">(${esc(x.art)})</span>`:''}</span></label>`).join('')}</div>`}
+// o: {cx, redraw, man(id) — пользователь сам поменял ставку}
+const bindRates=(el,rates,fixed,o={})=>{const man=id=>o.man&&o.man(id);
+  $$('[data-rate]',el).forEach(s=>s.onchange=()=>{rates[s.dataset.rate]=s.value;man(s.dataset.rate)});
+  const ed=(k,f)=>{const[id,i]=k.split(':');const rows=rates[id]=(rates[id]||[]).map(e=>Object.assign({},e));f(rows,+i);man(id);o.redraw&&o.redraw()};
+  $$('[data-enc]',el).forEach(s=>s.onchange=()=>ed(s.dataset.enc,(rows,i)=>{if(s.value==='__all')rows[i].all=true;else rows[i]=Object.assign(enItem(enRow(s.value),o.cx),rows[i].all?{all:true}:{})}));
+  $$('[data-env]',el).forEach(s=>s.onchange=()=>ed(s.dataset.env,(rows,i)=>{rows[i].v=+s.value}));
+  $$('[data-endel]',el).forEach(b=>b.onclick=()=>ed(b.dataset.endel,(rows,i)=>rows.splice(i,1)));
+  $$('[data-enadd]',el).forEach(b=>b.onclick=()=>ed(b.dataset.enadd+':0',rows=>{const c=enSuggest(o.cx,rows).find(x=>!rows.some(e=>e.code===x));rows.push(c?enItem(enRow(c),o.cx):{code:'ЕНС-04',all:true})}));
+  $$('[data-radd]',el).forEach(x=>x.onchange=()=>{const[id,k]=x.dataset.radd.split(':');const a=new Set(rates['add:'+id]||[]);x.checked?a.add(k):a.delete(k);rates['add:'+id]=[...a];man(id)});
+  if(fixed)$$('[data-fix]',el).forEach(i=>i.oninput=()=>{const n=parseNum(i.value);if(isNaN(n))delete fixed[i.dataset.fix];else fixed[i.dataset.fix]=n})};
 // Форма делится на разделы «Реквизиты», «Режим и статусы», «Отчёты и обслуживание»: на ПК — все три на одном экране с оглавлением,
 // на телефоне — три шага с «Назад» и «Далее» (ТЗ «Подбор отчётов и налогов, льгот и статусов»)
 const CF_SECS=['Реквизиты','Режим и статусы','Отчёты и обслуживание'];
@@ -30,10 +48,11 @@ function addCpDlg(kind,pre){
   const st={regime:'Единый налог',regime2:'',ben:[],benD:{},bases:[],size:'small',form:'ОсОО',kind:typeof kind==='string'?kind:'regular',per:'M',sel:new Set(),picked:false,forced:{},rates:{},rateMan:{},gked:'',gked2:[],reg:{},regOpen:!!pre,ugAdd:[],...sfInit(null)};
   if(pre&&pre.res){rdPrefill(st,pre);st.ugAdd=ugAuto(st,st.d.ugns);if(st.ugAdd.length)setTimeout(()=>toast(ugMsg(st.ugAdd)),600)}
   openModal({form:true,size:'mid',state:{step:1},render:m=>{const reg=st.kind==='regular';
-    const fake={regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2,sf:st.sf,kind:st.kind,assign:[...st.sel].filter(id=>['enq','enm'].includes(id)).map(id=>({t:id,rate:st.rates[id]||defRate(T[id])}))};
-    if(reg&&!st.picked)st.sel=new Set(pkAuto(Object.assign({},fake,{assign:[]})));
-    // Ставка ЕН подставляется по ГКЭД и статусам, пока пользователь не выбрал её сам
-    ['enq','enm'].forEach(id=>{if(st.sel.has(id)&&!st.rateMan[id]){const r=gkEnRate(fake,T[id]);if(r)st.rates[id]=r}});
+    const fake={regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2,sf:st.sf,kind:st.kind,ugns:(st.d||{}).ugns||'',reg:st.reg,assign:[]};
+    if(reg&&!st.picked)st.sel=new Set(pkAuto(fake));
+    // Ставка ЕН подставляется по ГКЭД, статусам и месту строками ЕНС целиком, пока пользователь не выбрал её сам
+    EN_IDS.forEach(id=>{if(st.sel.has(id)&&!st.rateMan[id])st.rates[id]=enAuto(fake)});
+    fake.assign=[...st.sel].filter(isEnT).map(id=>({t:id,en:enClean(st.rates[id])}));
     const d=st.d||{};const feeOn=feat('fee')&&can('fee')&&reg;const mob=isMobile();const step=m.state.step;
     const s1=`<div class="form">
     <div class="fld full"><label>Тип обслуживания</label><div class="seg" role="group" aria-label="Тип обслуживания" id="nc-kind" style="align-self:flex-start;width:max-content">${[['regular','Постоянное обслуживание'],['oneoff','Разовое']].map(([k,l])=>`<button type="button" data-k="${k}" class="${st.kind===k?'on':''}">${l}</button>`).join('')}</div><div class="hint">${reg?'Сдаёт отчёты, платит за обслуживание по тарифу.':'Отчётов и тарифа нет: только разовые услуги и проекты. Потом можно перевести в постоянное.'}</div></div>
@@ -57,7 +76,7 @@ function addCpDlg(kind,pre){
     const s3=`<div class="form">
     ${reg?`<div class="fld full" data-f="nc-types"><label class="req">Сдаёт отчёты</label>${cfTypes('nc',fake,st.sel,!st.picked&&st.sel.size>0)}<div class="err" hidden></div></div>
     <div class="fld full">${pkNotNeededNote(fake,[...st.sel],'data-nnrm')}${st.picked?cfMissing(fake,st.sel,'data-addmiss'):''}${gkFitHint(fake,st.sel)}</div>`:''}
-    ${reg&&st.sel.size?`<div class="fld full"><label>Ставки налога</label>${rateRows(st.sel,st.rates)||'<span class="faint">У выбранных видов ставка не выбирается</span>'}<div class="hint">Ставки ведёт администратор платформы в каталоге видов отчётов. Повторяющуюся сумму (например, патент) можно задать позже в карточке, кнопка «Ставки».</div></div>`:''}
+    ${reg&&st.sel.size?`<div class="fld full"><label>Ставки налога</label>${rateRows(st.sel,st.rates,null,fake)||'<span class="faint">У выбранных видов ставка не выбирается</span>'}<div class="hint">Ставки ведёт администратор платформы: у видов отчётов — в каталоге, у единого налога — в справочнике «Ставки единого налога» (строки ЕНС подставлены по ГКЭД и статусам). Повторяющуюся сумму (например, патент) можно задать позже в карточке, кнопка «Ставки».</div></div>`:''}
     ${fld('Ответственный бухгалтер',sel('nc-resp',[['','— выберите —'],...EMP.filter(e=>e.active).map(e=>[e.id,e.short])],d.resp||(me().role==='acc'?S.me:'')),{req:true,id:'nc-resp'})}
     ${fld(reg?'Дата начала обслуживания':'Дата первого обращения',inp('nc-start',d.start||TODAY,'type="date"'),{id:'nc-start'})}
     ${feeOn?`${fld('Стоимость обслуживания, сом',`<div class="row" style="flex-wrap:nowrap">${inp('nc-fee',d.fee||'','inputmode="decimal" class="inp tnum"')}<div class="seg" role="group" aria-label="Периодичность оплаты" id="nc-per" style="flex-shrink:0;white-space:nowrap">${[['M','в месяц'],['Y','в год']].map(([k,l])=>`<button type="button" data-p="${k}" class="${st.per===k?'on':''}">${l}</button>`).join('')}</div></div>`,{req:true,id:'nc-fee',hint:st.per==='Y'?'Годовой тариф начисляется раз в год, в месяце начала обслуживания':''})}${st.per==='M'?fld('Первый неполный месяц',sel('nc-first',[['prorate','Пропорционально дням'],['full','Полный месяц'],['next','Со следующего месяца']],d.first||'prorate'),{id:'nc-first'}):'<div></div>'}`:reg&&feat('fee')?`<div class="note full" style="grid-column:1/-1">${ic('lock')}<span>Стоимость обслуживания вам не видна. Её внесёт владелец или сотрудник с правом «Плата за обслуживание».</span></div>`:''}
@@ -69,7 +88,7 @@ function addCpDlg(kind,pre){
       body:`${pre&&pre.res?rdHead(st,pre):pre?RD_BETA:''}${pre&&(pre.files||[]).length?`<div class="note">${ic('clip')}<span>После сохранения к контрагенту прикрепятся: ${pre.files.map(esc).join(', ')}</span></div>`:''}
       <div class="cf ${mob?'steps':''}">${cfToc(step,mob)}${cfSec(1,s1)}${cfSec(2,s2)}${cfSec(3,s3)}</div>`,
     foot:mob?`<button class="btn ghost" id="cf-back">${ic('left','sm')}Назад</button><button class="btn ghost cf-cancel" data-close>Отмена</button><div class="grow"></div><button class="btn cta" id="cf-next">Далее${ic('right','sm')}</button><button class="btn cta" id="nc-ok">Сохранить контрагента</button>`:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="nc-ok">Сохранить контрагента</button>',
-    mount(el){bindPhone(el,'nc-ph');bindRates(el,st.rates);$$('[data-rate]',el).forEach(x=>x.addEventListener('change',()=>st.rateMan[x.dataset.rate]=1));
+    mount(el){bindPhone(el,'nc-ph');bindRates(el,st.rates,null,{cx:fake,redraw:()=>{snap();m.draw()},man:id=>st.rateMan[id]=1});
       gkBind(el,'nc',st,()=>{snap();st.rateMan={};m.draw()});
       const snap=()=>{st.d={name:val(el,'nc-name'),inn:val(el,'nc-inn'),ph:readPhone(el,'nc-ph').ph,resp:val(el,'nc-resp'),start:val(el,'nc-start'),ugns:val(el,'nc-ugns'),fee:$('#nc-fee',el)?val(el,'nc-fee'):(st.d||{}).fee||'',first:$('#nc-first',el)?val(el,'nc-first'):'prorate',head:val(el,'nc-head'),contact:val(el,'nc-contact'),cno:val(el,'nc-cno'),cdate:val(el,'nc-cdate'),note:val(el,'nc-note'),needf:!!($('#nc-needf',el)&&$('#nc-needf',el).checked)};if($('#nc-rfull',el))st.reg=regRead(el,'nc')};
       // Проверки полей по разделам: [раздел, id поля, () => текст ошибки]
