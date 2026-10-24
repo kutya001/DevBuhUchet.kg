@@ -99,7 +99,8 @@ function compatible(t,cp){
   if(t.kind==='regime'&&rs.length&&!t.regimes.some(r=>rs.includes(r)))return `Не подходит к режиму «${rs.join(' + ')}»`;
   if(END_IDS.includes(t.id)){const nr=rs.find(r=>['Патент','Зона торговли','Налог на транзакцию'].includes(r));if(nr)return `ЕНД не сдают плательщики режима «${nr}» (ст. 106)`;
     if(cp.form==='Крестьянское (фермерское) хозяйство')return 'КФХ без юрлица ЕНД не сдаёт (ст. 106)';
-    const en=(cp.assign||[]).find(a=>!a.to&&['enq','enm'].includes(a.t)&&EN_ZERO.includes(a.rate));if(en)return `ЕНД не сдают плательщики единого налога по ставке ${en.rate} (ст. 106)`}
+    const en=(cp.assign||[]).find(a=>!a.to&&isEnT(a.t)&&(a.en||[]).length);const er=en?aRows(en).filter(e=>!e.x.addTo):[];
+    if(er.length&&er.every(e=>rtParts(e.x,e.v).every(p=>EN_ZERO.includes(p.pct))))return `ЕНД не сдают плательщики единого налога по ставке ${er.map(e=>`${e.code} · ${rtTxt(e.x,e.v)}`).join(', ')} (ст. 106)`}
   return '';
 }
 const benOf=cp=>(cp.ben||[]).map(n=>DICT.benefits.items.find(b=>b.name===n)).filter(Boolean);

@@ -1,6 +1,9 @@
 'use strict';
 // Карточка отчёта
 /* ── Report card ── */
+// Строки суммы по ставкам в карточке отчёта: ставка, выручка и налог
+function linesKv(r){const ls=(r.lines||[]).filter(l=>l.rev!=null||l.tax!=null);if(!ls.length)return '';
+  return `<div class="ln-kv"><span class="k">Строки по ставкам</span><span class="v">${ls.map(l=>`<span class="ln-row"><span>${esc(l.label)}</span><span class="tnum">${l.rev!=null?`выручка ${som(l.rev)} · `:''}налог <b>${som(l.tax||0)}</b></span></span>`).join('')}</span></div>`}
 function openReport(r){
   if(!r)return;
   openModal({size:'mid',live:true,render:m=>{
@@ -17,7 +20,7 @@ function openReport(r){
       ${t.payOnly?'':`<div><span class="k">Срок сдачи</span><span class="v ${r.overdue?'red strong':''}">${fmtD(r.due)}${r.due!==r.dueBase?`<div class="hint">перенесён с ${fmtD(r.dueBase)}: ${esc(holidayName(r.dueBase)||'выходной')}</div>`:''}</span></div>`}
       <div><span class="k">Ответственный</span><span class="v">${esc(empName(r.resp)||'—')}${can('assign')?` <button class="linkbtn" id="rc-resp" style="font-size:12px">сменить</button>`:''}</span></div>
       ${t.payOnly?'':`<div><span class="k">Дата сдачи</span><span class="v">${r.subDate?fmtD(r.subDate):'—'}${r.subDate&&r.subBy&&EMP.some(e=>e.id===r.subBy)?` <span class="faint">· отметил ${esc(empName(r.subBy))}</span>`:''}</span></div>`}
-      ${t.sum?`<div><span class="k">Сумма к уплате</span><span class="v strong tnum">${r.sum==null?'<span class="faint">не указана</span>':som(r.sum)}${r.auto?` <span class="tag">${ic('repeat','sm')} повторяющаяся</span>`:''}</span></div>
+      ${t.sum?`<div><span class="k">Сумма к уплате</span><span class="v strong tnum">${r.sum==null?'<span class="faint">не указана</span>':som(r.sum)}${r.auto?` <span class="tag">${ic('repeat','sm')} повторяющаяся</span>`:''}</span></div>${linesKv(r)}
       ${feat('taxpay')&&r.sum>0?`<div><span class="k">Получено под этот отчёт</span><span class="v tnum">${som(r.recv||0)} <span class="faint">· ${r.recv>=r.sum?'получены':r.recv>0?'получены частично':'ожидаем'}</span></span></div>`:''}
       ${feat('taxpay')?`<div><span class="k">Оплачено в бюджет</span><span class="v tnum">${som(r.paid)}${r.sum!=null&&r.paid>r.sum?` <span class="tag yellow">+${fmtM(r.paid-r.sum)} пеня/переплата</span>`:''}</span></div>
       <div><span class="k">Срок оплаты</span><span class="v ${r.payOverdue?'red strong':''}">${fmtD(r.payDue)}</span></div>

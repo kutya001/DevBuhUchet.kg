@@ -162,7 +162,15 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       const ks=db.ref.kbSteps||[],nk=(r.kbSteps||[]).find(x=>x.id==='cppage');if(nk&&!ks.some(x=>x.id==='cppage')){const a=ks.find(x=>x.id==='balance');ks.forEach(x=>{if(a&&x.ord>a.ord)x.ord++});ks.splice(a?ks.indexOf(a)+1:ks.length,0,Object.assign(structuredClone(nk),{ord:a?a.ord+1:nk.ord}))}
       const sh=db.ref.kbShows||[],ns=(r.kbShows||[]).find(x=>x.id==='sh-cppage');if(ns&&!sh.some(x=>x.id==='sh-cppage')){const i=sh.findIndex(x=>x.step==='balance');sh.splice(i<0?sh.length:i+1,0,structuredClone(ns))}
       const ob=db.ref.onboarding&&db.ref.onboarding.base;if(ob&&ob.cppage==null)ob.cppage=false;
-      if(db.meta.mode==='demo'){const dc=DBSRC.demo.db.contractors||[];(db.contractors||[]).forEach(c=>{const f=dc.find(x=>x.id===c.id&&x.inn===c.inn);if(f&&f.page&&!c.page){c.page=structuredClone(f.page);(DBSRC.demo.db.history||[]).forEach(h=>{if(h.ent==='cp'&&h.id===c.id&&/^(Страница контрагента|Ссылка на страницу)/.test(h.what))db.history.push(structuredClone(h))})}})}}}
+      if(db.meta.mode==='demo'){const dc=DBSRC.demo.db.contractors||[];(db.contractors||[]).forEach(c=>{const f=dc.find(x=>x.id===c.id&&x.inn===c.inn);if(f&&f.page&&!c.page){c.page=structuredClone(f.page);(DBSRC.demo.db.history||[]).forEach(h=>{if(h.ent==='cp'&&h.id===c.id&&/^(Страница контрагента|Ссылка на страницу)/.test(h.what))db.history.push(structuredClone(h))})}})}}
+    // ЕН — строки ЕНС в назначении (пункт 3): у ЕНС-16 — к каким ставкам она добавляется, у налога с продаж — добавляемые строки ставок, подсказка «Ставки налога» — из refDB.json;
+    // процент в старых назначениях ЕН заменяется строкой ЕНС при первом пересчёте (enNorm); в демо-данных строки ЕНС и строки сумм — как в demoDB.json
+    {(db.ref.enRates||[]).forEach(x=>{const f=(r.enRates||[]).find(y=>y.code===x.code);if(f&&f.addTo&&!x.addTo)x.addTo=[...f.addTo]});
+      (db.ref.reportTypes||[]).forEach(x=>{const f=(r.reportTypes||[]).find(y=>y.id===x.id);if(f&&f.rateAdd&&!x.rateAdd)x.rateAdd=structuredClone(f.rateAdd)});
+      const u=db.ref.kbUi,ru=r.kbUi;if(u&&ru&&u.fields&&ru.fields){const f=u.fields['Ставки налога'];if(f&&f.x==='Ставки берутся из каталога платформы; повторяющуюся сумму можно задать, чтобы она подставлялась в отчёт сама.'&&ru.fields['Ставки налога'])u.fields['Ставки налога']=structuredClone(ru.fields['Ставки налога'])}
+      if(db.meta.mode==='demo'){const dc=DBSRC.demo.db.contractors||[],dr=DBSRC.demo.db.reports||[];
+        (db.contractors||[]).forEach(c=>{const f=dc.find(x=>x.id===c.id&&x.inn===c.inn);if(f)(c.assign||[]).forEach(a=>{if(!['enq','enm'].includes(a.t)||a.en)return;const fa=(f.assign||[]).find(y=>y.t===a.t&&y.from===a.from);if(fa&&fa.en){a.en=structuredClone(fa.en);delete a.rate}})});
+        (db.reports||[]).forEach(x=>{const f=!x.lines&&dr.find(y=>y.id===x.id&&y.cp===x.cp&&y.t===x.t&&y.pkey===x.pkey);if(f&&f.lines&&f.sum===x.sum)x.lines=structuredClone(f.lines)})}}}
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
