@@ -102,6 +102,35 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   if(!db.meta.v55){db.meta.v55=1;const V54={'ЛЬГ-02':'2026-10-23 13:05','РЕЖ-02':'2026-10-23 13:05','РЕЖ-05':'2026-10-23 13:05','НАЛ-14':'2026-10-23 13:05','ПЛТ-03':'2026-10-23 13:05',pat:'2026-10-23 13:05',pvtd:'2025-01-15 10:35',patw:'2025-01-15 10:24'};
     const put=(a,b,key)=>{if(a&&b)a.forEach((x,i)=>{const k=key(x),f=V54[k]&&b.find(y=>key(y)===k);if(f&&(x._ua||'')===V54[k])a[i]=structuredClone(f)})};
     put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);['regimes','benefits'].forEach(k=>{const d=db.ref.dictionaries&&db.ref.dictionaries[k];if(d&&r.dictionaries&&r.dictionaries[k])put(d.items,r.dictionaries[k].items,x=>x.code)})}
+  // Подтверждение сдачи вместо «Принят» (v56, решение заказчика 24.10.2026): у данных, сохранённых в браузере раньше, отчёты «Принят» становятся «Сдан» с отметкой «Подтверждено» —
+  // дата подтверждения — когда отметили «Принят» (или дата принятия), подтвердил — кто отметил «Принят», файлы остаются; статусы, право «Подтверждать сдачу отчётов» у главного бухгалтера,
+  // шаблоны Telegram, шаг урока, облачко показа, подсказки и статьи — из refDB.json, если администратор их не менял; записи «Налогов» 24.10 — если их не меняли после v55
+  if(!db.meta.v56){db.meta.v56=1;const hs={};(db.history||[]).forEach(h=>{if(h.ent==='r')(hs[h.id]=hs[h.id]||[]).push(h)});
+    (db.reports||[]).forEach(x=>{const h=(hs[x.id]||[]).slice().sort((a,b)=>a.at<b.at?-1:1);const sb=h.filter(e=>/→ Сдан/.test(e.what)).pop();
+      if(x.status==='Принят'){const a=h.filter(e=>/→ Принят/.test(e.what)).pop();Object.assign(x,{status:'Сдан',confAt:a?a.at:(x.accDate||x.subDate||x.due)+' 12:00',confBy:a?a.who:x._ub||null,confNote:''})}
+      if(sb&&!x.subBy&&['Сдан','Требует исправления'].includes(x.status))Object.assign(x,{subBy:sb.who,subAt:sb.at});delete x.accDate});
+    (db.history||[]).forEach(h=>{if(h.ent==='r'&&/^Статус: Сдан → Принят/.test(h.what)){const f=h.what.split(', подтверждение: ')[1];h.what='Сдача подтверждена (раньше — статус «Принят»)'+(f?', файлы: '+f:'')}});
+    const sr=db.ref.statuses&&db.ref.statuses.report,fr=r.statuses&&r.statuses.report;if(sr&&fr){const o=Object.assign({},sr);delete o['Принят'];if(String(o['Сдан'])==='yellow,hourglass')o['Сдан']=fr['Сдан'];
+      const n={};Object.keys(fr).forEach(k=>{n[k]=o[k]||structuredClone(fr[k])});Object.keys(o).forEach(k=>{if(!n[k])n[k]=o[k]});db.ref.statuses.report=n}
+    if(db.ref.statusNames)delete db.ref.statusNames['Принят'];
+    const sn=db.ref.statusNotes;if(sn&&sn['Принят']!=null){delete sn['Принят'];['Сдан','Требует исправления'].forEach(k=>{if(/ждёт подтверждения$|^орган вернул/.test(sn[k]||''))sn[k]=r.statusNotes[k]});Object.entries(r.statusNotes||{}).forEach(([k,v])=>{if(sn[k]==null)sn[k]=v})}
+    const ps=db.ref.permissions||[],fp=(r.permissions||[]).find(x=>x.id==='repConfirm');if(fp&&!ps.some(x=>x.id==='repConfirm')){const i=ps.findIndex(x=>x.id==='changeSum');ps.splice(i<0?ps.length:i+1,0,structuredClone(fp))}
+    {const a=ps.find(x=>x.id==='changeStatus'),b=(r.permissions||[]).find(x=>x.id==='changeStatus');if(a&&b&&/«Принят»/.test(a.desc||''))a.desc=b.desc}
+    const addP=x=>{if(!x.perms.includes('repConfirm')){const i=x.perms.indexOf('changeSum');x.perms.splice(i<0?x.perms.length:i+1,0,'repConfirm')}};
+    (db.roles||[]).forEach(x=>{if(x.id==='chief'||x.id==='owner')addP(x)});(db.ref.roleTemplates||[]).forEach(x=>{if(x.id==='chief')addP(x)});
+    ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k])['tgConfWait','tgFix'].forEach(n=>{if(a[n]==null&&r[k][n]!=null)a[n]=r[k][n]})});
+    {const ks=db.ref.kbSteps||[],rk=r.kbSteps||[];const a=ks.find(x=>x.id==='accept'),b=rk.find(x=>x.id==='accept');if(a&&b&&/«Принят»/.test(a.t||''))['t','w','perm'].forEach(k=>a[k]=b[k]);
+      const v=ks.find(x=>x.id==='ver'),vb=rk.find(x=>x.id==='ver');if(v&&vb&&/принятого/.test(v.w||''))v.w=vb.w}
+    {const a=(db.ref.kbShows||[]).find(x=>x.id==='sh-accept'),b=(r.kbShows||[]).find(x=>x.id==='sh-accept');if(a&&b&&a.items&&a.items[0]&&/орган ещё не подтвердил/.test(a.items[0].x||'')){a.items[0].t=b.items[0].t;a.items[0].x=b.items[0].x}}
+    const u=db.ref.kbUi,ru=r.kbUi;if(u&&ru){const old=v=>/«Принят»|принят[а-я]* органом|Отметить принятым|Принято в этом|Дата принятия/.test(JSON.stringify(v));
+      Object.keys(ru).forEach(k=>{const a=u[k],b=ru[k];if(!a||!b||typeof b!=='object'||Array.isArray(b))return;Object.keys(a).forEach(n=>{if(!(n in b)&&old(a[n]))delete a[n]});Object.entries(b).forEach(([n,v])=>{if(!(n in a)||old(a[n]))a[n]=structuredClone(v)})});
+      if(u.fields)['ac-date','ac-file'].forEach(n=>delete u.fields[n]);if(u.acts&&u.acts['Подтвердить']==='Подтверждает выполненную задачу.')u.acts['Подтвердить']=ru.acts['Подтвердить'];
+      if(u.forms&&/подтверждения органа\.$/.test(u.forms['Отметить отчёт сданным']||''))u.forms['Отметить отчёт сданным']=ru.forms['Отметить отчёт сданным']}
+    const arts=db.ref.kbArticles||[];['a2','a3','a5','a7','a8','a13','a16','a17','a18','a20','a21','a22'].forEach(id=>{const b=(r.kbArticles||[]).find(x=>x.id===id),i=arts.findIndex(x=>x.id===id);if(b&&i>=0&&(!arts[i]._ub||arts[i]._ub==='system'))arts[i]=structuredClone(b)});
+    const V55={nspm:'2026-08-28 15:40',nspq:'2026-08-28 15:40',roy:'2025-01-15 10:36',enq:'2026-10-23 15:45',enm:'2026-10-23 15:45',patw:'2026-10-23 15:50','НАЛ-10':'2026-10-18 09:54','НАЛ-15':'2026-10-23 15:45','ЕНС-02':'2026-10-18 09:54','ЕНС-03':'2026-10-18 09:54','ЕНС-04':'2026-10-18 09:54','ЕНС-16':'2026-10-18 09:54'};
+    const put=(a,b,key)=>{if(a&&b)a.forEach((x,i)=>{const k=key(x),f=V55[k]&&b.find(y=>key(y)===k);if(f&&(x._ua||'')===V55[k])a[i]=structuredClone(f)})};
+    put(db.ref.reportTypes,r.reportTypes,x=>x.id);put(db.ref.taxes,r.taxes,x=>x.code);put(db.ref.enRates,r.enRates,x=>x.code)}
+  if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};
   return {db,miss}}

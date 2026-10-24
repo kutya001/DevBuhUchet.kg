@@ -4,7 +4,7 @@
 function repTabs(){const c=counts();return [
  {id:'week',label:'На неделе',icon:'calendar',count:c.week},
  {id:'overdue',label:'Просрочено',icon:'alert',count:c.overdue,red:true},
- {id:'waiting',label:'Ожидают подтверждения',icon:'hourglass',count:c.waiting},
+ repConfOn()?{id:'waiting',label:'Ожидают подтверждения',icon:'hourglass',count:c.waiting}:null,
  {id:'all',label:'Все отчёты',icon:'list'},
  {id:'matrix',label:'Кто что сдаёт',icon:'matrix'},
  feat('calendar')?{id:'calendar',label:'Календарь',icon:'calendar'}:null]}
@@ -28,7 +28,7 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'due',label:'Срок сдачи',type:'date',w:176,val:r=>r.due,html:dueHtml},
  {key:'days',label:'Дней до срока',type:'int',w:132,num:true,val:r=>isDone(r)?null:diffDays(r.due,TODAY),html:daysHtml,hide:!!o.compact},
  {key:'status',label:'Статус сдачи',type:'enum',w:175,val:r=>tR(r).payOnly?'—':r.status,html:r=>tR(r).payOnly?'<span class="faint">—</span>':scaleMini('rep',r.status,r)},
- ...(o.waiting?[{key:'wait',label:'Ждём, дней',type:'int',w:100,num:true,val:r=>r.subDate?diffDays(TODAY,r.subDate):null,html:r=>{const d=diffDays(TODAY,r.subDate);return d>=ORG.waitDays?`<span class="pill orange sm">${d}</span>`:String(d)}}]:[]),
+ ...(o.waiting?[{key:'wait',label:'Ждёт, дней',type:'int',w:100,num:true,val:r=>repWait(r)?repWaitDays(r):null,html:r=>{const d=repWaitDays(r);return d>=(ORG.waitDays||3)?`<span class="pill orange sm" title="Дольше ${ORG.waitDays||3} дн.: старшим бухгалтерам ушло напоминание">${d}</span>`:String(d)}},{key:'subby',label:'Сдал',type:'enum',w:130,val:r=>empName(r.subBy||r.resp)}]:[]),
  {key:'sub',label:'Дата сдачи',type:'date',w:108,val:r=>tR(r).payOnly?null:r.subDate,html:r=>tR(r).payOnly?'<span class="faint">—</span>':r.subDate?fmtD(r.subDate):'',hide:!!o.compact},
  {key:'sum',label:'Сумма к уплате',type:'money',w:140,num:true,total:true,val:r=>tR(r).sum?r.sum:null,html:r=>!tR(r).sum?'<span class="faint">—</span>':r.sum==null?'<span class="faint">не указана</span>':fmtM(r.sum)+(r.auto?` <span title="Повторяющаяся сумма из назначения">${ic('repeat','sm')}</span>`:'')},
  ...(tp?[
@@ -43,7 +43,8 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'funds',label:'Средства от контрагента',type:'enum',w:190,val:r=>!r.sum||!tR(r).sum?'':(r.recv||0)>=r.sum?'Получены':(r.recv||0)>0?'Получены частично':'Ожидаем',hide:true},
  {key:'pfull',label:'Период полностью',type:'text',w:170,val:r=>r.phuman,sortVal:r=>r.pkey,hide:true},
  {key:'duebase',label:'Срок по закону',type:'date',w:120,val:r=>r.dueBase,hide:true},
- {key:'acc',label:'Дата принятия',type:'date',w:120,val:r=>r.accDate,hide:true},
+ ...(repConfOn()?[{key:'conf',label:'Подтверждение',type:'enum',w:190,val:r=>repMark(r)===REP_MK.wait?stl(REP_MK.wait):repMark(r)?repConfTxt(r):'',html:r=>{const k=repMark(r);return !k?'<span class="faint">—</span>':k===REP_MK.wait?`<span class="pill yellow sm">${ic('hourglass')}${esc(repConfTxt(r))}</span>`:`<span class="pill green sm">${ic('check')}${esc(repConfTxt(r))}</span>`},hide:true},
+ {key:'confd',label:'Дата подтверждения',type:'date',w:130,val:r=>repMark(r)===REP_MK.ok&&r.confAt?r.confAt.slice(0,10):null,hide:true}]:[]),
  {key:'ver',label:'Версия',type:'enum',w:110,val:r=>r.ver?'Уточнённый '+r.ver:'Первичный',hide:true},
  {key:'rfiles',label:'Файлов',type:'int',w:90,num:true,val:r=>r.files.length,hide:true},
  {key:'form',label:'Форма собственности',type:'enum',w:120,val:r=>CPM[r.cp].form,hide:true},
@@ -61,24 +62,25 @@ function actQ(r,q){if(q==='all')return true;const t=tR(r);if(r.status==='Не т
   if(q==='sub')return !t.payOnly&&OPEN.has(r.status);return t.sum&&(r.sum==null||r.sum>0&&r.paid<r.sum)}
 function renderReports(body,tab,fresh){
   const vr=visReports();const[w0,w1]=weekRange();const month=ym(TODAY);
+  if(tab==='waiting'&&!repConfOn())tab='all';
   if(['week','overdue','waiting','all'].includes(tab)){
-    const c=counts();const accepted=vr.filter(r=>r.accDate&&ym(r.accDate)===month).length;
+    const c=counts();const subm=vr.filter(r=>r.status==='Сдан'&&!tR(r).payOnly&&r.subDate&&ym(r.subDate)===month).length;
     const toPay=vr.filter(r=>tR(r).sum&&r.sum>0&&r.payDue&&ym(r.payDue)===month);
     body.innerHTML=`${txNote()}<div class="plates">
       ${plate({id:'overdue',icon:'alert',color:c.overdue?'red':'green',label:'Просрочено',value:c.overdue,sub:'сдача или оплата',on:tab==='overdue'})}
       ${plate({id:'week',icon:'calendar',color:'yellow',label:'На этой неделе',value:c.week,sub:`${fmtD(w0).slice(0,5)}–${fmtD(w1).slice(0,5)}`,on:tab==='week'})}
-      ${plate({id:'waiting',icon:'hourglass',color:'blue',label:'Ожидают подтверждения',value:c.waiting,sub:'сданы, не приняты',on:tab==='waiting'})}
-      ${plate({id:'acc',icon:'ok',color:'green',label:'Принято в этом месяце',value:accepted,sub:ymLabel(month)})}
+      ${repConfOn()?plate({id:'waiting',icon:'hourglass',color:'blue',label:'Ожидают подтверждения',value:c.waiting,sub:'сданы, ждут старшего бухгалтера',on:tab==='waiting'}):''}
+      ${plate({id:'subm',icon:'ok',color:'green',label:'Сдано в этом месяце',value:subm,sub:ymLabel(month)})}
       ${plate({id:'sum',icon:'coins',color:'purple',label:'К уплате за '+MONTHS[+month.slice(5)-1],value:fmtM(toPay.reduce((a,r)=>a+r.sum,0),false),unit:'сом',sub:`оплачено ${fmtM(toPay.reduce((a,r)=>a+r.paid,0),false)}`})}
     </div><div id="rg"></div>`;
     body.querySelector('.plates').onclick=e=>{const b=e.target.closest('[data-plate]');if(!b)return;const id=b.dataset.plate;
       if(['overdue','week','waiting'].includes(id))go('reports',id);
-      if(id==='acc')go('reports','all',{status:{type:'enum',vals:['Принят']}});
+      if(id==='subm')go('reports','all',{status:{type:'enum',vals:['Сдан']},sub:{type:'date',from:month+'-01',to:lastDay(month)}});
       if(id==='sum')go('reports','all',{paydue:{type:'date',from:month+'-01',to:lastDay(month)}})};
     let rows,extra={load:fresh};
     if(tab==='week'){rows=()=>visReports().filter(r=>inWeek(r,w0,w1));extra.emptyTitle='На этой неделе всё сдано и оплачено';}
     if(tab==='overdue'){rows=()=>visReports().filter(r=>r.overdue||r.payOverdue);extra.emptyTitle='Просрочек нет';extra.emptyText='Все отчёты сданы и оплачены в срок.'}
-    if(tab==='waiting'){rows=()=>visReports().filter(r=>r.status==='Сдан');extra.waiting=true;extra.emptyTitle='Нет отчётов, ожидающих подтверждения'}
+    if(tab==='waiting'){rows=()=>repWaitList();extra.waiting=true;extra.emptyTitle='Нет отчётов, ожидающих подтверждения';if(can('repConfirm'))extra.cfg={bulk:[{label:'Подтвердить',icon:'check',run:(rs,done)=>repConfDlg(rs,done)}]}}
     if(tab==='all'){rows=()=>visReports()}
     const base=rows;const q=S.repAct||'all';rows=()=>base().filter(r=>actQ(r,q));
     $('#rg',body).insertAdjacentHTML('beforebegin',`<div class="chipsel actq" id="actq" role="group" aria-label="Что нужно сделать">${[['all','Все'],['sub','Сдать'],['pay','Уплатить']].map(([k,l])=>`<button type="button" data-aq="${k}" class="${q===k?'on':''}">${l}<span class="n">${base().filter(r=>actQ(r,k)).length}</span></button>`).join('')}</div>`);
@@ -122,7 +124,8 @@ function reportActions(r){
   it.push({label:'Открыть карточку',icon:'file',run:()=>openReport(r)});
   if(OPEN.has(st))it.push({label:'Отметить сданным',icon:'send',disabled:!cs,reason:!cs&&no,run:()=>submitDlg([r])});
   if(st==='К сдаче')it.push({label:'Взять в работу',icon:'clock',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'В работе')});
-  if(st==='Сдан'){it.push({label:'Отметить принятым',icon:'ok',disabled:!cs,reason:!cs&&no,run:()=>acceptDlg(r)});it.push({label:'Требует исправления',icon:'alert',disabled:!cs,run:()=>setStatus(r,'Требует исправления')})}
+  if(repWait(r)){const why=repConfWhy(r);it.push({label:'Подтвердить',icon:'check',sub:'Сдача проверена старшим бухгалтером',disabled:!!why,reason:why,run:()=>repConfDlg([r])},{label:'На исправление',icon:'refresh',sub:'Вернуть ответственному с причиной',disabled:!!why,reason:why,run:()=>repFixDlg(r)})}
+  if(st==='Сдан')it.push({label:'Требует исправления',icon:'alert',sub:'Орган не принял отчёт',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'Требует исправления')});
   if(OPEN.has(r.status)&&!t.payOnly)it.push({label:'Изменить срок',icon:'calendar',disabled:!can('repDue'),reason:'Нужно право «Изменять срок отчёта»',run:()=>dueEditDlg(r)});
   if(t.sum&&r.status!=='Не требуется')it.push({label:'Указать сумму',icon:'coins',disabled:!can('changeSum'),reason:!can('changeSum')&&'Нет права менять сумму',run:()=>sumDlg(r)});
   if(feat('taxpay')&&t.sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'){const ok=r.money&&r.money.s==='ok';
@@ -130,10 +133,10 @@ function reportActions(r){
     it.push({label:'Отметить оплаченным',icon:'wallet',disabled:!ok||!can('money'),reason:!can('money')?'Нет права на учёт денег':!ok?`Денег контрагента не хватает: ${som(r.money?r.money.n:r.sum-r.paid)}`:'',run:()=>payDlg(r)});
     it.push({label:'Напомнить в WhatsApp',icon:'chat',run:()=>waDlg({r})})}
   if(feat('files')&&can('filesUpload'))it.push({label:'Прикрепить файл',icon:'clip',run:()=>fileDlg(r)});
-  if(st==='Сдан'||st==='Принят')it.push({label:'Создать уточнённый',icon:'repeat',disabled:!cs,reason:!cs&&no,run:()=>createRevision(r)});
+  if(st==='Сдан')it.push({label:'Создать уточнённый',icon:'repeat',disabled:!cs,reason:!cs&&no,run:()=>createRevision(r)});
   it.push({sep:true});
-  if(st==='Сдан'||st==='Принят'){const bk=scBack('rep',st,r);it.push({label:`Откатить в «${bk&&!bk.no?bk:'—'}»`,icon:'history',disabled:!can('rollback')||!bk||!!bk.no,reason:!can('rollback')?'Нужно право «Откат статусов»':bk&&bk.no?bk.no:'',run:()=>rollbackDlg('rep',r.id,bk)})}
-  if(r.status!=='Не требуется'&&r.status!=='Принят')it.push({label:'Не требуется',icon:'ban',disabled:!cs,run:()=>confirmDlg({title:'Отметить «Не требуется»?',text:'Отчёт не нужно сдавать за этот период. Напоминания по нему прекратятся.',ok:'Отметить',run:()=>setStatus(r,'Не требуется')})});
+  if(st==='Сдан'){const bk=scBack('rep',st,r);it.push({label:bk===REP_MK.wait?'Снять подтверждение':`Откатить в «${bk&&!bk.no?bk:'—'}»`,icon:'history',disabled:!can('rollback')||!bk||!!bk.no,reason:!can('rollback')?'Нужно право «Откат статусов»':bk&&bk.no?bk.no:'',run:()=>rollbackDlg('rep',r.id,bk)})}
+  if(r.status!=='Не требуется'&&!repFin(r))it.push({label:'Не требуется',icon:'ban',disabled:!cs,run:()=>confirmDlg({title:'Отметить «Не требуется»?',text:'Отчёт не нужно сдавать за этот период. Напоминания по нему прекратятся.',ok:'Отметить',run:()=>setStatus(r,'Не требуется')})});
   return it;
 }
 const canRecv=r=>feat('taxpay')&&can('money')&&tR(r).sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'&&!r.superseded&&!CPM[r.cp].archived;

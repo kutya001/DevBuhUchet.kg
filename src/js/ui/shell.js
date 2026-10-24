@@ -4,7 +4,7 @@
 function counts(){const vr=visReports();const[w0,w1]=weekRange();
   const overdue=vr.filter(r=>r.overdue||r.payOverdue).length;
   const week=vr.filter(r=>inWeek(r,w0,w1)).length;
-  const waiting=vr.filter(r=>r.status==='Сдан').length;
+  const waiting=repWaitList().length;
   return {overdue,week,waiting}}
 function inWeek(r,w0,w1){if(CPM[r.cp].paused)return false;return (OPEN.has(r.status)&&!tR(r).payOnly&&r.due>=w0&&r.due<=w1)||(feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue>=w0&&r.payDue<=w1)}
 function renderSide(){

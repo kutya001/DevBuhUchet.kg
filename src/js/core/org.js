@@ -46,7 +46,7 @@ const CPM={};CPS.forEach(c=>CPM[c.id]=c);
 function makeReport(cp,t,p,resp){
   const {base,due}=dueOf(t,p);
   const a=cp.assign&&cp.assign.find(a=>a.t===t.id&&!a.to);const fx=a&&a.fixed!=null&&t.sum?a.fixed:null;
-  return {auto:fx!=null,id:RID++,cp:cp.id,t:t.id,p,pkey:pstart(t,p),plabel:plabel(t,p),phuman:phuman(t,p),ver:0,dueBase:base,due,status:'К сдаче',subDate:null,accDate:null,sum:fx,paid:0,resp,files:[],superseded:false,_cb:'system',_ca:nowStamp(),_ub:'system',_ua:nowStamp()};
+  return {auto:fx!=null,id:RID++,cp:cp.id,t:t.id,p,pkey:pstart(t,p),plabel:plabel(t,p),phuman:phuman(t,p),ver:0,dueBase:base,due,status:'К сдаче',subDate:null,sum:fx,paid:0,resp,files:[],superseded:false,_cb:'system',_ca:nowStamp(),_ub:'system',_ua:nowStamp()};
 }
 
 function schedule(r){
