@@ -355,7 +355,8 @@
   "taskConfirm": true,
   "onboard": {
    "state": "new"
-  }
+  },
+  "repConfirm": true
  },
  "roles": [
   {
@@ -375,6 +376,7 @@
     "repDue",
     "changeStatus",
     "changeSum",
+    "repConfirm",
     "finView",
     "money",
     "bonus",
@@ -429,6 +431,7 @@
     "repDue",
     "changeStatus",
     "changeSum",
+    "repConfirm",
     "finView",
     "money",
     "bonus",

@@ -88,7 +88,7 @@ function respDlg(cs,done){
     mount(el,m){$('#rs-ok',el).onclick=()=>{const to=val(el,'rs-e');cs.forEach(c=>transferCp(c,to));m.close();done&&done();refreshAll();toast(cs.length>1?`Ответственный назначен: ${cs.length} контрагентов`:'Ответственный изменён','user')}}})});
 }
 // Незавершённый отчёт — ещё не «Принят» или налог по нему не оплачен: при передаче контрагента переходит к новому ответственному
-const repUnfinished=r=>!r.superseded&&r.status!=='Не требуется'&&(r.status!=='Принят'||(feat('taxpay')&&!!tR(r).sum&&r.sum>0&&r.paid<r.sum));
+const repUnfinished=r=>!r.superseded&&r.status!=='Не требуется'&&(r.status!=='Сдан'||(feat('taxpay')&&!!tR(r).sum&&r.sum>0&&r.paid<r.sum));
 function transferCp(c,to){const from=c.resp;if(from===to)return;c.resp=to;
   REPORTS.filter(r=>r.cp===c.id&&repUnfinished(r)&&(r.resp===from||!r.resp)).forEach(r=>r.resp=to);
   TASKS.filter(t=>t.cp===c.id&&t.exec===from&&taskOpen(t)).forEach(t=>t.exec=to);
@@ -141,7 +141,7 @@ function asgDlg(c,a){const t=T[a.t];const st={from:(a.from||TODAY).slice(0,7),un
     ${fld('Ответственный',sel('ag-resp',[['','Ответственный контрагента: '+empName(c.resp)],...EMP.filter(e=>e.active).map(e=>[e.id,e.fio])],st.resp),{id:'ag-resp',hint:'Например, Соцфонд ведёт кадровик; деньги остаются на счёте ответственного контрагента'})}
     ${t.kind!=='internal'&&t.per!=='Y'&&!t.oneOff?fld('Вариант срока',sel('ag-dd',[['',(dueBen(t,c)?`По статусу «${dueBen(t,c).name}»: `+ruleText(tOv(t,c)):'Как в каталоге: '+ruleText(t))],...[10,15,20,25].filter(d=>d!==t.day).map(d=>[String(d),'до '+d+'-го числа']),['31','до последнего дня месяца']],String(st.dd)),{id:'ag-dd',full:true,hint:'Если у контрагента срок отличается от каталога, например НДС до 25-го или до последнего дня месяца'}):''}
     ${fld('Примечание',inp('ag-note',st.note),{id:'ag-note',full:true})}</div>
-    ${miss.length?`<div class="note warn">${ic('history')}<span>Назначение начинается в прошлом: нет отчётов за ${miss.length} ${plural(miss.length,'прошлый период','прошлых периода','прошлых периодов')} (${miss.map(p=>plabel(tEff(t,a),p)).join(', ')}). Они будут созданы.</span></div><label class="check-row"><input type="checkbox" class="sw" id="ag-mark" ${st.mark?'checked':''}><span class="grow">Сразу отметить прошлые периоды сданными и принятыми</span></label>`:''}`,
+    ${miss.length?`<div class="note warn">${ic('history')}<span>Назначение начинается в прошлом: нет отчётов за ${miss.length} ${plural(miss.length,'прошлый период','прошлых периода','прошлых периодов')} (${miss.map(p=>plabel(tEff(t,a),p)).join(', ')}). Они будут созданы.</span></div><label class="check-row"><input type="checkbox" class="sw" id="ag-mark" ${st.mark?'checked':''}><span class="grow">Сразу отметить прошлые периоды сданными${repConfOn()?' и подтверждёнными':''}</span></label>`:''}`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ag-ok">Сохранить</button>',
     mount(el){const snap=()=>{st.from=val(el,'ag-from')||st.from;st.until=val(el,'ag-until');st.resp=val(el,'ag-resp');st.dd=$('#ag-dd',el)?val(el,'ag-dd'):'';st.note=val(el,'ag-note');if($('#ag-mark',el))st.mark=$('#ag-mark',el).checked};
       $('#ag-from',el).onchange=()=>{snap();m.draw()};
@@ -151,7 +151,7 @@ function asgDlg(c,a){const t=T[a.t];const st={from:(a.from||TODAY).slice(0,7),un
         a.from=st.from+'-01';a.until=st.until||null;a.resp=st.resp||null;a.dueDay=st.dd?+st.dd:null;a.note=st.note;touch(c);const te=tEff(t,a,c);
         REPORTS.filter(r=>r.cp===c.id&&r.t===t.id&&OPEN.has(r.status)).forEach(r=>{r.resp=a.resp||c.resp;if(!r.dueManual&&!r.ev){const d=dueOf(te,r.p);r.dueBase=d.base;r.due=d.due}});
         if(a.until)REPORTS.filter(r=>r.cp===c.id&&r.t===t.id&&OPEN.has(r.status)&&ym(r.pkey)>a.until).forEach(r=>{r.status='Не требуется';log('r',r.id,`Статус: ${'К сдаче'} → Не требуется (назначение до ${ymLabel(a.until)})`,c.id)});
-        miss.forEach(p=>{const r=born(makeReport(c,te,p,a.resp||c.resp));if(st.mark){r.status='Принят';r.subDate=r.dueBase;r.accDate=r.dueBase;r.sum=r.sum??0;r.paid=r.sum||0}REPORTS.push(r);log('r',r.id,st.mark?'Создан за прошлый период и отмечен сданным и принятым при назначении':'Создан за прошлый период при назначении',c.id)});
+        miss.forEach(p=>{const r=born(makeReport(c,te,p,a.resp||c.resp));if(st.mark){Object.assign(r,{status:'Сдан',subDate:r.dueBase,subAt:nowStamp(),subBy:S.me,confAt:nowStamp(),confBy:S.me,confNote:'Прошлый период отмечен при назначении'});r.sum=r.sum??0;r.paid=r.sum||0}REPORTS.push(r);log('r',r.id,st.mark?`Создан за прошлый период и отмечен сданным${repConfOn()?' и подтверждённым':''} при назначении`:'Создан за прошлый период при назначении',c.id)});
         if(miss.length)ch.push(`отчётов за прошлые периоды: ${miss.length}${st.mark?' (отмечены сданными)':''}`);
         if(ch.length)log('cp',c.id,`${t.short}: назначение изменено — ${ch.join(', ')}`,c.id);m.close();derive();refreshAll();toast(ch.length?'Назначение сохранено':'Без изменений')}}}}})}
 function dueEditDlg(r){const t=tR(r);const rs=DICT.reasons.items.filter(x=>x.active).map(x=>x.name);

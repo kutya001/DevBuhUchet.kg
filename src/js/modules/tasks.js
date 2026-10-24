@@ -1,12 +1,12 @@
 'use strict';
 // Модуль «Задачи»
 /* ═════════════ Задачи ═════════════ */
-const taskOpen=t=>t.reg?t.status!=='Принят'&&t.status!=='Не требуется':t.status==='К выполнению'||t.status==='В работе'||t.status==='На доработке';
+const taskOpen=t=>t.reg?!t.fin&&t.status!=='Не требуется':t.status==='К выполнению'||t.status==='В работе'||t.status==='На доработке';
 // Подтверждение выполнения: «На подтверждении» ждёт постановщика или сотрудника с правом «Подтверждать задачи»; исполнитель свою задачу не подтверждает
 const taskPend=t=>!t.reg&&t.status==='На подтверждении';
 const taskConfDef=()=>ORG.taskConfirm!==false;
 function taskConfWhy(t){if(!taskPend(t))return 'Задача не ждёт подтверждения';if(t.exec===S.me)return 'Свою задачу подтвердить нельзя: подтверждает постановщик или другой сотрудник с правом';if(t.by!==S.me&&!can('tasksConfirm'))return 'Подтверждает постановщик или сотрудник с правом «Подтверждать задачи»';return ''}
-const taskConfTxt=t=>t.reg?'':!t.confirm?'Не требуется':t.status==='Подтверждена'&&t.confBy?'Подтвердил '+empName(t.confBy):'Требуется';
+const taskConfTxt=t=>t.reg?repConfTxt(REPORTS.find(r=>r.id===t.rid)):!t.confirm?'Не требуется':t.status==='Подтверждена'&&t.confBy?'Подтвердил '+empName(t.confBy):'Требуется';
 const taskOver=t=>(t.reg?OPEN.has(t.status):taskOpen(t))&&t.date<TODAY;
 // Текст регулярной задачи по метке «Что нужно сделать»: «Сдать 1-Т…», «Оплатить патент…», «Сдать и оплатить НДС…»
 const REG_VERB={sub:'Сдать',pay:'Оплатить',both:'Сдать и оплатить'};
@@ -14,7 +14,7 @@ const REG_VERB={sub:'Сдать',pay:'Оплатить',both:'Сдать и оп
 const taskExec0=e=>{const r=e.cp&&CPM[e.cp]&&CPM[e.cp].resp;return r&&EMP.some(x=>x.id===r&&x.active)?r:S.me};
 function allTasks(){
   const m=ym(TODAY);
-  const reg=REPORTS.filter(r=>!r.superseded&&r.status!=='Не требуется'&&!CPM[r.cp].archived&&(ym(r.due)===m||(OPEN.has(r.status)&&r.due<TODAY&&r.due>=addDays(TODAY,-75)))).map(r=>({id:'r'+r.id,reg:true,rid:r.id,title:`${REG_VERB[actOf(r)]||'Сдать'} ${tR(r).payOnly?T[r.t].name.toLowerCase():T[r.t].short} за ${r.phuman} — ${CPM[r.cp].name}`,cat:tR(r).payOnly?'Оплата':'Сдача отчёта',cp:r.cp,exec:r.resp,by:null,kind:'day',date:r.due,needFile:!!(ORG.types[r.t]&&ORG.types[r.t].needFile),_cb:'system',_ca:r._ca,_ub:r._ub,_ua:r._ua,status:r.status}));
+  const reg=REPORTS.filter(r=>!r.superseded&&r.status!=='Не требуется'&&!CPM[r.cp].archived&&(ym(r.due)===m||(OPEN.has(r.status)&&r.due<TODAY&&r.due>=addDays(TODAY,-75)))).map(r=>({id:'r'+r.id,reg:true,rid:r.id,title:`${REG_VERB[actOf(r)]||'Сдать'} ${tR(r).payOnly?T[r.t].name.toLowerCase():T[r.t].short} за ${r.phuman} — ${CPM[r.cp].name}`,cat:tR(r).payOnly?'Оплата':'Сдача отчёта',cp:r.cp,exec:r.resp,by:null,kind:'day',date:r.due,needFile:!!(ORG.types[r.t]&&ORG.types[r.t].needFile),_cb:'system',_ca:r._ca,_ub:r._ub,_ua:r._ua,status:r.status,fin:repFin(r),wait:repWait(r)}));
   return TASKS.concat(reg)}
 function taskScope(){return can('tasksAll')?allTasks():allTasks().filter(t=>t.exec===S.me||t.by===S.me||(can('tasksConfirm')&&taskPend(t)))}
 function taskTabs(){const sc=taskScope();return [
@@ -33,13 +33,13 @@ function taskCols(){return [
  {key:'status',label:'Статус',type:'enum',w:220,val:t=>t.status,html:t=>t.reg?scaleMini('rep',t.status,REPORTS.find(r=>r.id===t.rid))+' <span class="tag" title="Статус берётся из отчёта">отчёт</span>':scaleMini('task',t.status,t)},
  {key:'needf',label:'Нужен файл',type:'enum',w:110,val:t=>t.needFile?'Да':'Нет',hide:true},{key:'doneAt',label:'Дата выполнения',type:'date',w:130,val:t=>t.doneAt||null,hide:true},{key:'file',label:'Файл',type:'enum',w:110,val:t=>t.needFile?(t.file?'Приложен':'Нужен'):'',html:t=>t.needFile?(t.file?`<span class="pill green sm">${ic('clip')}приложен</span>`:`<span class="pill sm">${ic('clip')}нужен</span>`):'<span class="faint">—</span>'},
  {key:'by',label:'Поставил',type:'enum',w:120,val:t=>t.reg?'Система':empName(t.by)},
- {key:'confirm',label:'Подтверждение',type:'enum',w:170,val:taskConfTxt,html:t=>t.reg?'<span class="faint">—</span>':!t.confirm?'<span class="faint">Не требуется</span>':t.status==='Подтверждена'?`<span class="pill green sm">${ic('check')}${esc(taskConfTxt(t))}</span>`:t.status==='На подтверждении'?`<span class="pill purple sm">${ic('hourglass')}ждёт</span>`:'Требуется',hide:true},
+ {key:'confirm',label:'Подтверждение',type:'enum',w:170,val:taskConfTxt,html:t=>t.reg?(t.wait?`<span class="pill yellow sm">${ic('hourglass')}${esc(taskConfTxt(t))}</span>`:taskConfTxt(t)?`<span class="pill green sm">${ic('check')}${esc(taskConfTxt(t))}</span>`:'<span class="faint">—</span>'):!t.confirm?'<span class="faint">Не требуется</span>':t.status==='Подтверждена'?`<span class="pill green sm">${ic('check')}${esc(taskConfTxt(t))}</span>`:t.status==='На подтверждении'?`<span class="pill purple sm">${ic('hourglass')}ждёт</span>`:'Требуется',hide:true},
  {key:'scope',label:'Вид задачи',type:'enum',w:140,val:t=>t.cp?'По контрагенту':'Общая',hide:true,xls:true},
  {key:'tkind',label:'Тип задачи',type:'enum',w:120,val:t=>t.reg?'Регулярная':'Ручная',hide:true},
  {key:'term',label:'Вид срока',type:'enum',w:120,val:t=>t.kind==='month'?'На месяц':'На день',hide:true},
  {key:'open',label:'Открыта',type:'enum',w:100,val:t=>taskOpen(t)?'Да':'Нет',hide:true}]}
 function taskActions(t){
-  if(t.reg){const r=REPORTS.find(x=>x.id===t.rid);return [{label:'Открыть отчёт',icon:'file',run:()=>openReport(r)},...(OPEN.has(r.status)?[{label:'Отметить отчёт сданным',icon:'send',disabled:!can('changeStatus'),run:()=>submitDlg([r])}]:[]),{label:'Задача закроется сама, когда отчёт будет принят',icon:'info',disabled:true}]}
+  if(t.reg){const r=REPORTS.find(x=>x.id===t.rid);return [{label:'Открыть отчёт',icon:'file',run:()=>openReport(r)},...(OPEN.has(r.status)?[{label:'Отметить отчёт сданным',icon:'send',disabled:!can('changeStatus'),run:()=>submitDlg([r])}]:[]),{label:repWait(r)?'Задача закроется сама, когда сдачу подтвердят':repConfOn()?'Задача закроется сама, когда отчёт сдадут и сдачу подтвердят':'Задача закроется сама, когда отчёт будет сдан',icon:'info',disabled:true}]}
   const mine=t.exec===S.me,boss=t.by===S.me||me().role==='owner';const it=[{label:'Открыть',icon:'task',run:()=>openTask(t)}];
   if(taskPend(t)){const why=taskConfWhy(t);it.push({label:'Подтвердить',icon:'check',disabled:!!why,reason:why,run:()=>taskConfDlg(t)},{label:'На доработку',icon:'refresh',disabled:!!why,reason:why,run:()=>taskReworkDlg(t)});if(boss)it.push({label:'Изменить',icon:'edit',run:()=>taskDlg(t)})}
   if(taskOpen(t)){if(t.status==='К выполнению')it.push({label:'Взять в работу',icon:'clock',disabled:!mine&&!boss,run:()=>{t.status='В работе';log('t',t.id,'Статус: К выполнению → В работе');refreshAll();toast('Задача в работе')}});
@@ -49,7 +49,7 @@ function taskActions(t){
   return it}
 function renderTasks(body,tab,fresh){
   const v=S.taskView;const m=ym(TODAY);
-  const reg=taskScope().filter(t=>t.reg&&ym(t.date)===m&&(tab==='mine'?t.exec===S.me:true));const done=reg.filter(t=>{const r=REPORTS.find(x=>x.id===t.rid);return r.status==='Сдан'||r.status==='Принят'}).length;
+  const reg=taskScope().filter(t=>t.reg&&ym(t.date)===m&&(tab==='mine'?t.exec===S.me:true));const done=reg.filter(t=>{const r=REPORTS.find(x=>x.id===t.rid);return r.status==='Сдан'}).length;
   const pl=can('tasksCreate')||can('tasksConfirm');const gid='tasks-'+tab;const pend=taskScope().filter(taskPend);const fst=(S.preset||(GS[gid]&&GS[gid].filters)||{}).status;const pendOn=!!(fst&&(fst.vals||[]).includes('На подтверждении'));
   body.innerHTML=`${pl?`<div class="plates" style="grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr))">${plate({id:'pend',icon:'hourglass',color:pend.length?'purple':'green',label:'На подтверждении',value:pend.length,sub:pend.length?`можете подтвердить: ${pend.filter(t=>!taskConfWhy(t)).length}`:'выполненных задач без подтверждения нет',on:pendOn})}</div>`:''}<div class="row"><span class="kd-legend"><span class="tag kd-day">День</span> задача на дату <span class="tag kd-month">Месяц</span> задача на месяц</span><span class="muted">${tab==='overdue'?'Все просроченные задачи':`С ${ymG(m)}, вперёд и всё просроченное`}</span><div class="grow"></div>
   ${tab!=='byme'&&reg.length?`<div style="min-width:260px;display:flex;flex-direction:column;gap:4px"><span class="hint">Отчёты ${tab==='mine'?'мои':'всех'} за месяц: <b>сдано ${done} из ${reg.length}</b></span><div class="bar"><i style="width:${Math.round(done/reg.length*100)}%"></i></div></div>`:''}</div><div id="tg"></div>`;

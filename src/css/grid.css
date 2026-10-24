@@ -95,6 +95,8 @@ table.gt{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:
 .scf-s.go{cursor:pointer;color:var(--text);border-style:dashed;border-color:var(--border-strong)}.scf-s.go:hover{background:var(--row-hover)}.scf-s.go .n{border-color:var(--accent);color:var(--accent)}
 .scf-s.go:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .scf-side{font-style:normal;font-size:11px;font-weight:500;margin-top:2px;color:var(--muted)}
+.scf-mk{display:inline-flex;align-items:center;gap:3px;font-style:normal;font-size:11px;font-weight:600;margin-top:2px}.scf-mk .ic{width:11px;height:11px}.scf-mk.wait{color:var(--yellow)}.scf-mk.ok{color:var(--green)}
+.scm .scm-mk{display:inline-flex;color:var(--sc)}.scm .scm-mk .ic{width:12px;height:12px}
 .scf-ln{flex:0 0 18px;height:2px;background:var(--border);border-radius:2px}.scf-ln.p{background:var(--border-strong)}
 .scf-none{display:inline-flex;gap:6px;align-items:center;color:var(--faint);font-size:13px}
 .scales{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:flex-start}
@@ -152,6 +154,7 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
   .scf-s .l>small{margin-top:0}
   .scf-at{margin-left:auto;font-size:11px}
   .scf-side{flex-basis:100%;margin-top:0}
+  .scf-mk{flex-basis:100%;margin-top:0}
   .scf-bk{flex-basis:100%}
   .scf-ln{flex:none;width:2px;height:8px;margin:0 0 0 17px}
   .scf-none{flex-wrap:wrap}

@@ -1,7 +1,7 @@
 'use strict';
 // Производное состояние: просрочки, остатки, статусы контрагентов (derive)
 /* ═════════════ Derived state ═════════════ */
-const DONE=new Set(['Сдан','Принят','Не требуется']);
+const DONE=new Set(['Сдан','Не требуется']);
 const OPEN=new Set(['К сдаче','В работе','Требует исправления']);
 function derive(){
   kpiIndex();
@@ -11,7 +11,7 @@ function derive(){
   REPORTS.forEach(r=>{const t=tR(r);
     const sch=schedule(r);const u=sch.find(x=>x.paid<x.amount);r.payDue=t.sum?(u?u.due:(sch.length?sch[sch.length-1].due:r.due)):null;
     r.payStatus=!t.sum||r.status==='Не требуется'?'Не требуется':r.sum==null?'Не оплачено':r.sum===0?'Не требуется':r.paid>=r.sum?'Оплачено':r.paid>0?'Оплачено частично':'Не оплачено';
-    if(t.payOnly&&r.status!=='Не требуется')r.status=r.sum>0&&r.paid>=r.sum?'Принят':'К сдаче';
+    if(t.payOnly&&r.status!=='Не требуется')r.status=r.sum>0&&r.paid>=r.sum?'Сдан':'К сдаче';
     r.recv=recv[r.id]||0;const cpP=CPM[r.cp].paused;
     r.overdue=!cpP&&!r.superseded&&!t.payOnly&&OPEN.has(r.status)&&r.due<TODAY;
     r.payOverdue=!cpP&&!r.superseded&&feat('taxpay')&&['Не оплачено','Оплачено частично'].includes(r.payStatus)&&r.sum>0&&r.payDue<TODAY;
