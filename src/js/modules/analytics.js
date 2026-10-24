@@ -4,11 +4,11 @@
 const REV=[['fee','Обслуживание','var(--blue)'],['proj','Проекты','var(--purple)'],['svc','Разовые услуги','var(--orange)']];
 function revenueData(y){const ys=String(y);const rows=visCps(true).map(c=>({c,fee:0,proj:0,svc:0,m:Array.from({length:12},()=>[0,0,0])}));const by={};rows.forEach(r=>by[r.c.id]=r);
   const add=(cp,date,k,a)=>{if(!date||!date.startsWith(ys))return;const r=by[cp];if(!r)return;r.m[+date.slice(5,7)-1][k]+=a;r[REV[k][0]]+=a};
-  FEEPAYS.forEach(f=>add(f.cp,f.date,0,f.amount));PROJECTS.forEach(p=>p.pays.forEach(x=>add(p.cp,x.date,1,x.amount)));SERVICES.forEach(s=>s.pays.forEach(x=>add(s.cp,x.date,2,x.amount)));
+  FEEPAYS.forEach(f=>{if(!f.del)add(f.cp,f.date,0,f.amount)});PROJECTS.forEach(p=>p.pays.forEach(x=>{if(!x.del)add(p.cp,x.date,1,x.amount)}));SERVICES.forEach(s=>{if(!s.del)s.pays.forEach(x=>{if(!x.del)add(s.cp,x.date,2,x.amount)})});
   const lastM=ys===TODAY.slice(0,4)?ym(TODAY):ys+'-12';
   rows.forEach(r=>{const c=r.c;r.feeCh=0;if(c.kind!=='oneoff')for(let mo=1;mo<=12;mo++){const m=`${ys}-${String(mo).padStart(2,'0')}`;if(m>lastM||m<c.start.slice(0,7)||!inService(c,m))continue;r.feeCh+=feeCharge(c,m)}
-    r.svcCh=SERVICES.filter(s=>s.cp===c.id&&s.date.startsWith(ys)).reduce((a,s)=>a+s.amount,0);
-    r.svcDebt=SERVICES.filter(s=>s.cp===c.id).reduce((a,s)=>a+Math.max(0,s.amount-svcPaid(s)),0);
+    r.svcCh=SERVICES.filter(s=>!s.del&&s.cp===c.id&&s.date.startsWith(ys)).reduce((a,s)=>a+s.amount,0);
+    r.svcDebt=SERVICES.filter(s=>!s.del&&s.cp===c.id).reduce((a,s)=>a+Math.max(0,s.amount-svcPaid(s)),0);
     r.debt=(c.feeDebt||0)+r.svcDebt;r.total=r.fee+r.proj+r.svc});return rows}
 function niceStep(max){const raw=max/4;const p=Math.pow(10,Math.floor(Math.log10(raw||1)));const n=raw/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
 const kSom=v=>v>=1e6?(v/1e6).toFixed(1).replace('.',',').replace(',0','')+' млн':v>=1000?Math.round(v/1000)+' тыс.':String(v);

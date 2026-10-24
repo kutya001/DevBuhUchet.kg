@@ -4,7 +4,8 @@
 const SVST=DB.ref.statuses.service;
 const PRS=DB.ref.statuses.project;
 STATUS_GROUPS.push(['Статусы обслуживания',SVST,'svc'],['Статусы проектов',PRS,'proj']);
-const sumPays=a=>(a||[]).reduce((s,x)=>s+x.amount,0);
+// Удалённые оплаты (отметка del) не входят в «получено» и статусы
+const sumPays=a=>(a||[]).reduce((s,x)=>x.del?s:s+x.amount,0);
 const svcPaid=s=>sumPays(s.pays);
 const svcStatus=s=>{const p=svcPaid(s);return p>=s.amount?'Оплачено':p>0?'Оплачено частично':'Не оплачено'};
 const projPlan=p=>p.plan||0;
@@ -73,25 +74,29 @@ function serviceDlg(s0,c0){const e=s0?Object.assign({},s0):{cp:c0?c0.id:'',name:
     ${fld('Исполнитель',sel('sv-resp',EMP.filter(x=>x.active).map(x=>[x.id,x.short]),e.resp),{id:'sv-resp'})}<div></div>
     ${fld('Описание',`<textarea class="inp" id="sv-desc" style="min-height:60px">${esc(e.desc)}</textarea>`,{full:true,id:'sv-desc'})}
     ${s0?'':`<label class="check-row full" style="grid-column:1/-1"><input type="checkbox" class="sw" id="sv-paid"><span class="grow">Оплачено сразу<div class="hint">Запишется оплата на всю сумму сегодняшним днём</div></span></label>`}
-    ${fld('Файлы: акт, договор, чек',`<input class="inp" type="file" id="sv-f" multiple>`,{full:true,id:'sv-f'})}</div>`,
+    ${fld('Файлы: акт, договор, чек',`<input class="inp" type="file" id="sv-f" multiple>`,{full:true,id:'sv-f'})}
+    ${s0?fld('Причина изменения',`<textarea class="inp" id="sv-why" style="min-height:56px" placeholder="Например: стоимость согласовали заново"></textarea>`,{full:true,id:'sv-why',hint:'Обязательна, если меняются стоимость или дата'}):''}</div>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="sv-ok">${s0?'Сохранить':'Добавить услугу'}</button>`,
     mount(el,m){$('#sv-ok',el).onclick=()=>{const cp=s0?s0.cp:c0?c0.id:+val(el,'sv-cp');const n=parseNum(val(el,'sv-sum'));
-      const ok=[c0||s0?true:setErr(el,'sv-cp',cp?'':'Выберите контрагента'),setErr(el,'sv-name',val(el,'sv-name')?'':'Опишите услугу'),setErr(el,'sv-date',val(el,'sv-date')?'':'Укажите дату'),setErr(el,'sv-sum',isNaN(n)||n<=0?'Введите стоимость':s0&&n<svcPaid(s0)?`Не меньше уже полученного: ${som(svcPaid(s0))}`:'')].every(Boolean);if(!ok)return;
+      const ch=s0?[Math.abs(n-s0.amount)>0.001?`стоимость ${fmtM(s0.amount)} → ${fmtM(n)} сом`:'',val(el,'sv-date')!==s0.date?`дата ${fmtD(s0.date)} → ${fmtD(val(el,'sv-date'))}`:''].filter(Boolean):[];const why=s0?val(el,'sv-why'):'';
+      const ok=[c0||s0?true:setErr(el,'sv-cp',cp?'':'Выберите контрагента'),setErr(el,'sv-name',val(el,'sv-name')?'':'Опишите услугу'),setErr(el,'sv-date',val(el,'sv-date')?'':'Укажите дату'),setErr(el,'sv-sum',isNaN(n)||n<=0?'Введите стоимость':s0&&n<svcPaid(s0)?`Не меньше уже полученного: ${som(svcPaid(s0))}`:''),s0?setErr(el,'sv-why',ch.length&&!why?'Укажите причину: меняются стоимость или дата':''):true].every(Boolean);if(!ok)return;
       const o={name:val(el,'sv-name'),date:val(el,'sv-date'),amount:n,resp:val(el,'sv-resp'),desc:val(el,'sv-desc')};const files=[...$('#sv-f',el).files].map(x=>x.name);
-      if(s0){Object.assign(s0,o);s0.files.push(...files);log('s',s0.id,'Услуга изменена',s0.cp)}
+      if(s0){Object.assign(s0,o);s0.files.push(...files);if(ch.length)s0.edited=true;log('s',s0.id,ch.length?`Изменено: ${ch.join('; ')}. Причина: ${why}`:'Услуга изменена',s0.cp)}
       else{const s=born(Object.assign({id:'s'+(SERVICES.length+1)+'n',cp,pays:[],files},o));if($('#sv-paid',el).checked)s.pays.push({id:s.id+'p1',date:TODAY,amount:n,by:S.me,files:[]});SERVICES.push(s);log('s',s.id,`Разовая услуга «${o.name}» на ${som(n)}${s.pays.length?', оплачена':''}`,cp)}
       m.close();refreshAll();toast(s0?'Услуга сохранена':'Разовая услуга добавлена','coins')}}})});
 }
-function svcActions(s){const left=s.amount-svcPaid(s);const ed=can('projects');return [{label:'Открыть',icon:'coins',run:()=>serviceCard(s)},{label:'Записать оплату',icon:'wallet',disabled:!ed||left<=0,reason:left<=0?'Услуга оплачена полностью':'Нужно право «Вести проекты и разовые услуги»',run:()=>svcPay(s)},{label:'Изменить',icon:'edit',disabled:!ed,run:()=>serviceDlg(s)},{label:'Карточка контрагента',icon:'building',run:()=>openCp(CPM[s.cp])},{sep:true},
-  {label:'Удалить',icon:'trash',danger:true,disabled:!ed||s.pays.length>0,reason:s.pays.length?'По услуге уже есть оплаты':'',run:()=>confirmDlg({title:`Удалить услугу «${esc(s.name)}»?`,text:'Оплат по ней не было, запись удалится.',ok:'Удалить',danger:true,run:()=>{SERVICES.splice(SERVICES.indexOf(s),1);log('cp',s.cp,`Удалена разовая услуга «${s.name}»`,s.cp);refreshAll();toast('Удалено')}})}]}
-function svcPay(s){tranchDlg({title:'Оплата разовой услуги',sub:esc(s.name)+' · '+esc(CPM[s.cp].name),left:s.amount-svcPaid(s),run:p=>{s.pays.push(Object.assign({id:s.id+'p'+(s.pays.length+1)},p));log('s',s.id,`Оплата ${som(p.amount)}`,s.cp)}})}
+function svcActions(s){const left=s.amount-svcPaid(s);const ed=can('projects');const d={src:'svc',ref:s};if(s.del)return [{label:'Открыть',icon:'coins',run:()=>serviceCard(s)}];const dL=opLock(d,'del');return [{label:'Открыть',icon:'coins',run:()=>serviceCard(s)},{label:'Записать оплату',icon:'wallet',disabled:!ed||left<=0,reason:left<=0?'Услуга оплачена полностью':'Нужно право «Вести проекты и разовые услуги»',run:()=>svcPay(s)},{label:'Изменить',icon:'edit',disabled:!ed,run:()=>serviceDlg(s)},{label:'Карточка контрагента',icon:'building',run:()=>openCp(CPM[s.cp])},{sep:true},
+  {label:'Удалить',icon:'trash',danger:true,disabled:!!dL,reason:dL,run:()=>opDelDlg(d)}]}
+function svcPay(s){tranchDlg({title:'Оплата разовой услуги',sub:esc(s.name)+' · '+esc(CPM[s.cp].name),left:s.amount-svcPaid(s),run:p=>{const x=Object.assign({id:s.id+'p'+(s.pays.length+1),_ca:nowStamp()},p);s.pays.push(x);log('s',s.id,`Оплата ${som(p.amount)}`,s.cp,{sub:x.id})}})}
 function serviceCard(s){
   openModal({size:'mid',live:true,render:m=>{const paid=svcPaid(s),left=s.amount-paid;const st=svcStatus(s);
-    return {title:esc(s.name),sub:`${esc(CPM[s.cp].name)} · разовая услуга от ${fmtD(s.date)}`,body:`<div class="row">${pill(st,PST)}</div>
+    const live=s.pays.filter(p=>!p.del);
+    return {title:esc(s.name),sub:`${esc(CPM[s.cp].name)} · разовая услуга от ${fmtD(s.date)}`,body:`<div class="row">${pill(st,PST)}${s.del?`<span class="pill red">${ic('trash')}Удалена</span>`:s.edited?`<span class="pill yellow">${ic('edit')}Изменена</span>`:''}</div>
+    ${s.del?`<div class="note bad">${ic('trash')}<span><b>Удалена</b> · ${esc(whoName(s.del.by))}, ${fmtDT(s.del.at)}. Причина: ${esc(s.del.why)}. В суммы и итоги не входит.</span></div>`:''}
     <div class="box"><div class="kv"><div><span class="k">Стоимость</span><span class="v tnum strong">${som(s.amount)}</span></div><div><span class="k">Получено</span><span class="v tnum">${som(paid)}</span></div><div><span class="k">Осталось</span><span class="v tnum ${left>0?'red strong':''}">${som(left)}</span></div><div><span class="k">Исполнитель</span><span class="v">${esc(empName(s.resp))}</span></div>${auditKv(s)}</div>${s.desc?`<p style="margin:0">${esc(s.desc)}</p>`:''}</div>
-    <div class="box"><h3>Оплаты · ${s.pays.length}<span class="grow"></span>${can('projects')&&left>0?`<button class="btn sm cta" id="sc-pay">${ic('wallet','sm')}Записать оплату</button>`:''}</h3>${s.pays.length?`<table class="mini"><thead><tr><th>Дата</th><th>Записал</th><th>Файлы</th><th class="num">Сумма</th></tr></thead><tbody>${s.pays.map(p=>`<tr><td>${fmtD(p.date)}</td><td>${esc(whoName(p.by))}</td><td>${(p.files||[]).map(esc).join(', ')||'<span class="faint">—</span>'}</td><td class="num">${fmtM(p.amount)}</td></tr>`).join('')}</tbody></table>`:'<span class="faint">Оплат пока не было</span>'}</div>
-    ${filesBox(s.files,'sc-f',can('projects'),'Файлы',{ent:'s',id:s.id,cp:s.cp})}${histBox('s',s.id)}`,
-    foot:`<button class="btn" id="sc-more">${ic('more','sm')}Действия</button><div class="grow"></div><button class="btn cta" data-close>Готово</button>`,
-    mount(el,mm){$('#sc-more',el).onclick=e=>menu(e.currentTarget,svcActions(s).filter(x=>x.label!=='Открыть'));if($('#sc-pay',el))$('#sc-pay',el).onclick=()=>svcPay(s);bindFiles(el,'sc-f',s.files,f=>{log('s',s.id,'Прикреплены файлы: '+f.join(', '),s.cp);mm.draw()})}}}});
+    <div class="box"><h3>Оплаты · ${live.length}<span class="grow"></span>${can('projects')&&left>0&&!s.del?`<button class="btn sm cta" id="sc-pay">${ic('wallet','sm')}Записать оплату</button>`:''}</h3>${live.length?`<div class="tbl-wrap"><table class="mini m-cards"><thead><tr><th>Дата</th><th>Записал</th><th>Файлы</th><th class="num">Сумма</th><th style="width:36px"></th></tr></thead><tbody>${live.map(p=>{const d={src:'sp',ref:p,own:s};return `<tr class="clk" data-opw="${esc(opKey(d))}" title="Открыть оплату"><td>${fmtD(p.date)}${p.edited?' <span class="tag yellow">изменена</span>':''}</td><td>${esc(whoName(p.by))}</td><td>${(p.files||[]).map(esc).join(', ')||'<span class="faint">—</span>'}</td><td class="num">${fmtM(p.amount)}</td><td>${opMenuBtn(d)}</td></tr>`}).join('')}</tbody></table></div>`:'<span class="faint">Оплат пока не было</span>'}</div>
+    ${filesBox(s.files,'sc-f',can('projects')&&!s.del,'Файлы',{ent:'s',id:s.id,cp:s.cp})}${histBox('s',s.id)}`,
+    foot:`${s.del?'':`<button class="btn" id="sc-more">${ic('more','sm')}Действия</button>`}<div class="grow"></div><button class="btn cta" data-close>Готово</button>`,
+    mount(el,mm){if($('#sc-more',el))$('#sc-more',el).onclick=e=>menu(e.currentTarget,svcActions(s).filter(x=>x.label!=='Открыть'));if($('#sc-pay',el))$('#sc-pay',el).onclick=()=>svcPay(s);bindFiles(el,'sc-f',s.files,f=>{log('s',s.id,'Прикреплены файлы: '+f.join(', '),s.cp);mm.draw()})}}}});
 }
 

@@ -30,7 +30,7 @@ function renderStaff(body,tab,fresh){
     {key:'date',label:'Дата',type:'date',w:110,val:o=>o.date},{key:'month',label:'Месяц',type:'enum',w:130,val:o=>ymLabel(ym(o.date)),sortVal:o=>o.date},
     {key:'emp',label:'Сотрудник',type:'enum',w:150,val:o=>o.holder==='org'?'Счёт организации':empName(o.holder)},{key:'cp',label:'Контрагент',type:'enum',w:220,val:o=>CPM[o.cp].name},
     {key:'sum',label:'Сумма',type:'money',w:130,num:true,total:true,val:o=>o.amount},{key:'note',label:'Причина',type:'text',w:220,val:o=>o.note||''},{key:'by',label:'Списал',type:'enum',w:120,val:o=>empName(o.by)}],
-    audit:o=>({_cb:o.by,_ca:o._ca||o.date}),rows:()=>OPS.filter(o=>o.kind==='bonus'),actions:o=>[{label:'Карточка контрагента',icon:'building',run:()=>openCp(CPM[o.cp],'money')},...woActs(o)],title:'cp',noun:['списание','списания','списаний'],sort:{key:'date',dir:-1},empty:{icon:'gift',title:'Списаний пока не было'}})}
+    audit:o=>({_cb:o.by,_ca:o._ca||o.date}),rows:()=>OPS.filter(o=>o.kind==='bonus'),open:o=>opWin({src:'op',ref:o}),actions:o=>[...opActs({src:'op',ref:o}),{sep:true},{label:'Карточка контрагента',icon:'building',run:()=>openCp(CPM[o.cp],'money')}],title:'cp',noun:['списание','списания','списаний'],sort:{key:'date',dir:-1},empty:{icon:'gift',title:'Списаний пока не было'}})}
 }
 function empActions(e){const it=[{label:'Открыть карточку',icon:'user',run:()=>empCard(e)}];
   if(e.role!=='owner'&&can('staff')){it.push({label:'Передать контрагентов',icon:'refresh',disabled:!empStats(e).cps,reason:!empStats(e).cps&&'Нет закреплённых контрагентов',run:()=>transferDlg(e)});

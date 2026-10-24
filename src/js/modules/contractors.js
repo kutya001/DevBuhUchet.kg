@@ -202,11 +202,12 @@ function allocText(o){const p=(o.alloc||[]).map(x=>{const r=REPORTS.find(y=>y.id
 const advOf=o=>Math.max(0,o.amount-(o.alloc||[]).reduce((a,x)=>a+x.a,0));
 /* Поступление от контрагента: одна общая сумма + детализация по отчётам (и, если нужно, за обслуживание) */
 function inDlg(c0,edit,pre){
-  const st={cp:c0?c0.id:(visCps().find(c=>c.kind!=='oneoff')||{}).id,total:edit?(edit.total??edit.amount):'',date:edit?edit.date:TODAY,alloc:{},fee:{}};
+  const st={cp:c0?c0.id:(visCps().find(c=>c.kind!=='oneoff')||{}).id,total:edit?(edit.total??edit.amount):'',date:edit?edit.date:TODAY,alloc:{},fee:{},acc:edit?edit.holder:null,why:''};
   if(pre&&c0){st.alloc[pre.r]=pre.amt;st.total=pre.amt;st.pre=c0.id}
   const prevFee={},own={};if(edit){(edit.alloc||[]).forEach(x=>{st.alloc[x.r]=x.a;own[x.r]=x.a});(edit.feeAlloc||[]).forEach(x=>{st.fee[x.m]=x.a;prevFee[x.m]=x.a})}
   const fv=v=>v==null||v===''?'':String(v);
-  const already=r=>Math.max(r.paid,(r.recv||0)-(own[r.id]||0));
+  // Уже получено под отчёт без этого поступления: при изменении его собственная часть (и оплата из неё) не считается чужой
+  const already=r=>Math.max(0,r.paid-(own[r.id]||0),(r.recv||0)-(own[r.id]||0));
   openModal({form:true,size:'wide',render:m=>{
     const c=CPM[st.cp];
     const reps=c?REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.status!=='Не требуется'&&(r.sum-already(r)>0||st.alloc[r.id]!=null)).sort((a,b)=>a.payDue<b.payDue?-1:1):[];
@@ -220,7 +221,7 @@ function inDlg(c0,edit,pre){
       fms.filter(mm=>mm<=ym(TODAY)).forEach(mm=>{const x=fLeft(mm);if(x>0){st.fee[mm]=x;tot+=x}});st.total=tot||''}
     const iStyle='style="max-width:130px;margin-left:auto;text-align:right"';
     return {title:edit?'Изменить поступление':'Поступление от контрагента',sub:c?`${esc(c.name)} · на ${c.paysTo==='org'?'счёт организации':'счёт '+esc(empName(c.resp))}${fms.length?' · плата за обслуживание — на счёт организации':''}`:'',
-    body:`${one?`<div class="note">${ic('coins')}<span><b>Платит одной суммой: налоги и обслуживание вместе.</b> Деление подставлено само: обслуживание за текущий месяц и налоги со сроком до конца месяца. Поправьте суммы, если контрагент перевёл иначе.</span></div>`:''}<div class="form">${c0||edit?'':fld('Контрагент',sel('in-cp',visCps().map(x=>[x.id,x.name]),st.cp),{req:true,full:true,id:'in-cp'})}
+    body:`${edit?inEditNote(edit):''}${one?`<div class="note">${ic('coins')}<span><b>Платит одной суммой: налоги и обслуживание вместе.</b> Деление подставлено само: обслуживание за текущий месяц и налоги со сроком до конца месяца. Поправьте суммы, если контрагент перевёл иначе.</span></div>`:''}<div class="form">${c0||edit?'':fld('Контрагент',sel('in-cp',visCps().map(x=>[x.id,x.name]),st.cp),{req:true,full:true,id:'in-cp'})}
       ${fld('Общая сумма, сом',inp('in-sum',fv(st.total),'inputmode="decimal" class="inp tnum" placeholder="15 000"'),{req:true,id:'in-sum',hint:'Сколько всего перевёл контрагент'})}${fld('Дата',inp('in-date',st.date,`type="date" max="${TODAY}"`),{req:true,id:'in-date'})}</div>
     <div class="box flat"><h3>Детализация: за что эти деньги<span class="grow"></span><button class="btn sm" id="in-auto" type="button">${ic('list','sm')}Распределить по срокам</button></h3>
       ${reps.length||fms.length?`<div class="tbl-wrap"><table class="mini"><thead><tr><th>Отчёт</th><th>Период</th><th>Срок оплаты</th><th class="num">К уплате</th><th class="num" title="Уже получено от контрагента под этот отчёт (или уже оплачено)">Уже получено</th><th class="num" style="width:150px">Распределить сейчас</th><th class="num">Осталось</th></tr></thead><tbody>
@@ -229,7 +230,8 @@ function inDlg(c0,edit,pre){
       </tbody><tfoot><tr><td colspan="3"><b>Итого</b></td><td class="num"><b>${fmtM(reps.reduce((s,r)=>s+r.sum,0)+fms.reduce((s,mm)=>s+feeCharge(c,mm),0))}</b></td><td class="num"><b>${fmtM(reps.reduce((s,r)=>s+already(r),0)+fms.reduce((s,mm)=>s+fGot(mm),0))}</b></td><td class="num"><b id="in-t-now"></b></td><td class="num"><b id="in-t-rest"></b></td></tr></tfoot></table></div>`:(()=>{const un=c?REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&r.status!=='Не требуется'&&r.sum>r.paid).length:0;return `<span class="faint">${un?`Деньги на все неоплаченные налоги (${un} ${plural(un,'отчёт','отчёта','отчётов')}) уже получены — эта сумма станет авансом контрагента.`:'Неоплаченных налогов нет — вся сумма станет авансом контрагента.'}</span>`})()}
       <div id="in-sumline" class="row"></div>
       <span class="hint">Общая сумма должна быть не меньше суммы строк, излишек остаётся авансом контрагента.${fms.length?' Часть за обслуживание на виртуальный счёт не попадает.':''}</span></div>
-    ${fld('Файлы: платёжка, чек, скрин перевода',`<input class="inp" type="file" id="in-f" multiple>`,{full:true,id:'in-f',req:!!(c&&c.needInFile),hint:c&&c.needInFile?'Для этого контрагента файл обязателен'+(edit&&(edit.files||[]).length?`: уже приложено ${edit.files.length}`:''):''})}`,
+    ${fld('Файлы: платёжка, чек, скрин перевода',`<input class="inp" type="file" id="in-f" multiple>`,{full:true,id:'in-f',req:!!(c&&c.needInFile),hint:c&&c.needInFile?'Для этого контрагента файл обязателен'+(edit&&(edit.files||[]).length?`: уже приложено ${edit.files.length}`:''):''})}
+    ${edit?`<div class="form">${fld('Счёт',sel('in-acc',[['org','Счёт организации'],...EMP.filter(e=>(e.active&&e.role!=='owner')||e.id===edit.holder).map(e=>[e.id,'Счёт '+e.short+(e.id===c.resp?' — ответственный':'')])],st.acc),{id:'in-acc'})}<div></div>${fld('Причина изменения',`<textarea class="inp" id="in-why" style="min-height:56px" placeholder="Например: ошибка в сумме платёжки">${esc(st.why)}</textarea>`,{full:true,id:'in-why',hint:'Обязательна, если меняются сумма, дата, детализация или счёт'})}</div>`:''}`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="in-ok">${edit?'Сохранить':'Записать поступление'}</button>`,
     mount(el,mm){
       const sl=$('#in-sumline',el);
@@ -240,6 +242,7 @@ function inDlg(c0,edit,pre){
       calc();
       if($('#in-cp',el))$('#in-cp',el).onchange=e=>{st.cp=+e.target.value;st.alloc={};st.fee={};st.total='';mm.draw()};
       $('#in-sum',el).oninput=e=>{st.total=e.target.value;calc()};$('#in-date',el).oninput=e=>{st.date=e.target.value};
+      if($('#in-why',el)){$('#in-why',el).oninput=e=>{st.why=e.target.value};$('#in-acc',el).onchange=e=>{st.acc=e.target.value}}
       $$('[data-al]',el).forEach(i=>i.oninput=()=>{const n=parseNum(i.value);if(isNaN(n))delete st.alloc[i.dataset.al];else st.alloc[i.dataset.al]=n;calc()});
       $$('[data-fm]',el).forEach(i=>i.oninput=()=>{const n=parseNum(i.value);if(isNaN(n))delete st.fee[i.dataset.fm];else st.fee[i.dataset.fm]=n;calc()});
       $('#in-auto',el).onclick=()=>{let t=parseNum(st.total);if(isNaN(t)){t=reps.reduce((s,r)=>s+left(r),0)+fms.reduce((s,f)=>s+fLeft(f),0);st.total=t}st.alloc={};st.fee={};reps.forEach(r=>{const x=Math.min(t,left(r));if(x>0){st.alloc[r.id]=x;t-=x}});fms.forEach(f=>{const x=Math.min(t,fLeft(f));if(x>0){st.fee[f]=x;t-=x}});mm.draw()};
@@ -249,14 +252,19 @@ function inDlg(c0,edit,pre){
         if(bad){toast('В строке сумма больше, чем нужно оплатить','alert',true);return}
         if(c.needInFile&&!$('#in-f',el).files.length&&!(edit&&(edit.files||[]).length)){setErr(el,'in-f','Прикрепите файл: для этого контрагента поступление без файла не сохраняется');return}
         const alloc=Object.entries(st.alloc).filter(([,v])=>v>0).map(([r,v])=>({r:+r,a:v})),feeAlloc=Object.entries(st.fee).filter(([,v])=>v>0).map(([k,v])=>({m:k,a:v}));
+        // Изменение: на налоги должно остаться не меньше уже потраченного; причина — если меняются сумма, дата, детализация или счёт
+        let ch=[];if(edit){const minT=inMin(edit);if(tot-f<minT-0.001){setErr(el,'in-sum',`Из этого поступления на налоги уже потрачено ${som(minT)}: столько должно остаться на налоги. Чтобы уменьшить сильнее, сначала измените или удалите оплату налога`);return}
+          const t0=edit.total??edit.amount,d0=allocText(edit)||'аванс',d1=allocText({amount:tot-f,alloc,feeAlloc})||'аванс';
+          if(Math.abs(tot-t0)>0.001)ch.push(`общая сумма ${fmtM(t0)} → ${fmtM(tot)} сом`);if(st.date!==edit.date)ch.push(`дата ${fmtD(edit.date)} → ${fmtD(st.date)}`);if(d0!==d1)ch.push(`детализация «${d0}» → «${d1}»`);if(st.acc!==edit.holder)ch.push(`счёт: ${accName(edit.holder)} → ${accName(st.acc)}`);
+          if(!setErr(el,'in-why',ch.length&&!st.why.trim()?'Укажите причину: меняются '+ch.map(s=>s.split(/[ :]/)[0]==='общая'?'сумма':s.split(/[ :]/)[0]).join(', '):''))return}
         const files=[...$('#in-f',el).files].map(x=>x.name);const holder=c.paysTo==='org'?'org':c.resp;
         const note=alloc.length?'За '+alloc.map(x=>T[REPORTS.find(y=>y.id===x.r).t].short).join(', '):feeAlloc.length?'За обслуживание':'Аванс';
         let op=edit;
         if(edit){(edit.feeAlloc||[]).forEach(x=>{c.feePaid[x.m]=(c.feePaid[x.m]||0)-x.a});for(let i=FEEPAYS.length-1;i>=0;i--)if(FEEPAYS[i].op===edit.id)FEEPAYS.splice(i,1);
-          Object.assign(edit,{amount:tot-f,total:tot,alloc,feeAlloc,date:st.date,note});edit.files=(edit.files||[]).concat(files);touch(edit);HIST.push({at:nowStamp(),who:S.me,ent:'in',id:edit.id,cp:c.id,what:`Поступление изменено: ${som(tot)}${allocText(edit)?' ('+allocText(edit)+')':''}`})}
+          Object.assign(edit,{amount:tot-f,total:tot,alloc,feeAlloc,date:st.date,note,holder:st.acc});edit.files=(edit.files||[]).concat(files);if(ch.length)edit.edited=true;touch(edit);HIST.push({at:nowStamp(),who:S.me,ent:'in',id:edit.id,cp:c.id,what:ch.length?`Изменено: ${ch.join('; ')}${files.length?'; добавлены файлы: '+files.join(', '):''}. Причина: ${st.why.trim()}`:files.length?'Прикреплены файлы: '+files.join(', '):'Сохранено без изменений'})}
         else{op={id:OPID++,cp:c.id,kind:'in',amount:tot-f,total:tot,alloc,feeAlloc,date:st.date,by:S.me,holder,note,files,_ca:nowStamp(),_ub:S.me,_ua:nowStamp()};OPS.push(op);HIST.push({at:nowStamp(),who:S.me,ent:'in',id:op.id,cp:c.id,what:`Поступление ${som(tot)} записано`})}
-        feeAlloc.forEach(x=>{c.feePaid[x.m]=(c.feePaid[x.m]||0)+x.a;FEEPAYS.push({id:'f'+(FEEPAYS.length+1)+'n',cp:c.id,month:x.m,amount:x.a,date:st.date,by:S.me,holder:'org',op:op.id})});
-        log('cp',c.id,`${edit?'Изменено поступление':'Поступление'} ${som(tot)}${allocText(op)?': '+allocText(op):''}`,c.id);mm.close();refreshAll();toast(edit?'Поступление изменено':'Поступление записано','wallet')}}};
+        feeAlloc.forEach(x=>{c.feePaid[x.m]=(c.feePaid[x.m]||0)+x.a;FEEPAYS.push({id:fpId(),cp:c.id,month:x.m,amount:x.a,date:st.date,by:S.me,holder:'org',op:op.id,_ca:nowStamp()})});
+        if(!edit)log('cp',c.id,`Поступление ${som(tot)}${allocText(op)?': '+allocText(op):''}`,c.id);mm.close();refreshAll();toast(edit?'Поступление изменено':'Поступление записано','wallet')}}};
   }});
 }
 function moneyOpDlg(c,kind){
