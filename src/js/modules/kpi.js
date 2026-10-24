@@ -16,10 +16,19 @@ const ymS=k=>MON_S[+k.slice(5,7)-1]+' '+k.slice(2,4);
 function kpiIndex(){IV={};IVALS.forEach(v=>IV[v.cp+'|'+v.ind+'|'+v.m]=v);KMI={};KMS.forEach(k=>KMI[k.id]=k)}
 const kInds=all=>IND.filter(i=>all||!i.archived).sort((a,b)=>a.order-b.order);
 // «Кому вести»: scope 'all' — всем, кроме выключенных; 'sel' — отмеченным (cps) и новым контрагентам при autoNew (новые — кого не было в seen на момент выбора).
-// off[id] — месяц выключения (пометка «Не ведётся с …»); from[id] — месяц, с которого показатель снова ведётся: более ранние месяцы не требуются
+// off[id] — месяц выключения (пометка «Не ведётся с …»); from[id] — месяц «с …» у контрагента: более ранние месяцы не требуются
 const kNew=(i,c)=>!!i.autoNew&&!(i.seen||[]).includes(c.id);
 const kOn=(i,c)=>!(i.off&&c.id in i.off)&&(i.scope==='all'||(i.cps||[]).includes(c.id)||kNew(i,c));
-const kApplies=(i,c,m)=>!i.archived&&c.kind!=='oneoff'&&!c.archived&&inService(c,m)&&kOn(i,c)&&!(i.from&&i.from[c.id]&&m<i.from[c.id]);
+// «Вести с»: у показателя — start (по умолчанию месяц создания); у контрагента — свой месяц «с …»: по умолчанию поздний из «Вести с» и начала обслуживания.
+// Раньше «с …» значения вносить можно, но они необязательны и в «Не заполнено» не попадают
+const kSvc0=c=>(c.periods||[]).map(p=>p.from).sort()[0]||'';
+const kStartI=i=>i.start||(i._ca||'').slice(0,7)||ym(TODAY);
+const kStart=(i,c)=>(i.from&&i.from[c.id])||[kStartI(i),kSvc0(c)].sort().pop();
+const kOpen=(i,c)=>!i.archived&&c.kind!=='oneoff'&&!c.archived&&kOn(i,c);
+const kApplies=(i,c,m)=>kOpen(i,c)&&m>=kStart(i,c)&&(inService(c,m)||m<kSvc0(c));
+const kEarly=(i,c,m)=>kOpen(i,c)&&m<kStart(i,c);
+const kCanVal=(i,c,m)=>kApplies(i,c,m)||kEarly(i,c,m);
+const ymN=m=>m.slice(5,7)+'.'+m.slice(0,4);
 const kWhoTxt=i=>{const cs=kWhoAll(),n=cs.filter(c=>kOn(i,c)).length;return i.scope==='all'?(n<cs.length?`всем, кроме ${cs.length-n}`:'всем контрагентам'):`выбранным: ${n}${i.autoNew?', новые — автоматически':''}`};
 const kOffLbl=(i,c)=>!kOn(i,c)&&i.off&&i.off[c.id]?`Не ведётся с ${ymG(i.off[c.id])}`:'';
 function kSetOn(i,c,on,quiet){if(kOn(i,c)===on)return false;i.off=i.off||{};i.from=i.from||{};
@@ -50,12 +59,32 @@ function kSet(c,i,m,v,note,file,src){const key=c.id+'|'+i.id+'|'+m;const old=IV[
   else{const o={cp:c.id,ind:i.id,m,v,note:note||'',file:file||'',by:S.me,at:nowStamp()};IVALS.push(o);IV[key]=o}
   if(ov!==v){IHIST.push(Object.assign({cp:c.id,ind:i.id,m,old:ov,new:v,by:S.me,at:nowStamp()},src?{src}:{}));log('kv',c.id+'|'+m,`Показатель «${i.name}», ${ymLabel(m)}: ${ov==null?'пусто':kFmt(i,ov)} → ${v==null?'пусто':kFmt(i,v)}${src==='xlsx'?' (из Excel)':''}`,c.id)}
   kSync(c,m,ov!==v);return true}
-function kResync(){const last=kPrev();CPS.forEach(c=>kMonths(addMonths(last,-11),last).forEach(m=>{if(KMI[c.id+'|'+m]||kReq(c,m).length)kSync(c,m,false)}))}
+function kResync(){const last=kPrev();CPS.forEach(c=>kMonths(addMonths(last,-K_BACK),last).forEach(m=>{if(KMI[c.id+'|'+m]||kReq(c,m).length)kSync(c,m,false)}))}
 const kCps=m=>visCps(false,'kpi').filter(c=>c.kind!=='oneoff'&&kReq(c,m).length);
+// В «Вводе за месяц» — ещё и контрагенты, у которых месяц раньше «с …»: значения можно внести, но они необязательны
+const kCpsIn=m=>visCps(false,'kpi').filter(c=>c.kind!=='oneoff'&&(kReq(c,m).length||kInds().some(i=>kEarly(i,c,m))));
 function kStats(m){const cs=kCps(m);const st=cs.map(c=>(kMonth(c,m)||{}).status);const due=c=>kDue(c,m);
   return {all:cs.length,filled:st.filter(x=>x==='Заполнено'||x==='Проверено').length,empty:st.filter(x=>x==='Не заполнено').length,over:cs.filter((c,j)=>st[j]==='Не заполнено'&&TODAY>due(c)).length,checked:st.filter(x=>x==='Проверено').length}}
-function kMissing(){const last=kPrev(),out=[];visCps(false,'kpi').forEach(c=>kMonths(addMonths(last,-11),last).forEach(m=>{const rq=kInds().filter(i=>i.req&&kApplies(i,c,m));const miss=rq.filter(i=>!kVal(c.id,i.id,m));if(!miss.length)return;const due=kDue(c,m);out.push({id:c.id+'|'+m,c,m,miss,due,over:TODAY>due?diffDays(TODAY,due):0,k:kMonth(c,m)})}));return out}
-function kpiTabs(){return [{id:'month',label:'Ввод за месяц',icon:'edit'},{id:'period',label:'За период',icon:'chart'},{id:'missing',label:'Не заполнено',icon:'alert',count:kMissing().length,red:true},can('indSetup')?{id:'setup',label:'Настройка показателей',icon:'sliders'}:null]}
+// Незаполненные месяцы: от «с …» каждого обязательного показателя до текущего месяца заполнения (прошлый календарный месяц), не дальше K_BACK месяцев назад.
+// Результат запоминается до изменения значений, настроек или контрагентов: счётчик нужен в панели модулей, на «Главной» и в каждой строке списка контрагентов
+const K_BACK=35;
+function kMissing(){const key=[TODAY,S.me,IVALS.length,IHIST.length,HIST.length,IND.length,CPS.length].join('|');if(kMissing.key===key)return kMissing.rows.slice();
+  const last=kPrev(),lo=addMonths(last,-K_BACK),out=[];
+  visCps(false,'kpi').forEach(c=>{const ri=kInds().filter(i=>i.req&&kOpen(i,c));if(!ri.length)return;let from=ri.map(i=>kStart(i,c)).sort()[0];if(from<lo)from=lo;
+    kMonths(from,last).forEach(m=>{const miss=ri.filter(i=>kApplies(i,c,m)&&!kVal(c.id,i.id,m));if(!miss.length)return;const due=kDue(c,m);out.push({id:c.id+'|'+m,c,m,miss,due,over:TODAY>due?diffDays(TODAY,due):0,k:kMonth(c,m)})})});
+  kMissing.key=key;kMissing.rows=out;return out.slice()}
+// Индикатор незаполненных: контрагенты с незаполненными обязательными показателями за текущий месяц заполнения и прошлые месяцы.
+// Красный — есть просроченные месяцы, жёлтый — не заполнен только текущий месяц до срока
+function kMissCnt(){kMissing();if(kMissCnt.rows===kMissing.rows)return kMissCnt.v;const by={};
+  kMissing.rows.forEach(r=>{const x=by[r.c.id]=by[r.c.id]||{c:r.c,ms:[],over:false};x.ms.push(r.m);if(r.over)x.over=true});
+  const l=Object.values(by);kMissCnt.rows=kMissing.rows;kMissCnt.v={n:l.length,over:l.some(x=>x.over),by};return kMissCnt.v}
+const kMissOk=()=>!isAdmin()&&feat('indicators')&&can('kpiView');
+function kMissBadge(style){if(!kMissOk())return '';const k=kMissCnt();if(!k.n)return '';
+  return `<span class="badge ${k.over?'red':'yellow'}" ${style?`style="${style}"`:''} title="${k.over?'Не заполнены показатели, есть просроченные месяцы':'Не заполнен текущий месяц, срок ещё не прошёл'}">${k.n}</span>`}
+// После ввода значения без перерисовки страницы: счётчик на вкладке «Не заполнено», в панели модулей и точка на «≡»
+function kLiveBadges(){const k=kMissCnt();const b=$('#tabs .tab[href$=".missing"] .badge');if(b){b.textContent=k.n;b.className='badge '+(k.n?(k.over?'red':'yellow'):'')}renderSide();renderSheetDot()}
+const kMissTip=x=>`Показатели не заполнены: ${x.ms.map(ymN).join(', ')}`;
+function kpiTabs(){return [{id:'month',label:'Ввод за месяц',icon:'edit'},{id:'period',label:'За период',icon:'chart'},(()=>{const k=kMissCnt();return {id:'missing',label:'Не заполнено',icon:'alert',count:k.n,red:k.over,yellow:!k.over}})(),can('indSetup')?{id:'setup',label:'Настройка показателей',icon:'sliders'}:null]}
 function kpiAdd(){return [can('indSetup')&&{label:'Показатель',icon:'gauge',run:()=>indDlg()},can('kpiImport')&&{label:'Ввод из Excel',icon:'upload',btn:true,sub:'Шаблон и загрузка заполненного шаблона',run:()=>kxDlg()}].filter(Boolean)}
 function kPlates(m){const s=kStats(m);return `<div class="plates">${plate({id:'kf',icon:'check',color:'blue',label:`Заполнено за ${MONTHS[+m.slice(5,7)-1]}`,value:`${s.filled} из ${s.all}`,sub:'контрагентов с внесёнными показателями'})}${plate({id:'ke',icon:'alert',color:s.empty?'orange':'green',label:'Не заполнено',value:s.empty,sub:s.empty?'нет обязательных значений':'всё внесено'})}${plate({id:'ko',icon:'clock',color:s.over?'red':'green',label:'Просрочено заполнение',value:s.over,sub:'срок заполнения прошёл'})}${plate({id:'kc',icon:'ok',color:'green',label:'Проверено',value:s.checked,sub:'главным бухгалтером или владельцем'})}</div>`}
 function kPeriodBar(p,id){const y=+TODAY.slice(0,4),last=kPrev();const q0=addMonths(ym(TODAY),-((+TODAY.slice(5,7)-1)%3));
@@ -73,28 +102,37 @@ function renderKpi(body,tab,fresh){
   if(tab==='period')return kpiPeriod(body,fresh);
   if(tab==='missing')return kpiMissingTab(body,fresh);
 }
+// Выбор месяца в «Вводе за месяц»: стрелки «‹ ›» и список месяцев; у месяца с незаполненными значениями — красная точка и число контрагентов
+function kMonCnt(){const n={};kMissing().forEach(r=>n[r.m]=(n[r.m]||0)+1);return n}
+function kMonList(){const cur=ym(TODAY);let lo=addMonths(cur,-24);kMissing().forEach(r=>{if(r.m<lo)lo=r.m});return kMonths(lo,cur).reverse()}
+function kMonPick(m){const n=kMonCnt()[m]||0;
+  return `<div class="km-pick" role="group" aria-label="Месяц"><button class="icon-btn sm" id="km-prev" aria-label="Предыдущий месяц" title="Предыдущий месяц">${ic('left','sm')}</button><button class="btn sm km-cur" id="km-open" aria-haspopup="listbox" title="Выбрать месяц">${n?'<span class="kdot" aria-hidden="true"></span>':''}<span>${esc(ymLabel(m))}${n?` · не заполнено ${n}`:''}</span>${ic('down','sm')}</button><button class="icon-btn sm" id="km-next" aria-label="Следующий месяц" title="Следующий месяц" ${m>=ym(TODAY)?'disabled':''}>${ic('right','sm')}</button></div>`}
+function kMonBind(root,m){const go=x=>{S.kpiM=x;renderPage()};const p=$('#km-prev',root),n=$('#km-next',root),o=$('#km-open',root);if(!o)return;
+  p.onclick=()=>go(addMonths(m,-1));n.onclick=()=>{if(m<ym(TODAY))go(addMonths(m,1))};
+  o.onclick=()=>{const cnt=kMonCnt();openPop(o,`<div class="km-list" role="listbox" aria-label="Месяцы">${kMonList().map(x=>`<button class="mi ${x===m?'on':''}" data-km="${x}" role="option" aria-selected="${x===m}"><span class="kdot ${cnt[x]?'':'off'}" aria-hidden="true"></span><span>${ymN(x)}${cnt[x]?` · не заполнено ${cnt[x]}`:''}${x===ym(TODAY)?' <small class="faint">идёт сейчас</small>':''}</span></button>`).join('')}</div>`,
+    {cls:'km-pop',mount(el){const on=el.querySelector('.mi.on');if(on)on.scrollIntoView({block:'center'});el.addEventListener('click',e=>{const b=e.target.closest('[data-km]');if(b){closePop();go(b.dataset.km)}})}})}}
 // «Ввод за месяц»: Excel-like grid; arrows/Enter move between cells, a block pasted from Excel fills cells from the focused one.
 function kpiMonth(body){const m=S.kpiM;const inds=kInds();const q=norm(S.search.trim());
-  const cs=kCps(m).filter(c=>!q||norm(c.name).includes(q)||norm(empName(c.resp)).includes(q)).sort((a,b)=>COLL.compare(a.name,b.name));
-  let h=kPlates(m)+`<div class="row kpi-bar"><label class="row" style="gap:6px"><span class="muted">Месяц</span><input type="month" class="inp" id="km-m" value="${m}" max="${ym(TODAY)}" style="width:auto;min-height:32px;padding:3px 8px"></label><span class="hint" style="margin:0">Внесите значения за месяц после его окончания. Пусто — «не заполнено», 0 — «внесено, равно нулю». Можно вставить блок из Excel.</span></div>`;
+  const cs=kCpsIn(m).filter(c=>!q||norm(c.name).includes(q)||norm(empName(c.resp)).includes(q)).sort((a,b)=>COLL.compare(a.name,b.name));
+  let h=kPlates(m)+`<div class="row kpi-bar">${kMonPick(m)}<span class="hint" style="margin:0">Внесите значения за месяц после его окончания или выберите любой прошлый месяц. Пусто — «не заполнено», 0 — «внесено, равно нулю». Можно вставить блок из Excel.</span></div>`;
   if(!inds.length){body.innerHTML=h+`<div class="state">${ic('gauge','lg')}<b>Показателей нет</b><span>Создайте показатели во вкладке «Настройка показателей».</span></div>`;return}
   if(!cs.length){body.innerHTML=h+`<div class="state">${ic('search','lg')}<b>Ничего не найдено</b><span>Нет контрагентов, для которых нужны показатели за ${esc(ymLabel(m))}.</span></div>`;bindM();return}
-  if(isMobile()){h+=`<div class="gcards">${cs.map(c=>{const k=kMonth(c,m);const ap=inds.filter(i=>kApplies(i,c,m));const n=ap.filter(i=>kVal(c.id,i.id,m)).length;
-      return `<button class="gcard kcard ${k&&k.status==='Не заполнено'&&TODAY>kDue(c,m)?'overdue':''}" data-kmc="${c.id}"><div class="row" style="flex-wrap:nowrap"><b class="grow" style="text-align:left">${esc(c.name)}</b>${ic('right','sm')}</div><dl><dt>Внесено</dt><dd>${n} из ${ap.length}</dd><dt>Ответственный</dt><dd>${esc(empName(c.resp)||'—')}</dd><dt>Статус</dt><dd>${k?scaleMini('ind',k.status,k):'—'}</dd></dl></button>`}).join('')}</div>`;
+  if(isMobile()){h+=`<div class="gcards">${cs.map(c=>{const k=kMonth(c,m);const ap=inds.filter(i=>kCanVal(i,c,m));const n=ap.filter(i=>kVal(c.id,i.id,m)).length;const er=ap.find(i=>kEarly(i,c,m));
+      return `<button class="gcard kcard ${k&&k.status==='Не заполнено'&&TODAY>kDue(c,m)?'overdue':''}" data-kmc="${c.id}"><div class="row" style="flex-wrap:nowrap"><b class="grow" style="text-align:left">${esc(c.name)}</b>${ic('right','sm')}</div><dl><dt>Внесено</dt><dd>${n} из ${ap.length}</dd>${er?`<dt>Необязательно</dt><dd>ведётся с ${ymN(kStart(er,c))}</dd>`:''}<dt>Ответственный</dt><dd>${esc(empName(c.resp)||'—')}</dd><dt>Статус</dt><dd>${k?scaleMini('ind',k.status,k):'—'}</dd></dl></button>`}).join('')}</div>`;
     body.innerHTML=h;bindM();body.onclick=e=>{const b=e.target.closest('[data-kmc]');if(b)kEditDlg(CPM[+b.dataset.kmc],m)};return}
   h+=`<div class="tbl-wrap kpi-wrap"><table class="kt"><thead><tr><th class="kt-cp">Контрагент</th><th>Ответственный</th>${inds.map(i=>`<th class="num">${esc(i.name)}${i.desc?tipI(i.desc):''}<small>${esc(i.unit||KTYPES[i.type])}${i.req?'':' · необязательный'}</small></th>`).join('')}<th>Статус месяца</th></tr></thead><tbody>`;
   cs.forEach((c,ri)=>{const k=kMonth(c,m);const ed=kCanEdit(c);const ov=k&&k.status==='Не заполнено'&&TODAY>kDue(c,m);
-    h+=`<tr class="${ov?'overdue':''}" data-kr="${c.id}"><td class="kt-cp"><button class="linkbtn" data-kcp="${c.id}">${esc(c.name)}</button></td><td class="muted">${esc(empName(c.resp)||'—')}</td>${inds.map((i,ci)=>{if(!kApplies(i,c,m))return `<td class="num faint kno" title="${esc(kOffLbl(i,c)||'Показатель у этого контрагента не ведётся или не нужен в этом месяце')}">—</td>`;const v=kVal(c.id,i.id,m);
-      return `<td class="num ${v?'':i.req?'emp':''}"><input class="kin" data-r="${ri}" data-c="${ci}" data-cp="${c.id}" data-ind="${i.id}" value="${v?esc(kNum(i,v.v)):''}" ${ed?'':'readonly title="Вносит ответственный, главный бухгалтер или владелец"'} inputmode="decimal" aria-label="${esc(c.name)}: ${esc(i.name)}"></td>`}).join('')}<td class="kst">${k?scaleMini('ind',k.status,k):'—'}</td></tr>`});
+    h+=`<tr class="${ov?'overdue':''}" data-kr="${c.id}"><td class="kt-cp"><button class="linkbtn" data-kcp="${c.id}">${esc(c.name)}</button></td><td class="muted">${esc(empName(c.resp)||'—')}</td>${inds.map((i,ci)=>{if(!kCanVal(i,c,m))return `<td class="num faint kno" title="${esc(kOffLbl(i,c)||'Показатель у этого контрагента не ведётся или не нужен в этом месяце')}">—</td>`;const v=kVal(c.id,i.id,m);const early=kEarly(i,c,m);const st=early?'Ведётся с '+ymN(kStart(i,c)):'';
+      return `<td class="num ${v||early?'':i.req?'emp':''} ${early?'kearly':''}"><input class="kin" data-r="${ri}" data-c="${ci}" data-cp="${c.id}" data-ind="${i.id}" ${early?`data-early="1" placeholder="${st.toLowerCase()}"`:''} value="${v?esc(kNum(i,v.v)):''}" ${ed?(early?`title="${st}: значение за этот месяц необязательно"`:''):'readonly title="Вносит ответственный, главный бухгалтер или владелец"'} inputmode="decimal" aria-label="${esc(c.name)}: ${esc(i.name)}${early?'. '+st+', необязательно':''}"></td>`}).join('')}<td class="kst">${k?scaleMini('ind',k.status,k):'—'}</td></tr>`});
   h+=`</tbody><tfoot>${[['sum','Сумма'],['avg','Среднее'],['max','Максимум'],['min','Минимум']].map(([a,l])=>`<tr><th colspan="2">${l}</th>${inds.map(i=>`<td class="num" data-kf="${i.id}" data-a="${a}"></td>`).join('')}<td></td></tr>`).join('')}</tfoot></table></div>`;
   body.innerHTML=h;bindM();foot();
   function foot(){inds.forEach(i=>{const g=kAgg(cs.map(c=>{const v=kVal(c.id,i.id,m);return v?v.v:null}));body.querySelectorAll(`[data-kf="${i.id}"]`).forEach(td=>{const a=td.dataset.a;td.textContent=g.n?kNum(i,a==='avg'?Math.round(g[a]*100)/100:g[a]):'—';td.title=g.n?`по ${g.n} из ${cs.length} контрагентов`:''})})}
-  function bindM(){const mi=body.querySelector('#km-m');if(mi)mi.onchange=()=>{if(mi.value){S.kpiM=mi.value;renderPage()}}}
+  function bindM(){kMonBind(body,m)}
   const inputs=[...body.querySelectorAll('.kin')];const at=(r,c)=>body.querySelector(`.kin[data-r="${r}"][data-c="${c}"]`);
   const commit=x=>{if(x.readOnly)return;const c=CPM[+x.dataset.cp],i=IND.find(y=>y.id===x.dataset.ind);const v=kParse(i,x.value);
     if(Number.isNaN(v)){toast(`«${x.value}» — не число`,'alert',true);const o=kVal(c.id,i.id,m);x.value=o?kNum(i,o.v):'';return}
-    if(kSet(c,i,m,v)){x.value=v==null?'':kNum(i,v);x.parentElement.classList.toggle('emp',v==null&&i.req);const tr=x.closest('tr');const k=KMI[c.id+'|'+m];tr.querySelector('.kst').innerHTML=k?scaleMini('ind',k.status,k):'—';tr.classList.toggle('overdue',!!k&&k.status==='Не заполнено'&&TODAY>kDue(c,m));foot();
-      const pl=body.querySelector('.plates');if(pl)pl.outerHTML=kPlates(m);const tb=$('#tabs .tab[href$=".missing"] .badge');if(tb)tb.textContent=kMissing().length}};
+    if(kSet(c,i,m,v)){x.value=v==null?'':kNum(i,v);x.parentElement.classList.toggle('emp',v==null&&i.req&&!x.dataset.early);const tr=x.closest('tr');const k=KMI[c.id+'|'+m];tr.querySelector('.kst').innerHTML=k?scaleMini('ind',k.status,k):'—';tr.classList.toggle('overdue',!!k&&k.status==='Не заполнено'&&TODAY>kDue(c,m));foot();
+      const pl=body.querySelector('.plates');if(pl)pl.outerHTML=kPlates(m);kLiveBadges()}};
   inputs.forEach(x=>{x.addEventListener('change',()=>commit(x));x.addEventListener('focus',()=>x.select());
     x.addEventListener('keydown',e=>{const r=+x.dataset.r,c=+x.dataset.c;let t=null;
       if(e.key==='ArrowDown'||e.key==='Enter'){for(let k=r+1;k<=cs.length&&!t;k++)t=at(k,c)}if(e.key==='ArrowUp'){for(let k=r-1;k>=0&&!t;k--)t=at(k,c)}
@@ -174,12 +212,12 @@ function kpiWho(host){const f=S.kWhoF=S.kWhoF||{};const inds=kInds();const ed=ca
   draw()}
 // Карточка контрагента: какие показатели вести (переключатели «Вести»; без права «Настраивать показатели» — только просмотр)
 function kpiCardWhoHtml(c){const inds=kInds();if(!inds.length)return '';const ed=can('indSetup');
-  return `<details class="box kw-card" ${c.archived?'':'open'}><summary><b>Какие показатели вести</b><span class="grow"></span><span class="muted">${inds.filter(i=>kOn(i,c)).length} из ${inds.length}</span>${ic('down','sm')}</summary><div class="kw-list">${inds.map(i=>{const o=kOffLbl(i,c);return `<label class="kw-li"><span class="grow"><b>${esc(i.name)}</b><small class="faint">${esc(i.unit||KTYPES[i.type])}${i.req?'':' · необязательный'}${o?' · '+esc(o):''}${i.from&&i.from[c.id]&&kOn(i,c)?' · ведётся с '+esc(ymG(i.from[c.id])):''}</small></span><span class="muted">Вести</span><input type="checkbox" class="sw" data-kcw="${i.id}" ${kOn(i,c)?'checked':''} ${ed&&!c.archived?'':'disabled'} aria-label="Вести «${esc(i.name)}»"></label>`}).join('')}</div>${ed?'':'<div class="hint">Менять может роль с правом «Настраивать показатели».</div>'}</details>`}
+  return `<details class="box kw-card" ${c.archived?'':'open'}><summary><b>Какие показатели вести</b><span class="grow"></span><span class="muted">${inds.filter(i=>kOn(i,c)).length} из ${inds.length}</span>${ic('down','sm')}</summary><div class="kw-list">${inds.map(i=>{const o=kOffLbl(i,c),on=kOn(i,c),f=kStart(i,c);return `<div class="kw-li"><span class="grow"><b>${esc(i.name)}</b><small class="faint">${esc(i.unit||KTYPES[i.type])}${i.req?'':' · необязательный'}${o?' · '+esc(o):''}</small></span>${on?`<label class="row kw-from" title="С этого месяца показатель обязателен; за более ранние месяцы значения вносить можно, но незаполненными они не считаются"><span class="muted">с</span><input type="month" class="inp" data-kcf="${i.id}" value="${f}" max="${ym(TODAY)}" ${ed&&!c.archived?'':'disabled'} aria-label="«${esc(i.name)}»: вести с месяца"></label>`:''}<label class="row kw-on"><span class="muted">Вести</span><input type="checkbox" class="sw" data-kcw="${i.id}" ${on?'checked':''} ${ed&&!c.archived?'':'disabled'} aria-label="Вести «${esc(i.name)}»"></label></div>`}).join('')}</div>${ed?'':'<div class="hint">Менять может роль с правом «Настраивать показатели».</div>'}</details>`}
 // «Показатели»: order by drag (arrows on the phone), archive, delete only without values.
 function kpiSetupList(body){const inds=kInds(true);
   body.innerHTML=`<div class="note">${ic('info')}<span>Показатели — собственная настройка вашей организации: другие организации и администратор платформы их не видят. Порядок здесь — порядок в таблицах и в карточке контрагента; меняется перетаскиванием.</span></div>
   <div class="kset">${inds.map((i,j)=>{const n=IVALS.filter(v=>v.ind===i.id).length;return `<div class="kset-i ${i.archived?'arch':''}" draggable="${!isMobile()}" data-kid="${i.id}"><span class="kset-g" aria-hidden="true">${ic('grip')}</span><div class="grow"><div class="row" style="gap:8px"><b>${esc(i.name)}</b><span class="tag">${esc(i.unit||'—')}</span>${i.req?'<span class="pill blue sm">обязательный</span>':''}${i.archived?'<span class="tag">архив</span>':''}</div>
-    <div class="hint" style="margin:3px 0 0">${KTYPES[i.type]} · основной итог: ${KAGG[i.main].toLowerCase()} · ${esc(kWhoTxt(i))} · заполнять до ${i.dueDay}-го числа следующего месяца · значений: ${n}</div>${i.desc?`<div class="hint" style="margin:2px 0 0">${esc(i.desc)}</div>`:''}</div>
+    <div class="hint" style="margin:3px 0 0">${KTYPES[i.type]} · основной итог: ${KAGG[i.main].toLowerCase()} · ${esc(kWhoTxt(i))} · вести с ${ymN(kStartI(i))} · заполнять до ${i.dueDay}-го числа следующего месяца · значений: ${n}</div>${i.desc?`<div class="hint" style="margin:2px 0 0">${esc(i.desc)}</div>`:''}</div>
     <button class="icon-btn sm" data-kup="${i.id}" ${j?'':'disabled'} aria-label="Выше">${ic('up','sm')}</button><button class="icon-btn sm" data-kdn="${i.id}" ${j<inds.length-1?'':'disabled'} aria-label="Ниже" style="transform:rotate(180deg)">${ic('up','sm')}</button><button class="icon-btn sm" data-kmore="${i.id}" aria-label="Действия">${ic('more','sm')}</button></div>`}).join('')}</div>
   <div class="row"><button class="btn cta" id="ks-add">${ic('plus')}Добавить показатель</button></div>`;
   const move=(id,to)=>{const l=kInds(true);const a=l.findIndex(x=>x.id===id);if(a<0||to<0||to>=l.length)return;const[x]=l.splice(a,1);l.splice(to,0,x);l.forEach((y,k)=>y.order=k+1);log('kind',id,`Порядок показателей: ${l.map(y=>y.name).join(', ')}`);renderPage()};
@@ -194,7 +232,7 @@ function kpiSetupList(body){const inds=kInds(true);
   let drag=null;body.querySelectorAll('.kset-i').forEach(x=>{x.addEventListener('dragstart',e=>{drag=x.dataset.kid;x.classList.add('dragging');e.dataTransfer.effectAllowed='move'});x.addEventListener('dragend',()=>x.classList.remove('dragging'));
     x.addEventListener('dragover',e=>{e.preventDefault();x.classList.add('over')});x.addEventListener('dragleave',()=>x.classList.remove('over'));x.addEventListener('drop',e=>{e.preventDefault();x.classList.remove('over');if(drag&&drag!==x.dataset.kid)move(drag,kInds(true).findIndex(y=>y.id===x.dataset.kid))})})}
 function indDlg(i0){if(!can('indSetup'))return toast('Нет права «Настраивать показатели»','alert',true);const has=i0&&kHasVals(i0);
-  const st={name:i0?i0.name:'',unit:i0?i0.unit:'сом',type:i0?i0.type:'som',main:i0?i0.main:'sum',desc:i0?i0.desc:'',scope:i0?i0.scope:'all',sel:new Set(i0?kWhoAll().filter(c=>kOn(i0,c)).map(c=>c.id):[]),autoNew:i0?i0.autoNew!==false:true,f:{},req:i0?i0.req:true,dueDay:i0?i0.dueDay:10};
+  const st={name:i0?i0.name:'',unit:i0?i0.unit:'сом',type:i0?i0.type:'som',main:i0?i0.main:'sum',desc:i0?i0.desc:'',scope:i0?i0.scope:'all',sel:new Set(i0?kWhoAll().filter(c=>kOn(i0,c)).map(c=>c.id):[]),autoNew:i0?i0.autoNew!==false:true,f:{},req:i0?i0.req:true,dueDay:i0?i0.dueDay:10,start:i0?kStartI(i0):ym(TODAY)};
   const custom=()=>!KUNITS.includes(st.unit);
   openModal({form:true,size:'mid',render:m=>({title:i0?`Показатель «${esc(i0.name)}»`:'Новый показатель',sub:'Настройка организации: показатель увидят все сотрудники с доступом к контрагентам',
     body:`<div class="form">${fld('Название',inp('ki-n',st.name,'placeholder="Например: Выручка"'),{req:true,full:true,id:'ki-n'})}
@@ -204,6 +242,7 @@ function indDlg(i0){if(!can('indSetup'))return toast('Нет права «Нас
       ${fld('Основной итог',sel('ki-a',Object.entries(KAGG),st.main),{id:'ki-a',hint:'Показывается первым: для выручки — сумма, для численности — среднее или последнее'})}
       ${fld('Описание',`<textarea class="inp" id="ki-d" style="min-height:60px" placeholder="Что и откуда брать — покажем подсказкой ⓘ при вводе">${esc(st.desc)}</textarea>`,{full:true,id:'ki-d'})}
       ${fld('Срок заполнения, число следующего месяца',inp('ki-due',st.dueDay,'type="number" min="1" max="28" style="width:110px"'),{id:'ki-due'})}
+      ${fld('Вести с',`<input type="month" class="inp" id="ki-st" value="${st.start}" max="${ym(TODAY)}" style="width:auto">`,{id:'ki-st',hint:'С этого месяца показатель обязателен. Значения за более ранние месяцы вносить можно, но незаполненными они не считаются. У контрагента месяц «с …» меняется в его карточке'})}
       <div class="fld"><label class="lbl">&nbsp;</label><label class="row"><input type="checkbox" id="ki-req" ${st.req?'checked':''}> Обязательно заполнять каждый месяц</label><div class="hint">Незаполненный месяц попадёт во вкладку «Не заполнено»</div></div>
       <div class="fld full"><span class="lbl">Кому вести</span><div class="seg"><button data-ksc="all" class="${st.scope==='all'?'on':''}">Всем контрагентам</button><button data-ksc="sel" class="${st.scope==='sel'?'on':''}">Выбранным</button></div>
       ${st.scope==='all'?(i0&&i0.scope==='all'&&kWhoAll().some(c=>!kOn(i0,c))?`<div class="hint">Сейчас не ведётся у ${kWhoAll().filter(c=>!kOn(i0,c)).length} контрагентов — их меняют во вкладке «Кому вести» или в карточке контрагента</div>`:''):(()=>{const cs=kWhoFilter(st.f);const allOn=cs.length&&cs.every(c=>st.sel.has(c.id));
@@ -213,16 +252,16 @@ function indDlg(i0){if(!can('indSetup'))return toast('Нет права «Нас
       <div class="hint">${st.scope==='all'?'При «Всем контрагентам» новые контрагенты включаются всегда. ':''}У разовых и приостановленных контрагентов показатель не требуется, даже если он включён</div></div>
       ${i0?(()=>{const hs=HIST.filter(h=>h.ent==='kind'&&h.id===i0.id).slice().reverse().slice(0,30);return hs.length?`<details class="fld full"><summary class="lbl" style="cursor:pointer">История показателя · ${hs.length}</summary><div class="tbl-wrap"><table class="mini"><thead><tr><th>Когда</th><th>Кто</th><th>Что</th></tr></thead><tbody>${hs.map(h=>`<tr><td class="tnum">${fmtDT(h.at)}</td><td>${esc(whoName(h.who))}</td><td style="white-space:normal">${esc(h.what)}</td></tr>`).join('')}</tbody></table></div></details>`:''})():''}</div>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ki-ok">${i0?'Сохранить':'Создать показатель'}</button>`,
-    mount(el){const rd=()=>{st.name=val(el,'ki-n');st.desc=val(el,'ki-d');st.req=$('#ki-req',el).checked;st.dueDay=+val(el,'ki-due')||10;st.main=val(el,'ki-a');if(!has){st.type=val(el,'ki-t');const u=val(el,'ki-u');st.unit=u==='_'?(el.querySelector('#ki-uc')?val(el,'ki-uc')||'_':'_'):u}};
+    mount(el){const rd=()=>{st.name=val(el,'ki-n');st.desc=val(el,'ki-d');st.req=$('#ki-req',el).checked;st.dueDay=+val(el,'ki-due')||10;st.main=val(el,'ki-a');st.start=val(el,'ki-st')||st.start;if(!has){st.type=val(el,'ki-t');const u=val(el,'ki-u');st.unit=u==='_'?(el.querySelector('#ki-uc')?val(el,'ki-uc')||'_':'_'):u}};
       $('#ki-u',el).onchange=()=>{rd();m.draw()};$$('[data-ksc]',el).forEach(b=>b.onclick=()=>{rd();st.scope=b.dataset.ksc;if(st.scope==='sel'&&!st.sel.size&&!i0)kWhoAll().forEach(c=>st.sel.add(c.id));m.draw()});$$('[data-kcs]',el).forEach(x=>x.onchange=()=>{rd();x.checked?st.sel.add(+x.dataset.kcs):st.sel.delete(+x.dataset.kcs);m.draw()});
       const au=$('#ki-auto',el);if(au)au.onchange=()=>{if(st.scope==='sel')st.autoNew=au.checked};
       const ka=$('#ki-all',el);if(ka)ka.onclick=()=>{rd();const cs=kWhoFilter(st.f);const on=cs.every(c=>st.sel.has(c.id));cs.forEach(c=>on?st.sel.delete(c.id):st.sel.add(c.id));m.draw()};
       kWhoFiltBind(el,st.f,(k,x)=>{rd();m.draw();const n=el.querySelector(`[data-kf="${k}"]`);if(n&&x.tagName!=='SELECT'){n.focus();n.setSelectionRange(n.value.length,n.value.length)}});
       $('#ki-ok',el).onclick=()=>{rd();const nm=st.name.trim();const dup=IND.some(x=>x!==i0&&x.name.toLowerCase()===nm.toLowerCase());
         if(!setErr(el,'ki-n',!nm?'Введите название':dup?'Такой показатель уже есть':''))return;if(st.unit==='_'&&el.querySelector('#ki-uc')&&!setErr(el,'ki-uc','Введите подпись единицы'))return;
-        if(st.dueDay<1||st.dueDay>28)return setErr(el,'ki-due','От 1 до 28');if(st.scope==='sel'&&!st.sel.size)return toast('Выберите хотя бы одного контрагента','alert',true);
-        const d={name:nm,unit:st.unit==='_'?'':st.unit,type:st.type,main:st.main,desc:st.desc,req:st.req,dueDay:st.dueDay};
-        if(i0){Object.assign(i0,d);kWhoApply(i0,st,false);touch(i0);log('kind',i0.id,`Показатель «${nm}» изменён`)}else{const n=born(Object.assign({id:'k'+(Math.max(0,...IND.map(x=>+x.id.slice(1)))+1),archived:false,order:IND.length+1,scope:'all',cps:[],off:{},from:{},seen:[],autoNew:true},d));kWhoApply(n,st,true);IND.push(n);log('kind',n.id,`Создан показатель «${nm}»`)}
+        if(st.dueDay<1||st.dueDay>28)return setErr(el,'ki-due','От 1 до 28');if(!setErr(el,'ki-st',st.start>ym(TODAY)?'Не позже текущего месяца':''))return;if(st.scope==='sel'&&!st.sel.size)return toast('Выберите хотя бы одного контрагента','alert',true);
+        const d={name:nm,unit:st.unit==='_'?'':st.unit,type:st.type,main:st.main,desc:st.desc,req:st.req,dueDay:st.dueDay,start:st.start};
+        if(i0){const ws=kStartI(i0);Object.assign(i0,d);if(ws!==st.start)log('kind',i0.id,`Показатель «${nm}»: вести с ${ymN(ws)} → с ${ymN(st.start)}`);kWhoApply(i0,st,false);touch(i0);log('kind',i0.id,`Показатель «${nm}» изменён`)}else{const n=born(Object.assign({id:'k'+(Math.max(0,...IND.map(x=>+x.id.slice(1)))+1),archived:false,order:IND.length+1,scope:'all',cps:[],off:{},from:{},seen:[],autoNew:true},d));kWhoApply(n,st,true);IND.push(n);log('kind',n.id,`Создан показатель «${nm}»`)}
         kResync();m.close();refreshAll();toast(i0?'Показатель сохранён':'Показатель создан','gauge')}}})})}
 // Сохранение «Кому вести» из окна показателя: сверяет, у кого показатель вёлся и у кого должен вестись, пишет изменения в историю показателя и контрагента
 function kWhoApply(i,st,isNew){const cs=CPS.filter(c=>c.kind!=='oneoff');const before=new Map(cs.map(c=>[c.id,isNew?null:kOn(i,c)]));const stayAll=!isNew&&i.scope==='all'&&st.scope==='all';
@@ -233,10 +272,10 @@ function kWhoApply(i,st,isNew){const cs=CPS.filter(c=>c.kind!=='oneoff');const b
     if(b!=null&&b!==want)log('kind',i.id,`Показатель «${i.name}», ${c.name}: «${b?'Ведётся':'Не ведётся'}» → «${want?'Ведётся':'Не ведётся'}»`,c.id)})}
 // One contractor × month: all indicators, comment and file per value, status scale and history.
 function kEditDlg(c,m){if(!c)return;const ed=kCanEdit(c);
-  openModal({form:true,size:'mid',live:true,render:mm=>{const inds=kInds(true).filter(i=>kApplies(i,c,m)||kVal(c.id,i.id,m));const k=kMonth(c,m);const hs=IHIST.filter(x=>x.cp===c.id&&x.m===m).sort((a,b)=>a.at<b.at?1:-1);
+  openModal({form:true,size:'mid',live:true,render:mm=>{const inds=kInds(true).filter(i=>kCanVal(i,c,m)||kVal(c.id,i.id,m));const k=kMonth(c,m);const hs=IHIST.filter(x=>x.cp===c.id&&x.m===m).sort((a,b)=>a.at<b.at?1:-1);
     return {title:esc(c.name),sub:`Показатели за ${esc(ymLabel(m))} · заполнить до ${fmtD(kDue(c,m))}`,
     body:`${k?`<div class="box">${scaleFull('ind',k.status,k.id)}</div>`:''}<div class="note">${ic('info')}<span>Пусто — «не заполнено», 0 — «внесено, равно нулю». ${ed?'':'Вносит и правит ответственный, главный бухгалтер или владелец.'}</span></div>
-      ${inds.length?inds.map(i=>{const v=kVal(c.id,i.id,m);const ro=!ed||i.archived;return `<div class="box flat kv-ed"><div class="row" style="gap:6px"><b>${esc(i.name)}</b>${i.desc?tipI(i.desc):''}${i.req?'':'<span class="tag">необязательный</span>'}${i.archived?'<span class="tag">архив</span>':''}<div class="grow"></div>${v?`<span class="hint" style="margin:0">${esc(whoName(v.by))}, ${fmtDT(v.at)}</span>`:''}</div>
+      ${inds.length?inds.map(i=>{const v=kVal(c.id,i.id,m);const ro=!ed||i.archived;return `<div class="box flat kv-ed"><div class="row" style="gap:6px"><b>${esc(i.name)}</b>${i.desc?tipI(i.desc):''}${i.req?'':'<span class="tag">необязательный</span>'}${kEarly(i,c,m)?`<span class="tag" title="Месяц раньше «с ${ymN(kStart(i,c))}»: значение можно внести, но оно необязательно">ведётся с ${ymN(kStart(i,c))}</span>`:''}${i.archived?'<span class="tag">архив</span>':''}<div class="grow"></div>${v?`<span class="hint" style="margin:0">${esc(whoName(v.by))}, ${fmtDT(v.at)}</span>`:''}</div>
         <div class="form">${fld(`Значение, ${esc(i.unit||KTYPES[i.type].toLowerCase())}`,inp('kv-'+i.id,v?kNum(i,v.v):'',`inputmode="decimal" class="inp tnum" placeholder="пусто" ${ro?'readonly':''}`),{id:'kv-'+i.id})}${fld('Комментарий',inp('kn-'+i.id,v?v.note:'',`placeholder="Необязательно" ${ro?'readonly':''}`),{id:'kn-'+i.id})}
         ${ro?(v&&v.file?`<div class="fld"><span class="lbl">Файл</span><span class="tag">${ic('clip','sm')}${esc(v.file)}</span></div>`:''):fld('Файл',`${v&&v.file?`<span class="tag">${ic('clip','sm')}${esc(v.file)}</span>`:''}<input type="file" class="inp" id="kf-${i.id}">`,{id:'kf-'+i.id,hint:'Например, выписка'})}</div></div>`}).join(''):`<div class="state">${ic('gauge','lg')}<b>Показатели за этот месяц не нужны</b></div>`}
       ${hs.length?`<div class="box"><h3>История значений</h3><div class="tbl-wrap"><table class="mini"><thead><tr><th>Когда</th><th>Показатель</th><th>Было</th><th>Стало</th><th>Кто</th></tr></thead><tbody>${hs.map(x=>{const i=IND.find(y=>y.id===x.ind)||{name:'?'};return `<tr><td class="tnum">${fmtDT(x.at)}</td><td>${esc(i.name)}</td><td class="faint">${x.old==null?'пусто':esc(kFmt(i,x.old))}</td><td>${x.new==null?'пусто':esc(kFmt(i,x.new))}${x.src==='xlsx'?' <span class="tag">Из Excel</span>':''}</td><td>${esc(whoName(x.by))}</td></tr>`}).join('')}</tbody></table></div></div>`:''}
@@ -246,14 +285,43 @@ function kEditDlg(c,m){if(!c)return;const ed=kCanEdit(c);
       inds.filter(i=>!i.archived).forEach(i=>{const v=kParse(i,val(el,'kv-'+i.id));if(Number.isNaN(v)){setErr(el,'kv-'+i.id,'Введите число');bad=true;return}setErr(el,'kv-'+i.id,'');
         const f=el.querySelector('#kf-'+i.id);const fn=f&&f.files&&f.files[0]?f.files[0].name:'';if(v==null&&!kVal(c.id,i.id,m))return;if(kSet(c,i,m,v,val(el,'kn-'+i.id),fn))n++});
       if(bad)return;mm.close();refreshAll();toast(n?`Сохранено: ${n}`:'Изменений нет')}}}}})}
+// Карточка контрагента: какие месяцы не заполнены и кнопка «Внести за прошлые месяцы»
+function kCardMissHtml(c,ed){const x=kMissOk()&&kMissCnt().by[c.id];const b=ed?`<button class="btn sm ${x?'cta':'dis'}" id="kc-past" ${x?'':'aria-disabled="true" data-why="Незаполненных месяцев нет: все обязательные показатели внесены"'}>${ic('edit','sm')}Внести за прошлые месяцы</button>`:'';
+  if(!x)return b?`<div class="row kc-miss"><span class="hint grow" style="margin:0">Все обязательные показатели внесены с месяца «с …» до прошлого месяца.</span>${b}</div>`:'';
+  return `<div class="note ${x.over?'red':'warn'} kc-miss">${ic('alert')}<span class="grow">Показатели не заполнены за ${x.ms.length} ${plural(x.ms.length,'месяц','месяца','месяцев')}: ${x.ms.map(ymN).join(', ')}${x.over?'':' — срок ещё не прошёл'}</span>${b}</div>`}
+// «Внести за прошлые месяцы»: все незаполненные месяцы контрагента от «с …» до прошлого месяца по всем ведущимся показателям; ввод в ячейках, как в «Вводе за месяц».
+// Список месяцев запоминается при открытии: заполненная строка не исчезает, пока окно открыто
+function kPastDlg(c,done){if(!kCanEdit(c))return toast('Нет права «Вносить значения показателей»','lock',true);
+  const ms=((kMissCnt().by[c.id]||{}).ms||[]).slice().sort();const inds=kInds().filter(i=>kOpen(i,c));
+  openModal({form:true,size:'wide',onClose:()=>{refreshAll();done&&done()},render:mm=>{const left=()=>ms.filter(m=>kInds().some(i=>i.req&&kApplies(i,c,m)&&!kVal(c.id,i.id,m))).length;
+    return {title:'Внести за прошлые месяцы',sub:esc(c.name),
+    body:ms.length?`<div class="note">${ic('info')}<span>Незаполненные месяцы от «с …» до прошлого месяца. Пусто — «не заполнено», 0 — «внесено, равно нулю». Стрелки и Enter переходят между ячейками, можно вставить блок из Excel.</span></div>
+      <div class="tbl-wrap kpi-wrap"><table class="kt kt-past"><thead><tr><th class="kt-cp">Месяц</th>${inds.map(i=>`<th class="num">${esc(i.name)}${i.desc?tipI(i.desc):''}<small>${esc(i.unit||KTYPES[i.type])}${i.req?'':' · необязательный'}</small></th>`).join('')}<th>Статус месяца</th></tr></thead><tbody>
+      ${ms.map((m,ri)=>{const k=kMonth(c,m);return `<tr class="${k&&k.status==='Не заполнено'&&TODAY>kDue(c,m)?'overdue':''}" data-pm="${m}"><td class="kt-cp"><b>${esc(ymLabel(m))}</b><small class="faint">до ${fmtD(kDue(c,m))}</small></td>${inds.map((i,ci)=>{if(!kApplies(i,c,m))return `<td class="num faint kno" title="В этом месяце показатель не нужен">—</td>`;const v=kVal(c.id,i.id,m);
+        return `<td class="num ${v?'':i.req?'emp':''}"><input class="kin" data-r="${ri}" data-c="${ci}" data-m="${m}" data-ind="${i.id}" value="${v?esc(kNum(i,v.v)):''}" inputmode="decimal" aria-label="${esc(i.name)}, ${esc(ymLabel(m))}"></td>`}).join('')}<td class="kst">${k?scaleMini('ind',k.status,k):'—'}</td></tr>`}).join('')}</tbody></table></div>`
+      :`<div class="state">${ic('ok','lg')}<b>Всё заполнено</b><span>Обязательные показатели внесены за все месяцы.</span></div>`,
+    foot:`<span class="hint grow" id="kp-left" style="margin:0">${ms.length?`Осталось незаполненных месяцев: ${left()} из ${ms.length}`:''}</span><button class="btn cta" data-close>Готово</button>`,
+    mount(el){const at=(r,ci)=>el.querySelector(`.kin[data-r="${r}"][data-c="${ci}"]`);
+      const put=(x,raw)=>{const i=IND.find(y=>y.id===x.dataset.ind),m=x.dataset.m;const v=kParse(i,raw);if(Number.isNaN(v))return 'bad';if(!kSet(c,i,m,v))return false;
+        x.value=v==null?'':kNum(i,v);x.parentElement.classList.toggle('emp',v==null&&i.req);const tr=x.closest('tr'),k=KMI[c.id+'|'+m];tr.querySelector('.kst').innerHTML=k?scaleMini('ind',k.status,k):'—';tr.classList.toggle('overdue',!!k&&k.status==='Не заполнено'&&TODAY>kDue(c,m));return true};
+      const upd=()=>{const l=el.querySelector('#kp-left');if(l)l.textContent=`Осталось незаполненных месяцев: ${left()} из ${ms.length}`;kLiveBadges()};
+      $$('.kin',el).forEach(x=>{x.addEventListener('focus',()=>x.select());
+        x.addEventListener('change',()=>{const r=put(x,x.value);if(r==='bad'){toast(`«${x.value}» — не число`,'alert',true);const i=IND.find(y=>y.id===x.dataset.ind),o=kVal(c.id,i.id,x.dataset.m);x.value=o?kNum(i,o.v):''}else if(r)upd()});
+        x.addEventListener('keydown',e=>{const r=+x.dataset.r,ci=+x.dataset.c;let t=null;
+          if(e.key==='ArrowDown'||e.key==='Enter'){for(let k=r+1;k<=ms.length&&!t;k++)t=at(k,ci)}if(e.key==='ArrowUp'){for(let k=r-1;k>=0&&!t;k--)t=at(k,ci)}
+          if(e.key==='ArrowRight'&&x.selectionEnd===x.value.length){for(let k=ci+1;k<=inds.length&&!t;k++)t=at(r,k)}if(e.key==='ArrowLeft'&&x.selectionStart===0){for(let k=ci-1;k>=0&&!t;k--)t=at(r,k)}
+          if(t){e.preventDefault();x.dispatchEvent(new Event('change'));t.focus()}});
+        x.addEventListener('paste',e=>{const tx=(e.clipboardData||window.clipboardData).getData('text');if(!/[\t\n]/.test(tx.trim()))return;e.preventDefault();const r0=+x.dataset.r,c0=+x.dataset.c;let n=0,bad=0;
+          tx.replace(/\r/g,'').replace(/\n$/,'').split('\n').forEach((line,dr)=>line.split('\t').forEach((cell,dc)=>{const y=at(r0+dr,c0+dc);if(!y)return;const r=put(y,cell);if(r==='bad')bad++;else if(r)n++}));
+          upd();toast(`Вставлено значений: ${n}${bad?`, пропущено не чисел: ${bad}`:''}`,'paste')})})}}}})}
 // Card tab «Показатели»: table indicator × month + totals, inline entry, chart of the chosen indicator.
 function kpiCardHtml(c,st){const y=+TODAY.slice(0,4);st.kp=st.kp||{from:`${y}-01`,to:`${y}-12`};const p=st.kp;const ms=kMonths(p.from,p.to);
-  const inds=kInds(true).filter(i=>ms.some(m=>kApplies(i,c,m)||kVal(c.id,i.id,m)));const ed=kCanEdit(c);st.kch=st.kch&&inds.find(i=>i.id===st.kch)?st.kch:(inds[0]||{}).id;
-  const who=kpiCardWhoHtml(c);
+  const inds=kInds(true).filter(i=>kOpen(i,c)||ms.some(m=>kVal(c.id,i.id,m)));const ed=kCanEdit(c);st.kch=st.kch&&inds.find(i=>i.id===st.kch)?st.kch:(inds[0]||{}).id;
+  const who=kpiCardWhoHtml(c)+kCardMissHtml(c,ed);
   if(!inds.length)return who+kPeriodBar(p,'kcp')+`<div class="state">${ic('gauge','lg')}<b>Показателей за этот период нет</b><span>${c.paused||c.archived?'Обслуживание приостановлено или контрагент в архиве.':'Показатели настраиваются в модуле «Показатели контрагентов».'}</span></div>`;
   const row=i=>{const vals=ms.map(m=>{const v=kVal(c.id,i.id,m);return v?v.v:null});return {vals,g:kAgg(vals),need:ms.filter(m=>kApplies(i,c,m)).length}};
-  const cell=(i,m)=>{const v=kVal(c.id,i.id,m);const ap=kApplies(i,c,m);const emp=!v&&ap&&m<ym(TODAY);
-    if(ed&&!i.archived&&(ap||v)&&m<=ym(TODAY))return `<td class="num ${emp?'emp':''}"><input class="kin kin-c" data-ind="${i.id}" data-m="${m}" value="${v?esc(kNum(i,v.v)):''}" inputmode="decimal" aria-label="${esc(i.name)}, ${esc(ymLabel(m))}"></td>`;
+  const cell=(i,m)=>{const v=kVal(c.id,i.id,m);const ap=kApplies(i,c,m);const emp=!v&&ap&&m<ym(TODAY);const early=kEarly(i,c,m);
+    if(ed&&!i.archived&&(ap||v||early)&&m<=ym(TODAY))return `<td class="num ${emp?'emp':''} ${early?'kearly':''}"><input class="kin kin-c" data-ind="${i.id}" data-m="${m}" value="${v?esc(kNum(i,v.v)):''}" inputmode="decimal" ${early?`title="Ведётся с ${ymN(kStart(i,c))}: значение необязательно"`:''} aria-label="${esc(i.name)}, ${esc(ymLabel(m))}"></td>`;
     return `<td class="num ${emp?'emp':''}">${v?esc(kNum(i,v.v)):ap&&m<ym(TODAY)?'<span class="faint">пусто</span>':'<span class="faint">—</span>'}</td>`};
   const tots=(i,r)=>['sum','avg','max','min'].map(a=>`<td class="num ktot ${a===i.main?'strong':''}">${r.g.n?esc(kNum(i,a==='avg'?Math.round(r.g.avg*100)/100:r.g[a])):'—'}${a==='avg'&&r.g.n?`<small class="faint"> по ${r.g.n} из ${r.need||ms.length}</small>`:''}</td>`).join('');
   let h=who+kPeriodBar(p,'kcp')+`<div class="hint" style="margin:0">Итоги считаются только по заполненным месяцам. Незаполненные месяцы подсвечены.</div>`;
@@ -269,6 +337,9 @@ function kpiCardHtml(c,st){const y=+TODAY.slice(0,4);st.kp=st.kp||{from:`${y}-01
   return h}
 function kpiCardMount(el,c,st,mm){kBindPeriod(el,'kcp',st.kp,()=>mm.draw());
   $$('[data-kcw]',el).forEach(x=>x.onchange=()=>{const i=IND.find(y=>y.id===x.dataset.kcw);if(kSetOn(i,c,x.checked)){derive();mm.draw();refreshAll();toast(`«${i.name}»: ${x.checked?'ведётся':'не ведётся'}`,'gauge')}});
+  $$('[data-kcf]',el).forEach(x=>x.onchange=()=>{const i=IND.find(y=>y.id===x.dataset.kcf),was=kStart(i,c),v=x.value;if(!v||v===was)return;if(v>ym(TODAY)){x.value=was;return toast('Месяц начала не может быть позже текущего','alert',true)}
+    i.from=i.from||{};i.from[c.id]=v;touch(i);log('kind',i.id,`Показатель «${i.name}», ${c.name}: вести с ${ymN(was)} → с ${ymN(v)}`,c.id);kResync();derive();mm.draw();refreshAll();toast(`«${i.name}»: ведётся с ${ymN(v)}`,'gauge')});
+  const kp=$('#kc-past',el);if(kp)kp.onclick=()=>kp.dataset.why?toast(kp.dataset.why,'lock',true):kPastDlg(c,()=>mm.draw());
   $$('[data-kch]',el).forEach(b=>b.onclick=()=>{st.kch=b.dataset.kch;mm.draw()});
   $$('.kin-c',el).forEach(x=>{x.addEventListener('focus',()=>x.select());x.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();x.blur()}});
     x.addEventListener('change',()=>{const i=IND.find(y=>y.id===x.dataset.ind),m=x.dataset.m;const v=kParse(i,x.value);if(Number.isNaN(v)){toast(`«${x.value}» — не число`,'alert',true);const o=kVal(c.id,i.id,m);x.value=o?kNum(i,o.v):'';return}

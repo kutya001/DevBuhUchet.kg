@@ -12,9 +12,9 @@ const kxFileName=(from,to)=>`Показатели ${from===to?ymLabel(from):ymLa
 const kxCps=o=>{const q=norm(o.q||'').trim();return visCps(false,'kpi').filter(c=>c.kind!=='oneoff'&&(!o.resp||c.resp===o.resp)&&(!o.reg||c.regime===o.reg)&&(!q||norm(c.name).includes(q)||c.inn.includes(q))).sort((a,b)=>COLL.compare(a.name,b.name))};
 // Состав шаблона: только контрагенты и столбцы, где показатель ведётся хотя бы у одного контрагента
 function kxTpl(o){const ms=kMonths(o.from,o.to);const inds=kInds().filter(i=>o.inds.has(i.id));
-  const cps=kxCps(o).filter(c=>inds.some(i=>ms.some(m=>kApplies(i,c,m))));
-  const cols=[];inds.forEach(i=>ms.forEach(m=>{if(cps.some(c=>kApplies(i,c,m)))cols.push({i,m})}));
-  const cell=(c,x)=>{if(!kApplies(x.i,c,x.m))return {v:'',s:XL_ST.off,off:1};const v=kVal(c.id,x.i.id,x.m);const k=KMI[c.id+'|'+x.m];const chk=!!(v&&k&&k.status==='Проверено');return {v:v?v.v:'',s:chk?XL_ST.checked:XL_ST.input,chk}};
+  const cps=kxCps(o).filter(c=>inds.some(i=>ms.some(m=>kCanVal(i,c,m))));
+  const cols=[];inds.forEach(i=>ms.forEach(m=>{if(cps.some(c=>kCanVal(i,c,m)))cols.push({i,m})}));
+  const cell=(c,x)=>{if(!kCanVal(x.i,c,x.m))return {v:'',s:XL_ST.off,off:1};const v=kVal(c.id,x.i.id,x.m);const k=KMI[c.id+'|'+x.m];const chk=!!(v&&k&&k.status==='Проверено');return {v:v?v.v:'',s:chk?XL_ST.checked:XL_ST.input,chk}};
   const rows=cps.map(c=>[{v:c.inn,s:XL_ST.key},{v:c.name,s:XL_ST.key},...cols.map(x=>cell(c,x))]);
   return {ms,inds,cps,cols,rows}}
 function kxTplBlob(t,o){const head=[{v:'ИНН',s:XL_ST.head},{v:'Контрагент',s:XL_ST.head},...t.cols.map(x=>({v:`${kxHead(x.i,x.m)} (${kxUnit(x.i)})`,s:XL_ST.head}))];
@@ -33,7 +33,7 @@ function kxParse(rows){const res={nw:[],chg:[],same:0,errs:[],months:new Set()};
     const c=CPS.find(x=>x.inn===inn);if(!c){err(ri,ci,'неизвестный контрагент',null,inn);return}
     if(!visCps(true,'kpi').includes(c)||!kCanEdit(c)){err(ri,ci,'нет доступа к контрагенту',c,inn);return}
     cols.forEach((x,j)=>{if(!x)return;const raw=r[j];if(raw==null||String(raw).trim()==='')return;
-      if(x.i.archived)return err(ri,j,'показатель в архиве',c,raw);if(!kApplies(x.i,c,x.m))return err(ri,j,'показатель не ведётся у контрагента',c,raw);
+      if(x.i.archived)return err(ri,j,'показатель в архиве',c,raw);if(!kCanVal(x.i,c,x.m))return err(ri,j,'показатель не ведётся у контрагента',c,raw);
       const v=typeof raw==='number'?kParse(x.i,String(raw).replace('.',',')):kParse(x.i,raw);if(v==null||Number.isNaN(v))return err(ri,j,'не число',c,raw);
       const key=c.id+'|'+x.i.id+'|'+x.m;if(seen.has(key))return;seen.add(key);res.months.add(x.m);
       const o=kVal(c.id,x.i.id,x.m);const k=KMI[c.id+'|'+x.m];const it={c,i:x.i,m:x.m,v,old:o?o.v:null,chk:!!(o&&k&&k.status==='Проверено'),ref:kxRef(ri,j),row:ri+1};

@@ -84,4 +84,6 @@ function kbUserDlg(e){const s=kbFor(e.id);openModal({size:'mid',render:()=>({tit
 function kbBox(s,o={}){return `<div class="box kb-box"><h3>Уровень знаний<span class="grow"></span>${o.link?`<button class="linkbtn" id="${o.link}" style="text-transform:none;letter-spacing:0;font-size:12.5px">Открыть Базу знаний</button>`:''}</h3><div class="row">${kbBadge(s,{big:1})}<span class="grow"></span><span class="muted">${s.d} из ${s.n} шагов</span></div>${kbBar(s)}<span class="hint">${s.nx?kbNextTxt(s):'Высший уровень'}${s.last?` · уровень «${esc(s.lv[s.cur].n)}» получен ${fmtD(((s.u.got||[]).find(x=>x.l===s.cur)||s.last).at.slice(0,10))}`:''}</span>${o.mods?kbModsHtml(s):''}</div>`}
 /* Приветствие при первом входе — внутри окна «Что нового» (whatsNew, вкладка «Новости») */
 const kbDot=()=>{try{return kbStat().pct===0}catch(e){return false}};
-function renderSheetDot(){const b=$('#burger');if(b)b.classList.toggle('has-dot',(!!kbDot()||newsUnread()>0)&&isMobile())}
+// Точка на «≡»: незаполненные показатели (красная — есть просроченные, жёлтая — только текущий месяц), иначе новости и начало обучения (синяя)
+function renderSheetDot(){const b=$('#burger');if(!b)return;const k=kMissOk()?kMissCnt():{n:0};const kb=!!kbDot()||newsUnread()>0;
+  b.classList.toggle('has-dot',(k.n>0||kb)&&isMobile());b.classList.toggle('dot-red',k.n>0&&k.over);b.classList.toggle('dot-yellow',k.n>0&&!k.over)}

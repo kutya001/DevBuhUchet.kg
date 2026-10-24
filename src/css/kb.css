@@ -24,6 +24,7 @@
 .kb-art img{max-width:100%;border-radius:var(--r-m);border:1px solid var(--border)}
 .kb-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-left:auto;flex:none;box-shadow:0 0 0 3px var(--blue-bg)}
 #burger.has-dot{position:relative}#burger.has-dot::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
+#burger.has-dot.dot-red::after{background:var(--red)}#burger.has-dot.dot-yellow::after{background:var(--b-yellow)}
 #kb-cg{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:95;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--r-l);background:var(--raised);border:1px solid var(--border);box-shadow:var(--shadow-l);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s,transform .25s;font-size:13.5px}
 #kb-cg svg{width:26px;height:26px;color:var(--purple)}#kb-cg.on{opacity:1;transform:none}
 @media (max-width:767px){#kb-cg{left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;transform:translateY(-12px)}}
