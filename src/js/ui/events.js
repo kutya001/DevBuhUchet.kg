@@ -14,7 +14,7 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[da
 document.addEventListener('change',e=>{if(e.target.id==='demo-user'||e.target.id==='demo-user-m'){switchUser(e.target.value)}if(e.target.hasAttribute('data-demo-data')){const v=e.target.value;e.target.value=DATA_MODE;closeSheet();if(v===DATA_MODE)return;confirmDlg({title:v==='empty'?'Перейти на пустую организацию?':'Включить демо-данные?',text:`Рабочие данные (TemDB) будут созданы заново ${v==='empty'?'как организация сразу после регистрации':'из demoDB.json'}. Всё, что вы ввели и изменили, пропадёт; чтобы сохранить, сначала нажмите «Экспорт TemDB.json».`,ok:'Переключить',run:()=>setDataMode(v)})}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-db]');if(b){closeSheet();dbAct(b.dataset.db)}});
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if(POP){closePop();return}if(MODALS.length){MODALS[MODALS.length-1].close();return}if($('#sheet').classList.contains('open')){closeSheet();return}}
+  if(e.key==='Escape'){if(PUB.open){pubClose();return}if(POP){closePop();return}if(MODALS.length){MODALS[MODALS.length-1].close();return}if($('#sheet').classList.contains('open')){closeSheet();return}}
   if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)&&!MODALS.length){e.preventDefault();$('#topbar').classList.add('searching');$('#q').focus()}
 });
 $('#sheet-cover').onclick=closeSheet;

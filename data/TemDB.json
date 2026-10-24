@@ -26,7 +26,8 @@
    "fee": false,
    "finops": false,
    "projects": false,
-   "indicators": false
+   "indicators": false,
+   "cppage": false
   },
   "remind": [
    7,

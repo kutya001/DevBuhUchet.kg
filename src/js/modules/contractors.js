@@ -84,7 +84,7 @@ function renderCps(body,tab,fresh){
   const rows=()=>{const v=visCps(true);const g=GS[gid];const fs=g&&g.filters&&g.filters.svc;if(fs&&fs.vals&&fs.vals.includes('В архиве'))return v;const a=v.filter(c=>!c.archived);if(tab==='mine')return a.filter(c=>c.resp===S.me);if(tab==='debtors')return a.filter(c=>c.feeDebt>0);if(tab==='paused')return a.filter(c=>c.paused);if(tab==='oneoff')return a.filter(c=>c.kind==='oneoff');return a};
   grid($('#cg',body),{id:gid,cols:cpCols(),rows,title:'name',noun:['контрагент','контрагента','контрагентов'],rowClass:c=>!c.resp&&!c.archived?'warn':c.archived||c.paused?'muted':'',
     actions:cpActions,open:openCp,sort:{key:'name',dir:1},preset:S.preset,simulateLoad:fresh,
-    bulk:tab==='archive'||!(can('assign')||can('createCp')||can('cpArchive'))?null:[...(can('assign')||can('createCp')?[{label:'Назначить ответственного',icon:'user',run:(rs,done)=>respDlg(rs,done)}]:[]),...(can('cpArchive')?[{label:'В архив',icon:'archive',danger:true,run:(rs,done)=>archiveDlg(rs,done)}]:[])],
+    bulk:tab==='archive'||!(can('assign')||can('createCp')||can('cpArchive')||(feat('cppage')&&can('cpPage')))?null:[...(can('assign')||can('createCp')?[{label:'Назначить ответственного',icon:'user',run:(rs,done)=>respDlg(rs,done)}]:[]),...(feat('cppage')&&can('cpPage')?[{label:'Включить страницу',icon:'link',run:(rs,done)=>pgEnable(rs,done)}]:[]),...(can('cpArchive')?[{label:'В архив',icon:'archive',danger:true,run:(rs,done)=>archiveDlg(rs,done)}]:[])],
     empty:{icon:'building',title:tab==='mine'?'За вами пока не закреплены контрагенты':tab==='archive'?'Архив пуст':'Контрагентов пока нет',text:tab==='all'?'Добавьте первого контрагента или загрузите список из Excel.':'',add:tab==='all'&&can('createCp')?addCpDlg:null}});
 }
 function respDlg(cs,done){
@@ -102,7 +102,7 @@ function transferCp(c,to){const from=c.resp;if(from===to)return;c.resp=to;
   log('cp',c.id,`Ответственный: ${empName(from)||'—'} → ${empName(to)}`,c.id)}
 function archiveDlg(cs,done){
   confirmDlg({title:cs.length>1?`Отправить в архив ${cs.length} контрагентов?`:`Отправить в архив ${esc(cs[0].name)}?`,text:'Удалить контрагента с отчётами нельзя, его можно только архивировать. Отчёты за периоды после текущего месяца получат статус «Не требуется»; отчёты за уже обслуженные периоды остаются к сдаче, сданные — без изменений.',ok:'В архив',danger:true,run:()=>{
-    cs.forEach(c=>{c.archived=true;{const l=lastPeriod(c);if(l&&(!l.to||l.to>ym(TODAY)))l.to=ym(TODAY)}REPORTS.filter(r=>r.cp===c.id&&OPEN.has(r.status)&&r.due>=TODAY&&!inService(c,ym(r.pkey))).forEach(r=>{r.status='Не требуется'});log('cp',c.id,'Отправлен в архив',c.id)});done&&done();refreshAll();
+    cs.forEach(c=>{c.archived=true;{const l=lastPeriod(c);if(l&&(!l.to||l.to>ym(TODAY)))l.to=ym(TODAY)}REPORTS.filter(r=>r.cp===c.id&&OPEN.has(r.status)&&r.due>=TODAY&&!inService(c,ym(r.pkey))).forEach(r=>{r.status='Не требуется'});log('cp',c.id,'Отправлен в архив',c.id);pgOff(c,'контрагент в архиве')});done&&done();refreshAll();
     const rest=cs.filter(c=>feat('taxpay')&&c.free>0);
     if(!rest.length){toast('Отправлено в архив','archive');return}
     if(can('archiveRest'))restDlg(rest);else toast(`Отправлено в архив. Остаток денег (${som(rest.reduce((a,c)=>a+c.free,0))}) решает владелец`,'archive')}});

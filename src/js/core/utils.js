@@ -19,3 +19,7 @@ function bishkekNow(){
 }
 let TODAY=bishkekNow().iso;
 
+// Латинское имя для адресов страниц по названию: «ОсОО «Бухгалтер Плюс»» → buhgalter-plyus (форма собственности и кавычки отбрасываются); slugFree — первое свободное: name, name-2, name-3…
+const TRL={а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'i',к:'k',л:'l',м:'m',н:'n',ң:'ng',о:'o',ө:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ү:'u',ф:'f',х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'};
+const slugOf=s=>String(s||'').toLowerCase().replace(/^\s*(осоо|оао|зао|ао|оо|ип|гп|мп|чп|ф\/х|кх|оф)\s+/,'').replace(/[«»"'“”„]/g,'').replace(/[а-яёңөү]/g,c=>TRL[c]??'').replace(/[^a-z0-9]+/g,'-').replace(/^-+/,'').slice(0,30).replace(/-+$/,'');
+const slugFree=(base,taken)=>{let b=base.length>=3?base:(base?base+'-org':'org').slice(0,30),s=b,i=2;while(taken.includes(s)){const t='-'+i++;s=b.slice(0,30-t.length).replace(/-+$/,'')+t}return s};

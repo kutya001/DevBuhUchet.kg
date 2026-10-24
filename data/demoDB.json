@@ -33,7 +33,8 @@
    "files": true,
    "finops": true,
    "projects": true,
-   "indicators": true
+   "indicators": true,
+   "cppage": true
   },
   "remind": [
    7,
@@ -412,7 +413,15 @@
    }
   },
   "taskConfirm": true,
-  "repConfirm": true
+  "repConfirm": true,
+  "slug": "buhgalter-plyus",
+  "pageSec": [
+   "contacts",
+   "reports",
+   "money",
+   "kpi",
+   "fee"
+  ]
  },
  "roles": [
   {
@@ -426,6 +435,7 @@
     "cpArchive",
     "fee",
     "tariff",
+    "cpPage",
     "archiveRest",
     "repView",
     "assign",
@@ -482,6 +492,7 @@
     "cpPause",
     "fee",
     "tariff",
+    "cpPage",
     "repView",
     "assign",
     "repDue",
@@ -1039,7 +1050,21 @@
     "confirmed": true,
     "gov": false
    },
-   "sfT": "spino"
+   "sfT": "spino",
+   "page": {
+    "on": true,
+    "code": "730264",
+    "at": "2026-10-22 16:30",
+    "by": "e2",
+    "codeAt": "2026-10-22 16:30",
+    "hide": [
+     "fee"
+    ],
+    "last": null,
+    "lastDev": "",
+    "fails": 0,
+    "lock": 0
+   }
   },
   {
    "id": 3,
@@ -4262,6 +4287,18 @@
     "registry": true,
     "confirmed": true,
     "gov": false
+   },
+   "page": {
+    "on": true,
+    "code": "482915",
+    "at": "2026-10-20 11:05",
+    "by": "e1",
+    "codeAt": "2026-10-20 11:05",
+    "hide": [],
+    "last": "2026-10-23 19:42",
+    "lastDev": "Телефон · Safari",
+    "fails": 0,
+    "lock": 0
    }
   },
   {
@@ -36578,6 +36615,54 @@
    "id": 442,
    "cp": 29,
    "what": "Сдача подтверждена"
+  },
+  {
+   "at": "2026-10-20 11:05",
+   "who": "e1",
+   "ent": "cp",
+   "id": 29,
+   "cp": 29,
+   "what": "Страница контрагента включена: создан код доступа"
+  },
+  {
+   "at": "2026-10-20 11:07",
+   "who": "e3",
+   "ent": "cp",
+   "id": 29,
+   "cp": 29,
+   "what": "Ссылка на страницу контрагента с кодом отправлена в WhatsApp"
+  },
+  {
+   "at": "2026-10-20 18:15",
+   "who": "client",
+   "ent": "cp",
+   "id": 29,
+   "cp": 29,
+   "what": "Страница контрагента открыта: ПК · Chrome"
+  },
+  {
+   "at": "2026-10-23 19:42",
+   "who": "client",
+   "ent": "cp",
+   "id": 29,
+   "cp": 29,
+   "what": "Страница контрагента открыта: Телефон · Safari"
+  },
+  {
+   "at": "2026-10-22 16:30",
+   "who": "e2",
+   "ent": "cp",
+   "id": 2,
+   "cp": 2,
+   "what": "Страница контрагента включена: создан код доступа"
+  },
+  {
+   "at": "2026-10-22 16:31",
+   "who": "e2",
+   "ent": "cp",
+   "id": 2,
+   "cp": 2,
+   "what": "Страница контрагента: раздел «Оплата за обслуживание» скрыт"
   }
  ],
  "tasks": [
@@ -52329,7 +52414,8 @@
    "_ub": "admin",
    "_ua": "2025-04-02 09:51",
    "contractors": 64,
-   "employees": 5
+   "employees": 5,
+   "slug": "finkonsalt-osh"
   },
   {
    "id": "o3",
@@ -52343,7 +52429,8 @@
    "_ub": "admin",
    "_ua": "2025-06-19 09:09",
    "contractors": 118,
-   "employees": 9
+   "employees": 9,
+   "slug": "audit-profi"
   },
   {
    "id": "o4",
@@ -52357,7 +52444,8 @@
    "_ub": "admin",
    "_ua": "2025-09-11 14:45",
    "contractors": 23,
-   "employees": 1
+   "employees": 1,
+   "slug": "kasymova-n-b-nalog-konsalt"
   },
   {
    "id": "o5",
@@ -52371,7 +52459,8 @@
    "_ub": "admin",
    "_ua": "2026-01-20 09:48",
    "contractors": 41,
-   "employees": 4
+   "employees": 4,
+   "slug": "uchet-i-pravo"
   },
   {
    "id": "o6",
@@ -52386,7 +52475,8 @@
    "_ub": "admin",
    "_ua": "2026-09-01 09:00",
    "contractors": 12,
-   "employees": 2
+   "employees": 2,
+   "slug": "izi-buh"
   }
  ],
  "platformUsers": [
