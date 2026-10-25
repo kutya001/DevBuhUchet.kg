@@ -194,6 +194,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       if(o&&!(o.accounts||[]).some(a=>a.kind==='phone')){const ph=((dd.organization||{}).accounts||[]).filter(a=>a.kind==='phone');if(ph.length){if(ph.some(a=>a.mainFee))o.accounts.forEach(a=>a.mainFee=false);o.accounts.push(...structuredClone(ph))}}
       (db.employees||[]).forEach(e=>{const f=(dd.employees||[]).find(x=>x.id===e.id&&x.login===e.login);if(!f||!(f.wallets||[]).length)return;const nums=new Set(f.wallets.map(w=>dg(w.kind==='phone'?w.phone.digits:w.num)));
         if((e.wallets||[]).every(w=>w.kind!=='phone'&&nums.has(dg(w.num))))e.wallets=structuredClone(f.wallets)})}}
+  // Описания прав «Принимать деньги…», «Проекты…» и «Подтверждать сдачу…» (v59) — как в ТЗ; у данных, сохранённых в браузере раньше, заменяются, если администратор их не менял
+  if(!db.meta.v59){db.meta.v59=1;const was={"repConfirm": "Подтверждать сданные отчёты других сотрудников или возвращать их «На исправление» с причиной; видит все отчёты, ждущие подтверждения, в пределах области группы. Свой сданный отчёт подтвердить нельзя (кроме владельца).", "money": "Принимать деньги от контрагента на налоги, отмечать оплату в бюджет, делать переводы.", "projects": "Создавать проекты и разовые услуги, менять их статус и принимать по ним оплату."};
+    Object.keys(was).forEach(id=>{const a=(db.ref.permissions||[]).find(x=>x.id===id),b=(r.permissions||[]).find(x=>x.id===id);if(a&&b&&a.desc===was[id])a.desc=b.desc})}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
