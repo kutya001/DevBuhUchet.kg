@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "updated": "2026-10-26",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main 6542c2f",
-    "what": "Фактические миграции 0000–0004: организации, пользователи, сотрудники, роли и права, шаблоны ролей, учётная политика, ГКЭД, справочники (JSON), журнал расписания; RLS, роль buhuchet_app, функция app.org_ids()."
+    "ref": "main f41e211",
+    "what": "Фактические миграции 0000–0007: организации, пользователи, сотрудники, роли и права, шаблоны ролей, учётная политика, история изменений, ГКЭД, справочники (JSON), журнал расписания; RLS, роль buhuchet_app, функции app.org_ids() и app.history_actor_allowed()."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -1629,8 +1629,8 @@
    "name": "audit_log",
    "ru": "История изменений",
    "group": "core",
-   "status": "planned",
-   "desc": "Кто, когда и что изменил: было → стало. Пишется в той же транзакции, что и само изменение. Записи с пустой организацией — изменения справочников платформы.",
+   "status": "actual",
+   "desc": "Кто, когда и что изменил: было → стало. Пишется в той же транзакции, что и само изменение. Записи только добавляются — менять и удалять их нельзя.",
    "columns": [
     {
      "name": "id",
@@ -1639,29 +1639,35 @@
      "null": false,
      "pk": true,
      "default": "identity",
-     "desc": "Растёт по порядку."
+     "desc": "Растёт по порядку (GENERATED ALWAYS AS IDENTITY).",
+     "status": "actual"
     },
     {
      "name": "org_id",
      "ru": "Организация",
      "type": "uuid",
-     "null": true,
+     "null": false,
      "fk": "organizations.id",
-     "desc": "Пусто — изменение на уровне платформы (справочники, организации)."
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. Обязательна: истории платформы без организации пока нет, её добавит Админка.",
+     "default": "app.current_org_id()",
+     "onDelete": "restrict",
+     "status": "actual"
     },
     {
      "name": "entity",
      "ru": "Что изменено",
      "type": "text",
      "null": false,
-     "desc": "Тип записи: contractor, report, task, money_operation, role…"
+     "desc": "Тип записи: contractor, report, task, money_operation, role, employee…",
+     "status": "actual"
     },
     {
      "name": "entity_id",
      "ru": "Номер записи",
      "type": "text",
      "null": false,
-     "desc": "Номер изменённой записи."
+     "desc": "Номер изменённой записи (текстом: у справочников номера текстовые).",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -1669,28 +1675,33 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке."
+     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами.",
+     "status": "actual"
     },
     {
      "name": "action",
      "ru": "Действие",
      "type": "text",
      "null": false,
-     "desc": "create, update, delete, restore, status, rollback, import…"
+     "desc": "create, update или delete.",
+     "status": "actual"
     },
     {
      "name": "changes",
      "ru": "Было → стало",
      "type": "jsonb",
-     "null": true,
-     "desc": "Список полей со старым и новым значением."
+     "null": false,
+     "desc": "Список изменений {field, from, to}: какое поле, было, стало. У секретных полей (пароль и т. п.) значения не пишутся — только имя поля.",
+     "default": "'[]'",
+     "status": "actual"
     },
     {
      "name": "reason",
      "ru": "Причина",
      "type": "text",
      "null": true,
-     "desc": "Для действий, где причина обязательна (откат, удаление, смена срока)."
+     "desc": "Для действий, где причина обязательна (откат, удаление, смена срока).",
+     "status": "actual"
     },
     {
      "name": "actor_user_id",
@@ -1698,26 +1709,35 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пусто — система (например, задача по расписанию)."
+     "desc": "Кто изменил; по умолчанию — пользователь текущего запроса. Пусто — «Система» (например, задача по расписанию).",
+     "default": "app.current_user_id()",
+     "onDelete": "restrict",
+     "status": "actual"
     },
     {
      "name": "at",
      "ru": "Когда",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "desc": "Время записи; при вставке должно быть ровно now() — подделать время нельзя.",
+     "status": "actual"
     }
    ],
    "logic": [
-    "Записи истории не меняются и не удаляются."
+    "Записи истории не меняются и не удаляются: это гарантирует сама база (отозваны права), а не только код.",
+    "Автора и время подставляет база (app.current_user_id(), now()); чужого автора или другое время записать нельзя.",
+    "Изменение записи и строка истории пишутся в одной транзакции: нет изменения без истории.",
+    "Поле version у записей защищает от одновременной правки: устаревшее сохранение получает «Запись изменена другим пользователем» (та же задача #4)."
    ],
-   "rls": "Включена. Своя организация видит свои записи; записи платформы — только администратор.",
+   "rls": "Включена. Политика audit_log_isolation: роль приложения видит и добавляет только записи своей организации. Ограничивающая политика audit_log_insert_guard на вставку: автор — текущий пользователь, время — now(), автор — пользователь этой организации или администратор платформы (проверяет функция app.history_actor_allowed, SECURITY DEFINER). У роли приложения отозваны UPDATE, DELETE и TRUNCATE.",
    "indexes": [
-    "(org_id, entity, entity_id)",
-    "(org_id, contractor_id, at)"
+    "audit_log_entity_idx (org_id, entity, entity_id, at) — история одной записи",
+    "audit_log_contractor_idx (org_id, contractor_id, at), только где contractor_id заполнен — история контрагента"
    ],
-   "issue": "#4",
-   "source": "demoDB.history; ТЗ «Общие правила для всей платформы»"
+   "issue": "#4 (сделано)",
+   "source": "demoDB.history; ТЗ «Общие правила для всей платформы»",
+   "migration": "0005_history_actor_check, 0006_audit_log, 0007_audit_log_append_only"
   },
   {
    "name": "status_history",
