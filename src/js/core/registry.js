@@ -30,7 +30,9 @@ function modTabs(m){return m.tabs?m.tabs().filter(Boolean):[]}
 
 /* ═════════════ Router: #module.tab ═════════════ */
 function parseHash(){const h=location.hash.replace(/^#/,'');const[a,b]=h.split('.');return {mod:a||'',tab:b||''}}
-function go(mod,tab,preset){S.preset=preset||null;const h='#'+mod+(tab?'.'+tab:'');if(location.hash===h)route();else location.hash=h}
+// Заглушка «Назад» (ovOpen в popups.js): окно закрыли и сразу переходим — переход заменяет её; окно или показ ещё открыты — она остаётся сверху с новым адресом
+function go(mod,tab,preset){if(OV.skip){OV.next=[mod,tab,preset];return}S.preset=preset||null;const h='#'+mod+(tab?'.'+tab:'');if(location.hash===h)route();else if(ovStale()){clearTimeout(OV.t);location.replace(h)}
+  else if(ovAny()&&history.state&&history.state.ov){history.replaceState(history.state,'',h);route()}else location.hash=h}
 function route(){
   // #/<адрес организации>/inn/<ИНН> — страница контрагента по ссылке, открывается поверх программы
   if(pubRoute())return;if(PUB.open)pubHide();
@@ -41,7 +43,7 @@ function route(){
   if(changed){clearSearch();$('#topbar').classList.remove('searching')}
   if(!changed&&!S.preset){renderShell();return}
   renderShell(true);
-  if(location.hash!=='#'+S.mod+(S.tab?'.'+S.tab:''))history.replaceState(null,'','#'+S.mod+(S.tab?'.'+S.tab:''));
+  if(location.hash!=='#'+S.mod+(S.tab?'.'+S.tab:''))history.replaceState(history.state,'','#'+S.mod+(S.tab?'.'+S.tab:''));
 }
 addEventListener('hashchange',route);
 

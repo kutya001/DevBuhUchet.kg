@@ -29,17 +29,39 @@ function bindCardTabs(el,attr,go){const bs=$$(`.ctabs [data-${attr}]`,el);
   bs.forEach(x=>x.onclick=()=>{if(x.classList.contains('on')&&isMobile())return menu(x,bs.map(b=>({label:b.querySelector('.lbl').textContent,icon:b.dataset.ic,sub:b.querySelector('.badge')?b.querySelector('.badge').textContent:'',on:b===x,run:()=>{if(b!==x)go(b.getAttribute('data-'+attr))}})));
     if(!x.classList.contains('on'))go(x.getAttribute('data-'+attr))})}
 const MODALS=[];
+/* Кнопка «Назад» (телефон и браузер) закрывает верхнее окно, «Другие модули» или показ, а не меняет модуль под окном.
+   Пока открыто хоть одно, в истории браузера одна запись-заглушка {ov:id} с тем же адресом, а запись под ней помечена {ovb:id};
+   закрыли последнее кнопкой — заглушка снимается. */
+const OV={skip:false,t:0,url:'',id:0,reopen:false,next:null};
+const ovAny=()=>MODALS.length>0||!!(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('open'))||(typeof TOUR!=='undefined'&&TOUR.on);
+const ovStale=()=>!!(history.state&&history.state.ov)&&!ovAny();
+// Пока снимается заглушка (history.back ещё не дошёл), новое окно и переход ждут его завершения — иначе «Назад» унёс бы и их
+function ovOpen(){clearTimeout(OV.t);if(OV.skip){OV.reopen=true;return}if(!(history.state&&history.state.ov)){OV.url=location.href;OV.id++;history.replaceState({ovb:OV.id},'',location.href);history.pushState({ov:OV.id},'',location.href)}}
+// Под окном сменился модуль (go во время показа) — заглушка становится обычной записью этого модуля, иначе «Назад» по ней вернуло бы прежний
+function ovClosed(){clearTimeout(OV.t);OV.t=setTimeout(()=>{if(!ovStale())return;if(location.href===OV.url){OV.skip=true;history.back()}else history.replaceState(null,'',location.href)},0)}
+// popstate приходит и на «Назад», и на смену адреса после # (location.hash=…); окно закрывает только «Назад» с заглушки на помеченную запись под ней
+addEventListener('popstate',e=>{
+  if(OV.skip){OV.skip=false;if(OV.reopen){OV.reopen=false;if(ovAny())ovOpen()}if(OV.next){const n=OV.next;OV.next=null;go(...n)}return}
+  closePop();
+  // Вернулись на саму заглушку (со страницы, открытой поверх окна, например страницы контрагента): окно остаётся; окон нет — заглушка лишняя, проходим её
+  if(e.state&&e.state.ov){if(!ovAny())history.back();return}
+  if(!ovAny()||!(e.state&&e.state.ovb===OV.id))return;
+  if(typeof TOUR!=='undefined'&&TOUR.on){tourEnd(false);if(ovAny())ovOpen();return}
+  const m=MODALS[MODALS.length-1];
+  if(m){if(m.dirty&&m.o.form){ovOpen();confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close});return}
+    m.close();if(ovAny())ovOpen();return}
+  if(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('open'))closeSheet(true)});
 function openModal(o){
   const cover=document.createElement('div');cover.className='cover';
   cover.innerHTML=`<div class="modal ${o.size||''}" role="dialog" aria-modal="true"></div>`;
   document.body.appendChild(cover);
-  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){if(m.closed)return;m.closed=true;cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1);if(typeof ckSoon==='function')ckSoon();if(o.onClose)o.onClose()}};
+  const m={o,cover,el:cover.firstElementChild,state:o.state||{},close(){if(m.closed)return;m.closed=true;cover.remove();const i=MODALS.indexOf(m);if(i>=0)MODALS.splice(i,1);ovClosed();if(typeof ckSoon==='function')ckSoon();if(o.onClose)o.onClose()}};
   m.canMax=!!(o.size||o.form)&&!o.noMax;m.maxKey='modal.max.'+(o.form?'form':'card');if(o.form&&o.size!=='wide')m.el.classList.add('narrow');
   m.setMax=(on,save)=>{if(!m.canMax)on=false;m.max=on;const fl=m.el.getBoundingClientRect();cover.classList.toggle('max',on);m.el.classList.toggle('max',on);
     if(save){store.set(m.maxKey,on);
       if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!isMobile()){const to=m.el.getBoundingClientRect();m.el.animate([{transform:`translate(${fl.left+fl.width/2-to.left-to.width/2}px,${fl.top+fl.height/2-to.top-to.height/2}px) scale(${fl.width/to.width},${fl.height/to.height})`},{transform:'none'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'})}}
     if(m.drawn)m.draw()};
-  MODALS.push(m);
+  MODALS.push(m);ovOpen();
   formPager(m);
   const mark=e=>{if(e.target.closest&&e.target.closest('.form,.fld'))m.dirty=true};m.el.addEventListener('input',mark);m.el.addEventListener('change',mark);
   swipeDown(m.el,()=>m.el.querySelector('.mb'),{cover,headOnly:!!o.swipeHead,can:()=>{if(m.dirty&&o.form){confirmDlg({title:'Закрыть без сохранения?',text:'В форме есть несохранённые изменения. Если закрыть сейчас, они пропадут.',ok:'Закрыть',danger:true,run:m.close});return false}return true},close:m.close});

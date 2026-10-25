@@ -189,7 +189,7 @@ function tourAsk(key,run){const p=store.get(key,null);if(!p||!p.i||!p.n)return r
   openModal({noMax:true,size:'mid',render:()=>({title:'Продолжить показ?',body:`<p style="margin:0;color:var(--muted);line-height:1.55">В прошлый раз вы закончили показ на облачке ${p.i+1} из ${p.n}.</p>`,foot:`<button class="btn ghost" id="tr-0">Сначала</button><button class="btn cta" id="tr-c">Продолжить с ${p.i+1} из ${p.n}</button>`,
     mount(el,m){$('#tr-0',el).onclick=()=>{m.close();store.set(key,null);run(0,true)};$('#tr-c',el).onclick=()=>{m.close();run(p.all?p.i:0,!!p.all)}}})})}
 async function tourRun(o,from){MODALS.slice().forEach(m=>m.close());closeSheet();closePop();const ov=tourOverlay();
-  Object.assign(TOUR,{on:true,kind:o.kind,sid:o.sid,key:o.key,scr:o.scr,ctx:null,mbase:0,busy:true,form:false,list:[],i:0,o,all:!!o.all,skip:null});ov.hidden=false;ckBar();
+  Object.assign(TOUR,{on:true,kind:o.kind,sid:o.sid,key:o.key,scr:o.scr,ctx:null,mbase:0,busy:true,form:false,list:[],i:0,o,all:!!o.all,skip:null});ov.hidden=false;ovOpen();ckBar();
   const bub=$('#tour .tour-bub');bub.innerHTML=`<b>Готовлю показ…</b><p>Нахожу на экране кнопки, вкладки и поля.</p>`;tourPlace();
   // список мог ещё загружаться (скелетон): элементы собираются по готовому экрану, иначе первый показ короче следующего
   if(o.scr)await tBase(o.scr);await tSettle(120);const items=typeof o.items==='function'?o.items():o.items;
@@ -227,7 +227,7 @@ async function tourShow(){TOUR.busy=true;const p=TOUR.list[TOUR.i];if(!p){TOUR.b
   TOUR.busy=false;requestAnimationFrame(tourPlace);setTimeout(tourPlace,260)}
 function tourEnd(full,quiet){if(!TOUR.on)return;const p=TOUR.list[TOUR.i];const done=full&&p&&['done','end','save','doit'].includes(p.kind);TOUR.on=false;const o=$('#tour');if(o)o.hidden=true;closePop();
   // Форма, открытая «Сделать сейчас», остаётся открытой — её заполняют; всё, что открыл сам показ, закрывается
-  if(!TOUR.form)while(MODALS.length)MODALS[MODALS.length-1].close();else while(MODALS.length>TOUR.mbase)MODALS[MODALS.length-1].close();
+  if(!TOUR.form)while(MODALS.length)MODALS[MODALS.length-1].close();else while(MODALS.length>TOUR.mbase)MODALS[MODALS.length-1].close();ovClosed();
   if(done||full)store.set(TOUR.key,null);else if(TOUR.i>0)store.set(TOUR.key,{i:TOUR.i,n:TOUR.list.length,all:TOUR.all});
   // «Посмотреть» засчитывается только показом до конца; обзор экрана засчитывает шаги «Посмотреть» этого экрана
   if(done&&TOUR.kind==='step'){const i=ckFind(TOUR.sid);if(i&&i.learn){if(ckMark(i,'show')){CK.active=i.id;CK.bar=true;kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();if(S.mod==='kb')renderPage();setTimeout(()=>ckDoneDlg(i),120)}}}

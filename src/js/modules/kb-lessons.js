@@ -139,7 +139,7 @@ const KB_EV={
  'k.xls':['показатели загружены из Excel',h=>h.ent==='kimp'&&/^Ввод показателей из Excel/.test(h.what)],
  'k.check':['месяц показателей проверен',h=>h.ent==='km'&&/→ Проверено/.test(h.what)],
  'f.upload':['загружен файл вручную',h=>h.ent==='cp'&&/^Загружены файлы/.test(h.what)],
- 'open':['показ «Показать как» до конца или статья шага (Посмотреть)'],'use':['первое использование функции (раздел «Работа со списками»)'],'state':['выполнено условие в данных пользователя'],'hand':['только показом или статьёй']};
+ 'open':['«Перейти» и 3 секунды на экране шага, показ «Показать как» до конца или статья шага (Посмотреть)'],'use':['первое использование функции (раздел «Работа со списками»)'],'state':['выполнено условие в данных пользователя'],'hand':['только показом или статьёй']};
 const KB_MAP={profile:'org.main',accs:'org.acc',policy:'org.policy',settings:'org.settings',nmode:'emp.notify',types:'type.on',typecfg:'type.cfg',roles:'role.save',emps:'emp.new',cp1:'cp.new',import:'cp.import',resp:'cp.resp',tariff:'cp.tariff',oneoff:'cp.oneoff',cppage:'cp.page',assign:'r.assign',submit:'r.sub',accept:'r.acc',ver:'r.ver',na:'r.na',in:'in.new',split:'in.split',pay:'r.pay',svc:'s.new',feepay:'fee.pay',mtask:'t.new',tdone:'t.done',tconf:'t.conf',proj:'p.new',works:'p.work',tranche:'p.pay',kset:'k.setup',kwho:'k.who',kval:'k.val',kxls:'k.xls',kchk:'k.check',upload:'f.upload'};
 const KB_KEEP={profile:1,resp:1}; // the data condition stays in addition to the event
 const KB_FEAT={money:'taxpay',fee:'fee',tasks:'tasks',projects:'projects',kpi:'indicators',files:'files'},KB_IFEAT={tariff:'fee',bonus:'accounts',journal:'finops',svc:'finops',anl:'fee'};
@@ -210,7 +210,7 @@ function ckEval(){const fresh=CK.q.splice(0);
 function ckBase(noSync){ckAll().forEach(i=>{if(!ckDone(i)&&(i.ev||i.done)){let ok=false;try{ok=kbOk(i)}catch(e){}if(ok)ckMark(i,'data')}});if(!noSync)kbSync(true)}
 // Первое использование функции засчитывает шаг «Сделать» и шаги «Посмотреть» раздела «Работа со списками и интерфейсом»; остальные «Посмотреть» — только показом или статьёй
 function ckHit(name){if(TOUR.on)return;ckAll().forEach(i=>{if(i.hit===name&&(!i.learn||i.g==='lists')&&ckMark(i,'use'))CK.q.push(i)});ckSoon()}
-// Открытие экрана шаг «Посмотреть» больше не засчитывает (ТЗ: «просто открыть экран недостаточно»)
+// Само открытие экрана шаг «Посмотреть» не засчитывает: только «Перейти» из урока и 3 секунды на экране (ckLook), показ или статья
 function ckVisit(){}
 // Статья прочитана: открыта и прокручена до конца; засчитывает связанный шаг «Посмотреть»
 function kbArtRead(a,stepId){if(!a||!a.id)return;const u=ckU();const fresh=!u.arts[a.id];if(fresh)u.arts[a.id]={at:nowStamp()};
@@ -218,7 +218,13 @@ function kbArtRead(a,stepId){if(!a||!a.id)return;const u=ckU();const fresh=!u.ar
   if(l.length)toast(`База знаний: ${l.length===1?'шаг просмотрен — «'+l[0].t+'»':'просмотрено шагов: '+l.length}`,'grad');else if(fresh)toast('Статья прочитана','book')}
 function ckFlash(sel,msel){setTimeout(()=>{const s=isMobile()&&msel?msel:sel;if(!s)return;const el=[...document.querySelectorAll(s)].find(x=>x.getClientRects().length);if(!el)return;
   el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('ck-flash');void el.offsetWidth;el.classList.add('ck-flash');setTimeout(()=>el.classList.remove('ck-flash'),2800)},380)}
-function ckGo(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;MODALS.slice().forEach(m=>m.close());i.go();ckBar()}
+function ckGo(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.barOff=false;MODALS.slice().forEach(m=>m.close());i.go();ckBar();ckLook(i)}
+// Шаг «Посмотреть» с экраном: после «Перейти» пользователь 3 секунды остаётся на этом экране — шаг засчитывается и открывается окно «Шаг выполнен»
+// (решение заказчика 25.10.2026; ушёл с экрана раньше — не засчитывается)
+const CK_LOOK=3000;
+const ckOnScr=i=>{const scr=S.mod+(S.tab?'.'+S.tab:'');return (i.at||[]).some(a=>a===scr||a===S.mod)};
+function ckLook(i){clearTimeout(CK.lt);if(!i.learn||!i.at||ckDone(i))return;
+  CK.lt=setTimeout(()=>{if(CK.active!==i.id||ckDone(i)||TOUR.on||!ckOnScr(i)||!ckMark(i,'visit'))return;kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();ckBar();ckDoneDlg(i)},CK_LOOK)}
 function ckHow(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=false;CK.barOff=false;tourStep(i)}
 function ckDoneDlg(i){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(i.id);
   openModal({noMax:true,size:'mid',render:()=>({title:`Готово: шаг «${esc(i.t)}» выполнен`,sub:(()=>{const s=kbStat();return `База знаний: ${esc(s.lv[s.cur].n)} · ${s.pct} %`})(),

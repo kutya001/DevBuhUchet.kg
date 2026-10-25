@@ -37,9 +37,9 @@ function renderSheet(){
   <button class="orgbtn" data-sh="me"><span class="av round">${initials(me().fio)}</span><span><div class="o-n">Мой профиль</div><div class="o-s">${esc(me().fio)}</div></span></button>
   <button class="orgbtn" data-sh="out"><span class="av">${ic('logout','sm')}</span><span><div class="o-n">Выйти из аккаунта</div></span></button>${demoBox().replace('id="demo-user"','id="demo-user-m"').replace('for="demo-user"','for="demo-user-m"').replace('id="demo-data-x"','id="demo-data-m"')}`;
 }
-function openSheet(){renderSheet();$('#sheet').classList.add('open');$('#sheet-cover').hidden=false;if(!(history.state&&history.state.sheet))history.pushState({sheet:1},'',location.href)}
-function closeSheet(pop){const was=$('#sheet').classList.contains('open');$('#sheet').classList.remove('open');$('#sheet-cover').hidden=true;if(was&&!pop&&history.state&&history.state.sheet)history.replaceState(null,'',location.href)}
-addEventListener('popstate',()=>{if($('#sheet')&&$('#sheet').classList.contains('open'))closeSheet(true)});
+// «Назад» закрывает панель «Другие модули» (см. ovOpen в popups.js)
+function openSheet(){renderSheet();$('#sheet').classList.add('open');$('#sheet-cover').hidden=false;ovOpen()}
+function closeSheet(pop){const was=$('#sheet').classList.contains('open');$('#sheet').classList.remove('open');$('#sheet-cover').hidden=true;if(was&&!pop)ovClosed()}
 
 function renderPage(fresh){
   const m=curMod();const tabs=modTabs(m);const page=$('#page');const pane=$('#pane');

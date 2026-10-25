@@ -52,7 +52,9 @@ function newsOpen(n){newsRead().add(n.id);renderSide();renderSheetDot();
   openModal({size:'wide',render:()=>({title:esc(n.t),sub:`${fmtD(n.date)}${n.ver?' · версия '+esc(n.ver):''}${n.edited?' · изменено '+fmtD(n.edited):''}`,body:`<div class="row" style="gap:8px">${newsPill(n.type)}${n.pin?'<span class="tag">Закреплено</span>':''}</div><div class="kb-art md">${mdHtml(n.md)}</div>`,
     foot:`<div class="grow"></div>${n.link&&newsLinkOk(n.link)?`<button class="btn" id="nw-more">${ic('right','sm')}Подробнее: ${esc(newsLinkTxt(n.link))}</button>`:''}<button class="btn cta" data-close>Закрыть</button>`,
     mount(el,m){const b=$('#nw-more',el);if(b)b.onclick=()=>{m.close();n.link.k==='art'?kbArtDlg(KB_ARTS.find(a=>a.id===n.link.id)):go(n.link.id)}}}),onClose:()=>{if(S.mod==='kb')renderPage()}});if(S.mod==='kb')setTimeout(renderPage,0)}
-/* Окно «Что нового» (ТЗ, «Новости» → «Окно «Что нового» при входе»): при каждом входе в систему, не при перезагрузке страницы.
+/* Окно «Что нового» (ТЗ, «Новости» → «Окно «Что нового» при входе»): при входе в систему, только если есть непрочитанные новости
+   с отметкой «Показывать при входе»; показанные сразу считаются прочитанными, поэтому окно с ними больше не открывается (решение заказчика 25.10.2026).
+   При самом первом входе окно открывается с приветствием и последней версией. Не при перезагрузке страницы.
    В прототипе входом считаются открытие прототипа в новой вкладке браузера, «Войти как» и вход по логину и паролю. */
 // От новых к старым: по дате выхода, в один день — по времени публикации (последняя запись «Опубликовано» в истории), затем по номеру версии
 const newsPubAt=n=>((n.hist||[]).filter(h=>h.to==='Опубликовано').pop()||{}).at||n._ua||'';
@@ -61,15 +63,16 @@ function whatsNew(how){if(navigator.webdriver&&!store.get('wntest',false))return
   if(how==='open'){let seen=null;try{seen=sessionStorage.getItem('bu.wn.'+S.me)}catch(e){}if(seen)return}
   try{sessionStorage.setItem('bu.wn.'+S.me,'1')}catch(e){}
   const r=newsRead(),vis=newsVis().sort(newsSort);let l=vis.filter(n=>n.login&&!r.has(n.id));const unread=l.length;
-  if(!l.length){const last=vis.find(n=>n.ver);if(last)l=[last]}
   const first=!store.get('kbw.'+S.me,false);if(!l.length&&!first)return;store.set('kbw.'+S.me,true);
+  if(!l.length){const last=vis.find(n=>n.ver);if(last)l=[last]}
+  const fresh=new Set(l.filter(n=>!r.has(n.id)).map(n=>n.id));l.forEach(n=>r.add(n.id));renderSide();renderSheetDot();if(typeof dbSoon==='function')dbSoon();
   setTimeout(()=>openModal({size:'wide',render:()=>({title:'Что нового',sub:unread?`${unread} ${plural(unread,'новость','новости','новостей')} с вашего прошлого входа`:'Последняя версия',
     body:`${first?`<div class="note">${ic('grad')}<span><b>Добро пожаловать в Buhuchet.kg: начните с Базы знаний.</b> В «Базе знаний» — уроки по вашим модулям с кнопками «Перейти» и «Показать как», статьи инструкции и ваш уровень знаний. Программа строится из ваших прав: проходите шаги, и уровень вырастет от «Новичка» до «Эксперта».</span></div>`:''}
-      ${l.map(n=>`<section class="wn-item"><div class="row" style="gap:8px;flex-wrap:wrap">${newsPill(n.type)}<span class="muted">${fmtD(n.date)}${n.ver?' · версия '+esc(n.ver):''}</span>${r.has(n.id)?'':'<span class="pill sm red">Новое</span>'}</div><h3>${esc(n.t)}</h3><div class="kb-art md">${mdHtml(n.md)}</div>${n.link&&newsLinkOk(n.link)?`<button class="btn sm" data-wnmore="${n.id}">${ic('right','sm')}Подробнее: ${esc(newsLinkTxt(n.link))}</button>`:''}</section>`).join('')}`,
+      ${l.map(n=>`<section class="wn-item"><div class="row" style="gap:8px;flex-wrap:wrap">${newsPill(n.type)}<span class="muted">${fmtD(n.date)}${n.ver?' · версия '+esc(n.ver):''}</span>${fresh.has(n.id)?'<span class="pill sm red">Новое</span>':''}</div><h3>${esc(n.t)}</h3><div class="kb-art md">${mdHtml(n.md)}</div>${n.link&&newsLinkOk(n.link)?`<button class="btn sm" data-wnmore="${n.id}">${ic('right','sm')}Подробнее: ${esc(newsLinkTxt(n.link))}</button>`:''}</section>`).join('')}`,
     foot:`${first?`<button class="btn" id="wn-kb">${ic('grad','sm')}Открыть Базу знаний</button>`:''}<div class="grow"></div><button class="btn ghost" id="wn-all">${ic('bell','sm')}Все новости</button><button class="btn cta" data-close>Понятно</button>`,
     mount(el,m){$('#wn-all',el).onclick=()=>{m.close();go('kb','news')};const k=$('#wn-kb',el);if(k)k.onclick=()=>{m.close();go('kb','lessons')};
       $$('[data-wnmore]',el).forEach(b=>b.onclick=()=>{const n=NEWS.find(x=>x.id===b.dataset.wnmore);m.close();n.link.k==='art'?kbArtDlg(KB_ARTS.find(a=>a.id===n.link.id)):go(n.link.id)})}}),
-    onClose:()=>{l.forEach(n=>r.add(n.id));renderSide();renderSheetDot();if(S.mod==='kb')renderPage()}}),400)}
+    onClose:()=>{if(S.mod==='kb')renderPage()}}),400)}
 const newsLinkOk=l=>l.k==='art'?kbArts().some(a=>a.id===l.id):mods().some(m=>m.id===l.id);
 const NF={type:'',ver:'',q:''};
 function renderNews(body){const all=newsVis();const r=newsRead();const q=NF.q.trim().toLowerCase();
