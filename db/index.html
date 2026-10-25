@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>База данных Buhuchet.kg</title>
+<meta name="description" content="Схема базы данных Buhuchet.kg: таблицы, поля, связи, типы и правила. Описание читается из schema.json.">
+<style>
+/* Страница только показывает db/schema.json: всё описание базы — там. */
+:root{
+  color-scheme:light;
+  --bg:#f5efe5; --surface:#fffdf9; --surface-2:#f1e8da; --surface-3:#e9dcc8;
+  --border:#e1d3bd; --border-strong:#c8b08c;
+  --text:#43301d; --muted:#7a6447; --faint:#9f8a6c;
+  --accent:#86684a; --on-accent:#fffaf1; --link:#966400; --focus:#c08a1e;
+  --green:#17734b; --green-bg:#17734b1f; --blue:#1d6a8a; --blue-bg:#1d6a8a1c;
+  --orange:#b04a1c; --orange-bg:#b04a1c1c; --red:#b0372c; --red-bg:#b0372c1a;
+  --purple:#6c4888; --purple-bg:#6c48881c; --yellow:#946600; --yellow-bg:#d9a32a2e;
+  --shadow:0 1px 2px #0000000a,0 4px 12px #0000000f; --shadow-l:0 8px 40px #00000033;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+  --r:10px; --top:108px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#1f1914; --surface:#2a221b; --surface-2:#231c16; --surface-3:#342a21;
+  --border:#3b3026; --border-strong:#5a4737;
+  --text:#dccaa9; --muted:#a8916e; --faint:#857257;
+  --accent:#6e533a; --on-accent:#f4e6cc; --link:#e2bd5e; --focus:#e2bd5e;
+  --green:#5fcf98; --green-bg:#5fcf9822; --blue:#72c2da; --blue-bg:#72c2da1f;
+  --orange:#ef9b5c; --orange-bg:#ef9b5c22; --red:#f07b6f; --red-bg:#f07b6f22;
+  --purple:#aba7ea; --purple-bg:#aba7ea22; --yellow:#e2bd5e; --yellow-bg:#e2bd5e22;
+  --shadow:0 1px 2px #0000004d,0 4px 12px #00000040; --shadow-l:0 8px 40px #00000080;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#1f1914; --surface:#2a221b; --surface-2:#231c16; --surface-3:#342a21;
+  --border:#3b3026; --border-strong:#5a4737;
+  --text:#dccaa9; --muted:#a8916e; --faint:#857257;
+  --accent:#6e533a; --on-accent:#f4e6cc; --link:#e2bd5e; --focus:#e2bd5e;
+  --green:#5fcf98; --green-bg:#5fcf9822; --blue:#72c2da; --blue-bg:#72c2da1f;
+  --orange:#ef9b5c; --orange-bg:#ef9b5c22; --red:#f07b6f; --red-bg:#f07b6f22;
+  --purple:#aba7ea; --purple-bg:#aba7ea22; --yellow:#e2bd5e; --yellow-bg:#e2bd5e22;
+  --shadow:0 1px 2px #0000004d,0 4px 12px #00000040; --shadow-l:0 8px 40px #00000080;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font)}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--link)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+
+/* шапка и вкладки */
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+.hd{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;max-width:1500px;margin:0 auto}
+.hd h1{font-size:19px;line-height:1.25;margin:0;font-weight:700;letter-spacing:-.01em}
+.hd .sub{color:var(--muted);font-size:13px}
+.hd .grow{flex:1;min-width:0}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;width:38px;height:38px;display:inline-grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn:hover{border-color:var(--border-strong)}
+.icon-btn svg{width:18px;height:18px}
+nav.tabs{display:flex;gap:4px;padding:0 20px;max-width:1500px;margin:0 auto}
+nav.tabs button{flex:0 0 auto;border:0;background:none;padding:9px 14px 10px;cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;border-bottom:2px solid transparent}
+nav.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+main{max-width:1500px;margin:0 auto;padding:16px 20px 40px}
+
+/* общие элементы */
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;white-space:nowrap;min-height:32px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.badge{display:inline-flex;align-items:center;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600;line-height:1.6;white-space:nowrap}
+.b-actual{background:var(--green-bg);color:var(--green)}
+.b-planned{background:var(--surface-3);color:var(--muted)}
+.b-pk{background:var(--yellow-bg);color:var(--yellow)}
+.b-fk{background:var(--blue-bg);color:var(--blue)}
+.b-uq{background:var(--purple-bg);color:var(--purple)}
+.b-null{background:transparent;color:var(--faint);border:1px solid var(--border);font-weight:500}
+.b-issue{background:var(--orange-bg);color:var(--orange);font-weight:500}
+.muted{color:var(--muted)}.faint{color:var(--faint)}
+.search{position:relative}
+.search input{width:100%;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px 12px 10px 38px;min-height:44px}
+.search input:focus{outline:none;border-color:var(--border-strong);box-shadow:0 0 0 3px var(--yellow-bg)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--faint)}
+.row-chips{display:flex;gap:6px;flex-wrap:wrap}
+.lnk{color:var(--link);cursor:pointer;background:none;border:0;padding:0;text-align:left;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+h2{font-size:17px;margin:0 0 10px}
+h3{font-size:14px;margin:22px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+ul.list{margin:0;padding-left:20px}
+ul.list li{margin:4px 0}
+
+/* вкладка «Таблицы» */
+.tlayout{display:grid;grid-template-columns:minmax(300px,400px) minmax(0,1fr);gap:20px;align-items:start}
+.tside{position:sticky;top:calc(var(--top) + 16px);max-height:calc(100vh - var(--top) - 32px);display:flex;flex-direction:column;gap:10px;min-height:0}
+.filters{display:flex;flex-direction:column;gap:8px}
+.filters details summary{cursor:pointer;color:var(--muted);font-size:13px;list-style:none;display:flex;align-items:center;gap:6px;min-height:28px}
+.filters details summary::-webkit-details-marker{display:none}
+.filters details[open] summary .car{transform:rotate(90deg)}
+.car{display:inline-block;transition:transform .15s}
+.count-line{font-size:13px;color:var(--muted)}
+.tlist>*{flex:none}
+.tlist{overflow:auto;min-height:0;padding:2px 4px 8px 2px;margin:0 -4px 0 -2px;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
+.gtitle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 2px 2px}
+.gtitle .dot{width:9px;height:9px;border-radius:3px}
+.tcard{display:block;width:100%;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:var(--r);padding:10px 12px 10px 14px;cursor:pointer;position:relative;overflow:hidden}
+.tcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--g)}
+.tcard:hover{border-color:var(--border-strong)}
+.tcard[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--yellow-bg)}
+.tcard .t1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.tcard .ru{font-weight:650}
+.tcard .en{font-family:var(--mono);font-size:12px;color:var(--faint)}
+.tcard .d{font-size:13px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tcard .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--faint)}
+.tcard .hit{font-size:12px;margin-top:5px;color:var(--muted)}
+.tcard .hit code{background:var(--yellow-bg);border-radius:4px;padding:0 4px}
+.empty{padding:28px 12px;text-align:center;color:var(--muted)}
+
+.detail{min-width:0}
+.dhead{padding:18px 20px;border-bottom:1px solid var(--border);position:relative}
+.dhead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--g);border-radius:var(--r) 0 0 0}
+.dbar{display:none}
+.dhead h2{font-size:22px;margin:0;line-height:1.25}
+.dhead .en{font-family:var(--mono);color:var(--muted);font-size:14px;margin-top:2px;word-break:break-all}
+.dhead .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.dbody{padding:4px 20px 22px}
+.dbody p{margin:12px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:1px solid var(--border-strong);background:var(--surface-2);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:14px;font-weight:600;min-height:38px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-3)}
+
+/* карта связей таблицы */
+.rmap{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.rcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.rcol .cap{font-size:12px;color:var(--faint);font-weight:600}
+.rnode{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--border);border-left:4px solid var(--g);background:var(--surface-2);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left;min-width:0;width:100%}
+.rnode:hover{border-color:var(--border-strong);border-left-color:var(--g)}
+.rnode b{font-weight:600;font-size:13.5px}
+.rnode small{font-family:var(--mono);font-size:11.5px;color:var(--muted);word-break:break-all}
+.rself{border:2px solid var(--accent);background:var(--surface);border-radius:10px;padding:10px 14px;text-align:center;font-weight:700;max-width:220px}
+.rself small{display:block;font-family:var(--mono);font-weight:400;color:var(--muted);font-size:12px}
+.rarrow{color:var(--faint);font-size:12px;text-align:center}
+
+/* поля таблицы */
+.cols{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.crow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(110px,.6fr) 92px minmax(0,2.4fr);gap:12px;padding:10px 14px;border-top:1px solid var(--border);align-items:start}
+.crow:first-child{border-top:0}
+.crow.head{background:var(--surface-2);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 14px}
+.crow:not(.head):nth-child(odd){background:color-mix(in srgb,var(--surface-2) 45%,transparent)}
+.crow.planned-col .cn b::after{content:" · спроектировано";font-weight:500;color:var(--faint);font-size:12px}
+.cn b{font-weight:600;display:block}
+.cn code{color:var(--muted);word-break:break-all}
+.ct code{color:var(--blue)}
+.ct .lnk{font-family:var(--mono);font-size:.88em}
+.ck{display:flex;gap:4px;flex-wrap:wrap}
+.cd{font-size:14px;min-width:0}
+.cd .x{color:var(--muted);font-size:13px;margin-top:3px}
+.cd .x code{color:var(--text)}
+
+/* вкладка «Схема» */
+.dtools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.dtools select{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 10px;min-height:40px;max-width:100%}
+.dtools label.sw{display:inline-flex;gap:7px;align-items:center;font-size:14px;cursor:pointer;min-height:36px}
+.dtools input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.stage{position:relative;height:calc(100vh - var(--top) - 120px);min-height:420px;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);touch-action:none;cursor:grab}
+.stage.drag{cursor:grabbing}
+.stage .canvas{position:absolute;left:0;top:0;transform-origin:0 0}
+.stage .canvas svg{display:block;max-width:none!important}
+.stage .canvas g[id^="entity-"]{cursor:pointer}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+.zoom .icon-btn{box-shadow:var(--shadow);font-size:18px;font-weight:700}
+.stage .msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted)}
+.hint{font-size:13px;color:var(--faint);margin-top:8px}
+
+/* вкладки «Значения» и «Правила» */
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.ecard{padding:14px 16px}
+.ecard .en{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.ecard table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+.ecard td{border-top:1px solid var(--border);padding:6px 6px 6px 0;vertical-align:top}
+.ecard td:first-child{white-space:nowrap;width:1%}
+.ecard .used{font-size:13px;color:var(--muted);margin-top:8px}
+.ecard:target,.ecard.flash{box-shadow:0 0 0 3px var(--yellow-bg),var(--shadow)}
+.rules{max-width:980px;display:flex;flex-direction:column;gap:14px}
+.rules .box{padding:16px 18px}
+.legend{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
+.types{display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.types code{color:var(--blue)}
+
+/* телефон */
+@media (max-width:899px){
+  :root{--top:96px}
+  .hd{padding:10px 16px 6px}
+  .hd h1{font-size:17px}
+  nav.tabs{padding:0 8px;justify-content:space-between}
+  nav.tabs button{flex:1 1 0;padding:9px 4px 10px;font-size:13.5px}
+  main{padding:12px 16px 32px}
+  .tlayout{display:block}
+  .tside{position:static;max-height:none}
+  .tlist{overflow:visible;margin:0;padding:0}
+  .detail{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .detail.closed{display:none}
+  .detail>.box{border:0;border-radius:0;box-shadow:none;min-height:100%}
+  .dbar{display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:3;background:var(--surface);border-bottom:1px solid var(--border);padding:4px 12px 4px 6px;min-height:52px}
+  .dbar b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dbar .back{border:0;background:none;color:var(--link);font-size:22px;font-weight:600;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;flex:none}
+  .dhead{padding:14px 16px 14px}
+  .dhead::before{border-radius:0}
+  .dhead h2{font-size:19px}
+  .dbody{padding:4px 16px 28px}
+  .rmap{grid-template-columns:1fr}
+  .rself{max-width:none}
+  .rarrow{display:none}
+  .crow.head{display:none}
+  .crow{grid-template-columns:1fr auto;grid-template-areas:"n k" "t t" "d d";gap:4px 10px;padding:10px 12px}
+  .cn{grid-area:n}.ck{grid-area:k;justify-content:flex-end}.ct{grid-area:t}.cd{grid-area:d}
+  .grid2{grid-template-columns:1fr}
+  .dtools{gap:8px}
+  .dtools select{flex:1 1 calc(50% - 4px);min-width:0}
+  .stage{height:calc(100vh - var(--top) - 170px);height:calc(100dvh - var(--top) - 170px);min-height:360px}
+}
+@media (min-width:900px){ .detail.closed{display:block} }
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="grow">
+      <h1>База данных Buhuchet.kg</h1>
+      <div class="sub" id="sub">Загрузка описания…</div>
+    </div>
+    <button class="icon-btn" id="theme" type="button" title="Тема: как в устройстве" aria-label="Сменить тему">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="t" aria-selected="true">Таблицы</button>
+    <button role="tab" data-tab="d" aria-selected="false">Схема</button>
+    <button role="tab" data-tab="e" aria-selected="false">Значения</button>
+    <button role="tab" data-tab="r" aria-selected="false">Правила</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-t">
+    <div class="tlayout">
+      <aside class="tside">
+        <div class="filters">
+          <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Поиск: таблица, поле, описание" autocomplete="off" aria-label="Поиск"></label>
+          <div class="row-chips" id="st-chips"></div>
+          <details id="grp-box"><summary><span class="car">▸</span> Группы: <b id="grp-sum">все</b></summary><div class="row-chips" id="grp-chips" style="margin-top:6px"></div></details>
+          <div class="count-line" id="cnt"></div>
+        </div>
+        <div class="tlist" id="tlist"></div>
+      </aside>
+      <div class="detail closed" id="detail"></div>
+    </div>
+  </section>
+
+  <section id="tab-d" hidden>
+    <div class="dtools">
+      <select id="d-what" aria-label="Что показать"></select>
+      <select id="d-cols" aria-label="Какие поля показывать"><option value="all">Все поля</option><option value="keys">Только ключи</option><option value="none">Только названия таблиц</option></select>
+      <label class="sw" title="Связи org_id → «Организации» и «Кто создал / изменил» → «Пользователи» есть почти у каждой таблицы"><input type="checkbox" id="d-std"> Служебные связи</label>
+    </div>
+    <div class="stage" id="stage">
+      <div class="zoom">
+        <button class="icon-btn" type="button" id="z-in" aria-label="Крупнее">+</button>
+        <button class="icon-btn" type="button" id="z-out" aria-label="Мельче">−</button>
+        <button class="icon-btn" type="button" id="z-fit" aria-label="Вписать" title="Вписать в окно"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+      <div class="canvas" id="canvas"></div>
+      <div class="msg" id="d-msg">Схема рисуется…</div>
+    </div>
+    <div class="hint">Двигайте схему пальцем или мышью, приближайте двумя пальцами, колесом или кнопками. Нажмите на таблицу, чтобы открыть её описание.</div>
+  </section>
+
+  <section id="tab-e" hidden>
+    <p class="muted" style="margin-top:0">Перечисления — списки допустимых значений полей: статусы, виды, периоды. В таблицах такие поля показаны с типом-ссылкой.</p>
+    <div class="grid2" id="enums"></div>
+  </section>
+
+  <section id="tab-r" hidden>
+    <div class="rules" id="rules"></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const MERMAID_URL='https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return n+' '+(m===1&&h!==11?a:m>=2&&m<=4&&(h<10||h>=20)?b:c)};
+const fmtDate=s=>s?s.split('-').reverse().join('.'):'';
+let DB,TBL,GRP,ENUM,IN,ST={q:'',status:'all',groups:new Set()};
+let detailName=null;
+
+/* ═════════════ Загрузка ═════════════ */
+async function load(){
+  try{
+    const r=await fetch('schema.json',{cache:'no-cache'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    init(await r.json());
+  }catch(e){
+    $('#sub').textContent='Не удалось загрузить schema.json';
+    $('#tlist').innerHTML=`<div class="empty">Не удалось прочитать <code>schema.json</code> (${esc(e.message)}).<br>Откройте страницу через GitHub Pages или локальный сервер — с диска браузер не даёт читать файлы.<br><br><label class="btn">Выбрать schema.json вручную<input type="file" accept=".json,application/json" hidden id="pick"></label></div>`;
+    $('#pick').addEventListener('change',async ev=>{const f=ev.target.files[0];if(f)init(JSON.parse(await f.text()))});
+  }
+}
+
+function init(db){
+  DB=db;TBL=new Map(db.tables.map(t=>[t.name,t]));GRP=new Map(db.groups.map(g=>[g.id,g]));ENUM=new Map(db.enums.map(e=>[e.name,e]));
+  IN=new Map(db.tables.map(t=>[t.name,[]]));
+  db.tables.forEach(t=>t.columns.forEach(c=>{if(c.fk){const to=c.fk.split('.')[0];IN.get(to)&&IN.get(to).push({t,c})}}));
+  const act=db.tables.filter(t=>t.status==='actual').length;
+  $('#sub').textContent=`${plural(db.tables.length,'таблица','таблицы','таблиц')} · ${act} уже в базе · обновлено ${fmtDate(db.meta.updated)}`;
+  renderFilters();renderList();renderEnums();renderRules();fillDiagramSelect();
+  route();
+}
+
+/* ═════════════ Навигация: адрес #/t/таблица, #/d/группа, #/e/перечисление, #/r ═════════════ */
+function go(hash,replace){
+  if(location.hash===hash)return route();
+  history[replace?'replaceState':'pushState']({app:1},'',hash);route();
+}
+window.addEventListener('popstate',route);
+function route(){
+  if(!DB)return;
+  const [,tab='t',arg='']=(location.hash||'#/t').split('/');
+  const name=decodeURIComponent(arg);
+  showTab(['t','d','e','r'].includes(tab)?tab:'t');
+  if(tab==='t'||!tab){openDetail(TBL.has(name)?name:null)}else document.body.style.overflow='';
+  if(tab==='d')drawDiagram(name||$('#d-what').value||'core');
+  if(tab==='e'&&name){const el=document.getElementById('enum-'+name);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}}
+}
+function showTab(id){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
+  ['t','d','e','r'].forEach(k=>$('#tab-'+k).hidden=k!==id);
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.tab;go(k==='t'?(detailName&&!isPhone()?'#/t/'+detailName:'#/t'):k==='d'?'#/d/'+($('#d-what').value||'core'):'#/'+k);
+}));
+const isPhone=()=>matchMedia('(max-width:899px)').matches;
+
+/* ═════════════ Список таблиц ═════════════ */
+function renderFilters(){
+  const sc=[['all','Все'],['actual','Есть в базе'],['planned','Спроектировано']];
+  $('#st-chips').innerHTML=sc.map(([k,l])=>`<button class="chip" type="button" data-st="${k}" aria-pressed="${ST.status===k}">${l}</button>`).join('');
+  $('#grp-chips').innerHTML=DB.groups.map(g=>`<button class="chip" type="button" data-g="${g.id}" aria-pressed="false"><span class="dot" style="background:${g.color}"></span>${esc(g.ru)}</button>`).join('');
+  $('#st-chips').onclick=e=>{const b=e.target.closest('[data-st]');if(!b)return;ST.status=b.dataset.st;$('#st-chips').querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderList()};
+  $('#grp-chips').onclick=e=>{const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g;ST.groups.has(g)?ST.groups.delete(g):ST.groups.add(g);b.setAttribute('aria-pressed',String(ST.groups.has(g)));renderList()};
+  let tm;$('#q').addEventListener('input',e=>{clearTimeout(tm);tm=setTimeout(()=>{ST.q=e.target.value.trim().toLowerCase();renderList()},120)});
+}
+function matchTable(t,q){
+  if(!q)return {ok:true,cols:[]};
+  const inT=[t.name,t.ru,t.desc,t.issue,...(t.logic||[])].join(' ').toLowerCase().includes(q);
+  const cols=t.columns.filter(c=>[c.name,c.ru,c.desc,c.type].join(' ').toLowerCase().includes(q));
+  return {ok:inT||cols.length>0,cols};
+}
+function renderList(){
+  const q=ST.q,groups=ST.groups;
+  $('#grp-sum').textContent=groups.size?[...groups].map(g=>GRP.get(g).ru).join(', '):'все';
+  let html='',n=0;
+  DB.groups.forEach(g=>{
+    if(groups.size&&!groups.has(g.id))return;
+    const items=DB.tables.filter(t=>t.group===g.id&&(ST.status==='all'||t.status===ST.status)).map(t=>({t,m:matchTable(t,q)})).filter(x=>x.m.ok);
+    if(!items.length)return;
+    n+=items.length;
+    html+=`<div class="gtitle"><span class="dot" style="background:${g.color}"></span>${esc(g.ru)} · ${items.length}</div>`;
+    html+=items.map(({t,m})=>card(t,m,g)).join('');
+  });
+  $('#tlist').innerHTML=html||'<div class="empty">Ничего не найдено. Измените поиск или фильтры.</div>';
+  $('#cnt').textContent=n===DB.tables.length?`Показаны все ${plural(n,'таблица','таблицы','таблиц')}`:`Найдено: ${plural(n,'таблица','таблицы','таблиц')} из ${DB.tables.length}`;
+  markCurrent();
+}
+function card(t,m,g){
+  const fk=t.columns.filter(c=>c.fk).length,inc=IN.get(t.name).length;
+  const hit=m.cols.length&&ST.q?`<div class="hit">Поля: ${m.cols.slice(0,6).map(c=>`<code>${esc(c.name)}</code>`).join(' ')}${m.cols.length>6?' …':''}</div>`:'';
+  return `<button type="button" class="tcard" data-t="${t.name}" style="--g:${g.color}">
+    <div class="t1"><span class="ru">${esc(t.ru)}</span><span class="en">${esc(t.name)}</span></div>
+    <div class="d">${esc(t.desc)}</div>
+    <div class="meta">${statusBadge(t.status)}<span>${plural(t.columns.length,'поле','поля','полей')}</span>${fk+inc?`<span>· ${plural(fk+inc,'связь','связи','связей')}</span>`:''}</div>${hit}</button>`;
+}
+const statusBadge=s=>`<span class="badge b-${s}" title="${esc(DB.meta.statuses[s].desc)}">${esc(DB.meta.statuses[s].ru)}</span>`;
+$('#tlist').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b)go('#/t/'+b.dataset.t)});
+function markCurrent(){document.querySelectorAll('.tcard').forEach(b=>b.setAttribute('aria-current',String(b.dataset.t===detailName)))}
+
+/* ═════════════ Описание таблицы ═════════════ */
+function openDetail(name){
+  const box=$('#detail');
+  detailName=name;markCurrent();
+  if(!name){
+    box.classList.add('closed');
+    box.innerHTML=overview();
+    document.body.style.overflow='';
+    return;
+  }
+  const t=TBL.get(name),g=GRP.get(t.group);
+  box.innerHTML=`<div class="box" style="--g:${g.color}">
+    <div class="dbar"><button class="back" type="button" id="back" aria-label="Все таблицы">←</button><b>${esc(t.ru)}</b></div>
+    <div class="dhead">
+      <h2>${esc(t.ru)}</h2>
+      <div class="en">${esc(t.name)}</div>
+      <div class="tags">${statusBadge(t.status)}<span class="badge b-planned" style="background:none;border:1px solid var(--border)"><span class="dot" style="width:8px;height:8px;border-radius:2px;background:${g.color};margin-right:6px;display:inline-block"></span>${esc(g.ru)}</span>${t.migration?`<span class="badge b-actual" title="Миграция в продукте">миграция ${esc(t.migration)}</span>`:''}${t.issue?`<span class="badge b-issue" title="Задача или поток разработки">${esc(t.issue)}</span>`:''}</div>
+    </div>
+    <div class="dbody">
+      <p>${esc(t.desc)}</p>
+      <div class="actions"><button class="btn" type="button" data-diag="=${t.name}">Показать на схеме</button></div>
+      <h3>Поля · ${t.columns.length}</h3>
+      ${colsTable(t)}
+      ${relMap(t)}
+      ${t.logic&&t.logic.length?`<h3>Бизнес-логика</h3><ul class="list">${t.logic.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+      <h3>Защита строк (RLS)</h3><p style="margin-top:0">${esc(t.rls)}</p>
+      ${t.uniques&&t.uniques.length?`<h3>Уникальность</h3><ul class="list">${t.uniques.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
+      ${t.indexes&&t.indexes.length?`<h3>Индексы</h3><ul class="list">${t.indexes.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
+      ${t.source?`<h3>Откуда взято</h3><p style="margin-top:0" class="muted">${esc(t.source)}</p>`:''}
+    </div></div>`;
+  box.classList.remove('closed');
+  box.scrollTop=0;
+  if(isPhone())document.body.style.overflow='hidden';
+  else{const r=box.getBoundingClientRect();if(r.top<0||r.top>innerHeight)scrollTo({top:0})}
+  $('#back').onclick=()=>{history.state&&history.state.app?history.back():go('#/t',true)};
+}
+function overview(){
+  const by=DB.groups.map(g=>{const ts=DB.tables.filter(t=>t.group===g.id);return `<button type="button" class="tcard" data-ov="${g.id}" style="--g:${g.color}"><div class="t1"><span class="ru">${esc(g.ru)}</span></div><div class="d">${ts.slice(0,6).map(t=>esc(t.ru)).join(', ')}${ts.length>6?'…':''}</div><div class="meta"><span>${plural(ts.length,'таблица','таблицы','таблиц')}</span>${ts.some(t=>t.status==='actual')?`<span class="badge b-actual">${ts.filter(t=>t.status==='actual').length} в базе</span>`:''}</div></button>`}).join('');
+  return `<div class="box" style="padding:18px 20px"><h2>Обзор базы</h2><p class="muted" style="margin:0 0 14px">Выберите таблицу слева, чтобы увидеть её поля, связи и правила. Или откройте схему группы:</p><div class="grid2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${by}</div></div>`;
+}
+$('#detail').addEventListener('click',e=>{
+  const d=e.target.closest('[data-diag]');if(d){go('#/d/'+d.dataset.diag);return}
+  const t=e.target.closest('[data-go]');if(t){go('#/t/'+t.dataset.go);return}
+  const en=e.target.closest('[data-enum]');if(en){go('#/e/'+en.dataset.enum);return}
+  const ov=e.target.closest('[data-ov]');if(ov){go('#/d/'+ov.dataset.ov)}
+});
+function relMap(t){
+  // одна плашка на таблицу-соседа, а поля связи — списком
+  const gather=list=>{const m=new Map();list.forEach(({tt,col})=>{if(!m.has(tt.name))m.set(tt.name,{tt,cols:[]});m.get(tt.name).cols.push(col)});return [...m.values()]};
+  const out=gather(t.columns.filter(c=>c.fk).map(c=>({tt:TBL.get(c.fk.split('.')[0]),col:c.name})));
+  const inc=gather(IN.get(t.name).map(({t:ft,c})=>({tt:ft,col:c.name})));
+  if(!out.length&&!inc.length)return '<h3>Связи</h3><p class="muted" style="margin-top:0">Связей с другими таблицами нет.</p>';
+  const node=(x,dir)=>`<button type="button" class="rnode" data-go="${x.tt.name}" style="--g:${GRP.get(x.tt.group).color}"><b>${esc(x.tt.ru)}</b><small>${dir==='out'?x.cols.map(esc).join(', ')+' → '+esc(x.tt.name):esc(x.tt.name)+': '+x.cols.map(esc).join(', ')}</small></button>`;
+  const grp=(arr,dir)=>{
+    // org_id и «Кто создал / изменил» есть почти везде: сворачиваем, чтобы не заслоняли смысловые связи
+    const isStd=x=>dir==='in'&&(t.name==='organizations'&&x.cols.every(c=>c==='org_id')||t.name==='users'&&x.cols.every(c=>c==='created_by'||c==='updated_by'));
+    const common=arr.filter(isStd),main=arr.filter(x=>!isStd(x));
+    // длинный список сворачиваем: первые 6 видны сразу
+    const head=main.length>8?main.slice(0,6):main,rest=main.length>8?main.slice(6):[];
+    let h=head.map(x=>node(x,dir)).join('');
+    if(rest.length)h+=`<details><summary class="lnk" style="font-size:14px;padding:4px 0;list-style:none">Показать ещё ${plural(rest.length,'таблицу','таблицы','таблиц')}</summary><div class="rcol" style="margin-top:6px">${rest.map(x=>node(x,dir)).join('')}</div></details>`;
+    if(common.length)h+=`<details><summary class="muted" style="cursor:pointer;font-size:13px;padding:4px 0">и ещё ${plural(common.length,'таблица','таблицы','таблиц')} через ${t.name==='organizations'?'org_id':'«Кто создал / изменил»'}</summary><div class="rcol" style="margin-top:6px">${common.map(x=>node(x,dir)).join('')}</div></details>`;
+    return h;
+  };
+  return `<h3>Связи</h3><div class="rmap">
+    <div class="rcol"><div class="cap">Ссылается на (${out.length})</div>${out.length?grp(out,'out'):'<span class="faint">—</span>'}</div>
+    <div class="rself">${esc(t.ru)}<small>${esc(t.name)}</small><div class="rarrow">← ссылается · ссылаются →</div></div>
+    <div class="rcol"><div class="cap">На неё ссылаются (${inc.length})</div>${inc.length?grp(inc,'in'):'<span class="faint">—</span>'}</div>
+  </div>`;
+}
+const OD={cascade:'удалится вместе с ней',restrict:'удалить нельзя, пока есть ссылки','set null':'поле станет пустым'};
+function colsTable(t){
+  const rows=t.columns.map(c=>{
+    const keys=[c.pk?'<span class="badge b-pk" title="Первичный ключ: по нему находят запись">PK</span>':'',c.fk?'<span class="badge b-fk" title="Внешний ключ: ссылка на другую таблицу">FK</span>':'',c.unique?'<span class="badge b-uq" title="Значение не повторяется">UQ</span>':'',c.null?'<span class="badge b-null" title="Поле может быть пустым">NULL</span>':''].join('');
+    const en=ENUM.get(c.type);
+    const type=en?`<button type="button" class="lnk" data-enum="${en.name}" title="${esc(en.ru)}: допустимые значения">${esc(c.type)}</button><div class="faint" style="font-size:12px">${esc(en.ru)}</div>`:`<code title="${esc(DB.types[c.type]||'')}">${esc(c.type)}</code>`;
+    let x='';
+    if(c.fk){const [to,col]=c.fk.split('.');const tt=TBL.get(to);x+=`<div class="x">→ <button type="button" class="lnk" data-go="${to}">${esc(tt?tt.ru:to)}</button> <code>${esc(c.fk)}</code>${c.onDelete?` · при удалении записи там: ${esc(OD[c.onDelete]||c.onDelete)}`:''}</div>`}
+    if(c.default!==undefined)x+=`<div class="x">По умолчанию: <code>${esc(c.default)}</code></div>`;
+    const planned=t.status==='actual'&&c.status==='planned';
+    return `<div class="crow${planned?' planned-col':''}"><div class="cn"><b>${esc(c.ru)}</b><code>${esc(c.name)}</code></div><div class="ct">${type}</div><div class="ck">${keys}</div><div class="cd">${c.desc?esc(c.desc):'<span class="faint">—</span>'}${x}</div></div>`;
+  }).join('');
+  return `<div class="cols"><div class="crow head"><div>Поле</div><div>Тип</div><div>Ключи</div><div>Описание</div></div>${rows}</div>`;
+}
+
+/* ═════════════ Схема (mermaid erDiagram) ═════════════ */
+let mermaidP=null,renderNo=0,view={s:1,x:0,y:0},lastKey='',prevWhat='';
+function loadMermaid(){
+  if(window.mermaid)return Promise.resolve(window.mermaid);
+  if(!mermaidP)mermaidP=new Promise((ok,fail)=>{const s=document.createElement('script');s.src=MERMAID_URL;s.onload=()=>ok(window.mermaid);s.onerror=()=>{mermaidP=null;fail(new Error('нет связи с cdn.jsdelivr.net'))};document.head.appendChild(s)});
+  return mermaidP;
+}
+function fillDiagramSelect(){
+  const o=DB.groups.map(g=>`<option value="${g.id}">${esc(g.ru)} · ${DB.tables.filter(t=>t.group===g.id).length}</option>`).join('');
+  $('#d-what').innerHTML=`<optgroup label="Группа">${o}</optgroup><option value="all">Вся база</option><optgroup label="Таблица и её соседи" id="d-focus"></optgroup>`;
+  $('#d-what').onchange=()=>go('#/d/'+$('#d-what').value);
+  $('#d-cols').onchange=$('#d-std').onchange=()=>drawDiagram($('#d-what').value,true);
+}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+const mType=t=>t.replace(/\(.*\)/,'').replace(/[^A-Za-z0-9_\[\]]/g,'_');
+const mStr=s=>String(s||'').replace(/"/g,"'").replace(/[\r\n]+/g,' ');
+function erText(what){
+  const cols=$('#d-cols').value,std=$('#d-std').checked;
+  // служебные связи есть почти у каждой таблицы: без переключателя линии не рисуем (кроме группы «Ядро»)
+  const hideStdLink=(c,to)=>!std&&what!=='core'&&(to==='organizations'&&c.name==='org_id'||to==='users'&&(c.name==='created_by'||c.name==='updated_by'));
+  let full=[],light=[];
+  if(what==='all'){light=DB.tables.map(t=>t.name)}
+  else if(what.startsWith('=')){
+    const n=what.slice(1),t=TBL.get(n);if(!t)return '';
+    full=[n];
+    const nb=new Set();
+    t.columns.forEach(c=>{if(c.fk&&!hideStdLink(c,c.fk.split('.')[0]))nb.add(c.fk.split('.')[0])});
+    IN.get(n).forEach(({t:ft,c})=>{if(!hideStdLink(c,n))nb.add(ft.name)});
+    nb.delete(n);
+    light=[...nb];
+  }else{
+    full=DB.tables.filter(t=>t.group===what).map(t=>t.name);
+  }
+  const inSet=new Set([...full,...light]);
+  // для группы: таблицы других групп, на которые ссылаются, — без полей
+  if(what!=='all'&&!what.startsWith('=')){
+    full.forEach(n=>TBL.get(n).columns.forEach(c=>{if(!c.fk)return;const to=c.fk.split('.')[0];if(!inSet.has(to)&&!hideStdLink(c,to)){inSet.add(to);light.push(to)}}));
+  }
+  // на узком вертикальном экране схема строится слева направо — так она вытягивается вниз, а не вширь
+  const st=$('#stage'),L=['erDiagram'];if(st.clientHeight>st.clientWidth)L.push('  direction LR');
+  const ent=(n,mode)=>{
+    const t=TBL.get(n);
+    const cols=mode==='none'?[]:t.columns.filter(c=>mode==='all'||c.pk||c.fk&&!hideStdLink(c,c.fk.split('.')[0]));
+    L.push(`  ${n}["${mStr(t.ru)} · ${n}"] {`);
+    cols.forEach(c=>{const k=[c.pk&&'PK',c.fk&&'FK',c.unique&&!c.pk&&'UK'].filter(Boolean).join(', ');L.push(`    ${mType(c.type)} ${c.name}${k?' '+k:''} "${mStr(c.ru)}"`)});
+    L.push('  }');
+  };
+  full.forEach(n=>ent(n,cols));
+  light.forEach(n=>ent(n,what==='all'?cols:what.startsWith('=')&&cols!=='none'?'keys':'none'));
+  const seen=new Set();
+  inSet.forEach(n=>TBL.get(n).columns.forEach(c=>{
+    if(!c.fk)return;const to=c.fk.split('.')[0];if(!inSet.has(to))return;
+    if(hideStdLink(c,to))return;
+    // в «Вся база» и у соседей связи между «лёгкими» таблицами рисуем, только если одна из сторон — основная
+    if(what.startsWith('=')&&n!==what.slice(1)&&to!==what.slice(1))return;
+    if(!what.startsWith('=')&&what!=='all'&&!full.includes(n)&&!full.includes(to))return;
+    const k=n+'.'+c.name;if(seen.has(k))return;seen.add(k);
+    const one=c.unique||(c.pk&&TBL.get(n).columns.filter(x=>x.pk).length===1);
+    L.push(`  ${to} ${c.null?'|o':'||'}--${one?'o|':'o{'} ${n} : "${c.name}"`);
+  }));
+  return L.join('\n');
+}
+async function drawDiagram(what,force){
+  const sel=$('#d-what');
+  // таблица в фокусе — добавляем её в список выбора
+  const fg=$('#d-focus');
+  if(what.startsWith('=')){const n=what.slice(1);if(TBL.has(n)&&!fg.querySelector(`option[value="=${n}"]`))fg.insertAdjacentHTML('beforeend',`<option value="=${n}">${esc(TBL.get(n).ru)}</option>`)}
+  if([...sel.options].some(o=>o.value===what))sel.value=what;else{what='core';sel.value='core'}
+  // «Вся база» со всеми полями слишком велика: при переходе на неё — только названия, при уходе — обратно все поля
+  if(!force&&what!==prevWhat){if(what==='all')$('#d-cols').value='none';else if(prevWhat==='all')$('#d-cols').value='all'}
+  prevWhat=what;
+  const key=what+'|'+$('#d-cols').value+'|'+$('#d-std').checked+'|'+themeNow()+'|'+($('#stage').clientHeight>$('#stage').clientWidth);
+  if(!force&&key===lastKey&&$('#canvas').firstChild)return;
+  lastKey=key;
+  const msg=$('#d-msg');msg.hidden=false;msg.textContent='Схема рисуется…';
+  let mm;
+  try{mm=await loadMermaid()}catch(e){msg.innerHTML=`Не удалось загрузить программу рисования схем (${esc(e.message)}).<br>Таблицы и связи всё равно видны во вкладке «Таблицы».`;return}
+  const dark=themeNow()==='dark';
+  mm.initialize({startOnLoad:false,theme:'base',securityLevel:'strict',maxTextSize:900000,maxEdges:3000,
+    er:{useMaxWidth:false,diagramPadding:24,entityPadding:12,minEntityWidth:120,fontSize:13},
+    themeVariables:{fontFamily:cssVar('--font'),fontSize:'13px',primaryColor:cssVar('--surface-2'),primaryTextColor:cssVar('--text'),primaryBorderColor:cssVar('--border-strong'),
+      lineColor:cssVar('--muted'),secondaryColor:cssVar('--surface-3'),tertiaryColor:cssVar('--surface'),background:cssVar('--surface'),mainBkg:cssVar('--surface-2'),
+      textColor:cssVar('--text'),nodeBorder:cssVar('--border-strong'),attributeBackgroundColorOdd:cssVar('--surface'),attributeBackgroundColorEven:cssVar('--surface-2'),
+      rowOdd:cssVar('--surface'),rowEven:cssVar('--surface-2'),edgeLabelBackground:cssVar('--surface'),darkMode:dark}});
+  const src=erText(what);
+  try{
+    const {svg}=await mm.render('er'+(++renderNo),src);
+    const cv=$('#canvas');cv.innerHTML=svg;
+    const el=cv.querySelector('svg');
+    const vb=el.viewBox.baseVal;if(vb&&vb.width){el.setAttribute('width',vb.width);el.setAttribute('height',vb.height)}
+    el.style.maxWidth='none';
+    // цвет полосы группы на заголовке каждой таблицы
+    el.querySelectorAll('g[id^="entity-"]').forEach(g=>{const n=entName(g);const t=TBL.get(n);if(!t)return;const r=g.querySelector('rect, path');if(r)r.style.stroke=GRP.get(t.group).color,r.style.strokeWidth='2px'});
+    msg.hidden=true;fit();
+  }catch(e){msg.textContent='Ошибка рисования схемы: '+e.message}
+}
+const entName=g=>g.id.replace(/^entity-/,'').replace(/-\d+$/,'');
+function apply(){$('#canvas').style.transform=`translate(${view.x}px,${view.y}px) scale(${view.s})`}
+function fit(){
+  const el=$('#canvas svg');if(!el)return;const st=$('#stage');
+  const w=+el.getAttribute('width')||el.getBBox().width,h=+el.getAttribute('height')||el.getBBox().height;
+  const s=Math.min((st.clientWidth-60)/w,(st.clientHeight-20)/h,1.4);
+  view.s=Math.max(s,.05);view.x=(st.clientWidth-w*view.s)/2;view.y=Math.max(10,(st.clientHeight-h*view.s)/2);apply();
+}
+function zoomAt(f,cx,cy){const s=Math.min(4,Math.max(.05,view.s*f));const k=s/view.s;view.x=cx-(cx-view.x)*k;view.y=cy-(cy-view.y)*k;view.s=s;apply()}
+(function panZoom(){
+  const st=$('#stage');const pts=new Map();let moved=0,pinch=null;
+  st.addEventListener('pointerdown',e=>{if(e.target.closest('.zoom'))return;st.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}st.classList.add('drag')});
+  st.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
+    if(pts.size===1){view.x+=e.clientX-p.x;view.y+=e.clientY-p.y;moved+=Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y);apply()}
+    p.x=e.clientX;p.y=e.clientY;
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);const r=st.getBoundingClientRect();zoomAt(d/pinch.d,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top);pinch.d=d;moved+=10}});
+  const up=e=>{
+    const wasTap=pts.size===1&&moved<6;pts.delete(e.pointerId);if(pts.size<2)pinch=null;if(!pts.size)st.classList.remove('drag');
+    if(wasTap&&e.type==='pointerup'){const hit=document.elementFromPoint(e.clientX,e.clientY);const g=hit&&hit.closest&&hit.closest('g[id^="entity-"]');if(g&&TBL.has(entName(g)))go('#/t/'+entName(g))}
+  };
+  st.addEventListener('pointerup',up);st.addEventListener('pointercancel',up);
+  st.addEventListener('wheel',e=>{e.preventDefault();const r=st.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  $('#z-in').onclick=()=>zoomAt(1.25,st.clientWidth/2,st.clientHeight/2);
+  $('#z-out').onclick=()=>zoomAt(1/1.25,st.clientWidth/2,st.clientHeight/2);
+  $('#z-fit').onclick=fit;
+})();
+
+/* ═════════════ Перечисления и правила ═════════════ */
+function renderEnums(){
+  const used=new Map();DB.tables.forEach(t=>t.columns.forEach(c=>{if(ENUM.has(c.type)){if(!used.has(c.type))used.set(c.type,[]);used.get(c.type).push({t,c})}}));
+  $('#enums').innerHTML=DB.enums.map(e=>`<div class="box ecard" id="enum-${e.name}">
+    <h2 style="margin:0">${esc(e.ru)}</h2><div class="en">${esc(e.name)}</div>${e.desc?`<div class="muted" style="font-size:13px;margin-top:4px">${esc(e.desc)}</div>`:''}
+    <table>${e.values.map(v=>`<tr><td><code>${esc(v.v)}</code></td><td><b style="font-weight:600">${esc(v.ru)}</b>${v.desc?`<div class="muted" style="font-size:13px">${esc(v.desc)}</div>`:''}</td></tr>`).join('')}</table>
+    <div class="used">Где используется: ${(used.get(e.name)||[]).map(({t,c})=>`<button type="button" class="lnk" data-go="${t.name}">${esc(t.ru)}</button> <code>${esc(c.name)}</code>`).join(', ')||'—'}</div></div>`).join('');
+  $('#enums').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go('#/t/'+b.dataset.go)};
+}
+function renderRules(){
+  const m=DB.meta;
+  $('#rules').innerHTML=`
+  <div class="box"><h2>Общие правила базы</h2><ul class="list">${m.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
+  <div class="box"><h2>Как читать</h2><div class="legend">
+    ${statusBadge('actual')}<span>${esc(m.statuses.actual.desc)}</span>
+    ${statusBadge('planned')}<span>${esc(m.statuses.planned.desc)}</span>
+    <span class="badge b-pk">PK</span><span>Первичный ключ: по нему находят запись. Если PK у нескольких полей — ключ составной.</span>
+    <span class="badge b-fk">FK</span><span>Внешний ключ: ссылка на запись другой таблицы (в описании поля — куда и что будет при удалении).</span>
+    <span class="badge b-uq">UQ</span><span>Значение не повторяется в таблице.</span>
+    <span class="badge b-null">NULL</span><span>Поле может быть пустым. Без этой метки поле обязательно.</span>
+    <span class="badge b-issue">#3</span><span>Задача в репозитории продукта или поток разработки, где таблица появится.</span>
+  </div>
+  <p class="muted" style="margin:12px 0 0">На схеме линия идёт от таблицы, на которую ссылаются, к таблице со ссылкой. Значок «||» — ровно одна запись, «|o» — одна или ни одной, «o{» — много или ни одной.</p></div>
+  <div class="box"><h2>Типы данных</h2><div class="types">${Object.entries(DB.types).map(([k,v])=>`<code>${esc(k)}</code><span>${esc(v)}</span>`).join('')}</div></div>
+  <div class="box"><h2>Откуда это описание</h2><ul class="list">${m.sources.map(s=>`<li><b>${esc(s.name)}</b> <span class="muted">(${esc(s.ref)})</span> — ${esc(s.what)}</li>`).join('')}</ul></div>
+  <div class="box"><h2>Как поддерживается</h2><ul class="list">${m.maintain.map(r=>`<li>${esc(r)}</li>`).join('')}</ul><p class="faint" style="margin:10px 0 0;font-size:13px">Версия описания ${esc(m.schemaVersion)} от ${fmtDate(m.updated)}.</p></div>`;
+}
+
+/* ═════════════ Тема ═════════════ */
+const THEMES=['auto','light','dark'],THEME_RU={auto:'как в устройстве',light:'светлая',dark:'тёмная'};
+let theme='auto';try{theme=localStorage.getItem('db-theme')||'auto'}catch(e){}
+function themeNow(){return theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):theme}
+function applyTheme(){
+  if(theme==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',theme);
+  $('#theme').title='Тема: '+THEME_RU[theme];
+  if(DB&&!$('#tab-d').hidden)drawDiagram($('#d-what').value,true);else lastKey='';
+}
+$('#theme').onclick=()=>{theme=THEMES[(THEMES.indexOf(theme)+1)%3];try{localStorage.setItem('db-theme',theme)}catch(e){}applyTheme()};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(theme==='auto')applyTheme()});
+applyTheme();
+addEventListener('resize',()=>{if(!isPhone())document.body.style.overflow=''});
+load();
+</script>
+</body>
+</html>
