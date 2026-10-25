@@ -79,20 +79,116 @@ body.pub-on{overflow:hidden}
 .pub-gate h1{margin:0;font-size:20px}.pub-gate p{margin:0}
 .pub-brand{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:15px}
 .pub-code{font-size:22px;letter-spacing:.3em;text-align:center}
-.pub-body{width:min(1080px,100%);display:flex;flex-direction:column;gap:16px}
+.pub-body{width:min(1120px,100%);display:flex;flex-direction:column;gap:14px}
 .pub-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
 .pub-org{display:flex;align-items:center;gap:10px}.pub-org>span{display:flex;flex-direction:column}
 .pub-logo{width:40px;height:40px;border-radius:10px;object-fit:contain;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;flex:none}
 img.pub-logo{background:none;border:1px solid var(--border)}
 .pub-title h1{margin:0 0 4px;font-size:24px;line-height:1.25}
-.pub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.pub-wide{grid-column:1/-1}
-.pub-s h3 .ic{width:15px;height:15px}
+/* Строка состояния: цвет дополнен значком и текстом, замечания — ссылки на свои разделы */
+.pub-state{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:var(--r-l);font-size:14px;line-height:1.5}
+.pub-state>.ic{flex:none;margin-top:2px}
+.pub-state.ok{background:var(--green-bg);color:var(--green);font-weight:600}
+.pub-state.warn{background:var(--orange-bg);color:var(--orange)}
+.pub-state.bad{background:var(--red-bg);color:var(--red)}
+.pub-state .linkbtn{color:inherit;text-decoration:underline;text-underline-offset:2px;font-weight:600}
+.pub-state .tipi{margin-left:auto;color:inherit}
+/* ПК: две колонки — слева «Главное», «Отчёты», «Показатели», справа оплата, бухгалтер, деньги, обслуживание, контакты */
+.pub-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+.pub-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pub-s{scroll-margin-top:12px}
+.pub-s h3.pub-sh{font-size:15px;text-transform:none;letter-spacing:0;color:var(--text);flex-wrap:wrap}
+.pub-sh .ic{color:var(--accent)}
+.pub-tg{display:flex;align-items:center;gap:8px;flex:1;min-width:0;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:default}
+.pub-tg>.ic:last-child:not(:first-child){display:none;color:var(--faint);transition:transform .2s}
+.pub-body .grow{flex:1}
+.pub-tt{white-space:nowrap;flex:none}
+.pub-sum{display:none;font-weight:500;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pub-ex .inp{width:auto;min-height:30px;padding:3px 8px;font-size:13px}
+.pub-sb{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pub-what{margin:-2px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
 .pub-s h4{margin:6px 0 0;font-size:13px}
+.pub-flash{animation:pub-flash 1.4s}
+@keyframes pub-flash{0%{box-shadow:0 0 0 3px var(--b-blue)}100%{box-shadow:0 0 0 3px transparent}}
+/* «Главное» — плитки-итоги с крупными цифрами */
+.pub-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pub-tile{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-l);background:var(--pane-alt);font:inherit;color:inherit;cursor:pointer;min-width:0}
+.pub-tile:hover{border-color:var(--border-strong);box-shadow:var(--shadow-s)}
+.pub-tile.wide{grid-column:1/-1}
+.pub-tl{font-size:12.5px;color:var(--muted);font-weight:600}
+.pub-tv{font-size:24px;font-weight:700;line-height:1.15}
+.pub-tv small{font-size:14px;font-weight:600;color:var(--muted)}
+.pub-tile.bad .pub-tv{color:var(--red)}
+.pub-ts{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:6px;line-height:1.35}
+.pub-ts .bar{margin:2px 0 0}
+.pub-t3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pub-t3>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pub-t3 small{font-size:12px;color:var(--muted);font-weight:600}
+.pub-t3 b{font-size:20px}
+/* «Как оплатить» */
+.pub-pays{display:flex;flex-direction:column;gap:10px}
+.pub-pay{border:1px solid var(--border);border-radius:var(--r-l);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--pane-alt)}
+.pub-pt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pub-pt .ic{color:var(--accent)}.pub-pt .hint{margin-left:auto}
+.pub-pbn{font-weight:600}
+.pub-pn{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pub-pn .mono{font-size:22px;font-weight:700;letter-spacing:.02em;overflow-wrap:anywhere}
+.pub-pb,.pub-pk{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.pub-pay .pub-what{margin:0}
+/* Плитки видов отчётов, месяцев и показателей; строки периодов */
+.pub-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.plates.pub-pl{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pub-list{display:flex;flex-direction:column;gap:8px;min-width:0}
+.pub-row{display:flex;flex-direction:column;gap:4px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--raised);min-width:0}
+.pub-row.late{border-color:var(--b-red)}
+.pub-r1{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13.5px}
+.pub-r2{display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.pub-r2 b{color:var(--text)}
+.pub-files{display:flex;flex-wrap:wrap;gap:4px 10px}
+.tipi.pub-tp{width:auto;height:auto;margin:0;padding:0;border:0;background:none;display:inline-flex;align-items:center;gap:3px;cursor:help;font:inherit;color:var(--faint)}
+.pub-rt,.pub-grp,.pub-k{border:1px solid var(--border);border-radius:var(--r-l);background:var(--raised);overflow:hidden;min-width:0}
+.pub-rt.late{border-color:var(--b-red)}
+.pub-gh{display:flex;flex-direction:column;align-items:stretch;gap:5px;width:100%;padding:11px 14px;background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.pub-gh:hover{background:var(--row-hover)}
+.pub-rt1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pub-rt1>.ic:last-child{color:var(--faint);transition:transform .2s}
+.open>.pub-gh .pub-rt1>.ic:last-child{transform:rotate(180deg)}
+.pub-rt2{font-size:13px;color:var(--muted);line-height:1.45}
+.pub-rt3{display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.pub-rt3 b{color:var(--text)}
+.pub-gb{display:none;padding:0 12px 12px}
+.open>.pub-gb{display:flex}
+.pub-gb .pub-row{background:var(--pane-alt)}
+.pub-ks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.pub-kv{font-size:22px;font-weight:700;line-height:1.2}
+.pub-sp{width:100%;height:34px;display:block;margin-top:4px}
+.pub-sp rect{fill:var(--border-strong)}.pub-sp rect.c{fill:var(--accent)}.pub-sp rect.e{fill:var(--border)}
+.pub-people{display:flex;flex-direction:column;gap:10px}
 .pub-person{display:flex;flex-direction:column;gap:2px}.pub-person a{color:var(--link)}
-.pub-file{display:inline-flex;align-items:center;gap:4px;color:var(--link);margin-right:10px;font-size:12.5px}
+.pub-file{display:inline-flex;align-items:center;gap:4px;color:var(--link);font-size:12.5px}
+.pub-more{display:none}
+.pub-nav{display:none}
 .pub-foot{color:var(--faint);font-size:12px;text-align:center}
-@media (max-width:767px){.pub-grid{grid-template-columns:minmax(0,1fr)}.pub-proto span{display:none}.pub-bar{padding:8px 12px}.pub-title h1{font-size:20px}.pub-gate{margin-top:4vh;padding:22px 18px}.pg-pol{margin-left:0}}
+/* Окна и подсказки поверх страницы контрагента */
+body.pub-on .cover{z-index:88}body.pub-on .pop{z-index:89}
+/* Телефон: разделы друг под другом, кроме «Главного» и «Как оплатить» свёрнуты с итогом в заголовке, снизу — панель разделов */
+@media (max-width:767px){.pub-proto span{display:none}.pub-bar{padding:8px 12px}.pub-title h1{font-size:20px}.pub-gate{margin-top:4vh;padding:22px 18px}.pg-pol{margin-left:0}
+  .pub-page{padding:14px 12px calc(84px + env(safe-area-inset-bottom,0px));gap:14px}.pub-body{gap:10px}
+  .pub-grid{display:flex;flex-direction:column;align-items:stretch;gap:10px}.pub-col{display:contents}
+  .pub-s[data-sec=main]{order:1}.pub-s[data-sec=pay]{order:2}.pub-s[data-sec=acc]{order:3}.pub-s[data-sec=reports]{order:4}.pub-s[data-sec=money]{order:5}.pub-s[data-sec=fee]{order:6}.pub-s[data-sec=kpi]{order:7}.pub-s[data-sec=contacts]{order:8}
+  .pub-s{padding:12px 14px}.pub-fd .pub-tg{cursor:pointer;min-height:28px}.pub-tg>.ic:last-child:not(:first-child){display:inline-block}
+  .pub-fd:not(.fold) .pub-tg>.ic:last-child{transform:rotate(180deg)}
+  .pub-s.fold .pub-sb,.pub-s.fold .pub-ex{display:none}
+  .pub-fd .pub-tg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:8px;row-gap:1px}.pub-fd .pub-tg>.ic:first-child{grid-area:1/1}.pub-fd .pub-tt{grid-area:1/2}.pub-fd .pub-tg .grow{display:none}.pub-fd .pub-tg>.ic:last-child{grid-area:1/3/3/4}
+  .pub-s.fold .pub-sum{display:block;grid-area:2/2;white-space:normal}
+  .pub-tv{font-size:20px}.pub-t3 b{font-size:16px}.pub-pn .mono{font-size:20px}.pub-kv{font-size:20px}
+  .pub-tile{padding:10px 12px}.pub-ks{grid-template-columns:minmax(0,1fr)}
+  .plates.pub-pl{gap:8px}.plates.pub-pl .plate{padding:9px 10px;gap:4px}.plates.pub-pl .pl-top{font-size:11px;gap:4px;flex-wrap:wrap;min-width:0}.plates.pub-pl .pl-dot{width:20px;height:20px}.plates.pub-pl .pl-val{font-size:18px}
+  .pub-list:not(.all)>:nth-child(n+6):not(.pub-more){display:none}
+  .pub-more{display:inline-flex;align-items:center;gap:4px;align-self:flex-start}
+  .pub-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:86;background:var(--raised);border-top:1px solid var(--border);padding:2px 4px calc(2px + env(safe-area-inset-bottom,0px))}
+  .pub-nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;font:inherit;font-size:11px;font-weight:600;color:var(--muted);padding:6px 2px;min-height:52px;cursor:pointer}
+  .pub-nav button .ic{width:20px;height:20px}
+  body.pub-on .toasts{bottom:calc(66px + env(safe-area-inset-bottom,0px))}}
 /* Ставки в назначении: строки ЕНС, добавляемые строки налога с продаж; строки суммы по ставкам в «Сдан» и «Указать сумму» */
 .rt-tbl td:nth-child(2){min-width:260px}
 .en-ed{display:flex;flex-direction:column;gap:6px;align-items:flex-start}

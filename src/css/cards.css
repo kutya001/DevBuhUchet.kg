@@ -252,3 +252,9 @@
 .tx-chev{color:var(--faint);align-self:center}
 @media (max-width:767px){.tx-gh{padding-right:10px}.tx-gh .chk-n{margin-left:34px}}
 .pk-gt{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)}.pk-gt b{font-weight:700}.pk-gt:focus-visible{outline:2px solid var(--b-blue);outline-offset:2px}
+/* Блок сумм карточки отчёта: «К уплате» → «Получено от контрагента» → «Оплачено в бюджет» → «Осталось оплатить» (v57) */
+.sums4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.sm4{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 10px;border-radius:var(--r-m);background:var(--btn)}
+.sm4 .k{font-size:12px;color:var(--muted)}.sm4 b{font-size:18px;font-weight:700}.sm4 .faint,.sm4 .tag{font-size:11.5px}.sm4 .scm{font-size:11.5px}
+.note.sub-pay{flex-wrap:wrap}
+@media (max-width:767px){.sums4{grid-template-columns:repeat(2,minmax(0,1fr))}}

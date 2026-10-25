@@ -54,7 +54,7 @@ function newsOpen(n){newsRead().add(n.id);renderSide();renderSheetDot();
     mount(el,m){const b=$('#nw-more',el);if(b)b.onclick=()=>{m.close();n.link.k==='art'?kbArtDlg(KB_ARTS.find(a=>a.id===n.link.id)):go(n.link.id)}}}),onClose:()=>{if(S.mod==='kb')renderPage()}});if(S.mod==='kb')setTimeout(renderPage,0)}
 /* Окно «Что нового» (ТЗ, «Новости» → «Окно «Что нового» при входе»): при входе в систему, только если есть непрочитанные новости
    с отметкой «Показывать при входе»; показанные сразу считаются прочитанными, поэтому окно с ними больше не открывается (решение заказчика 25.10.2026).
-   При самом первом входе окно открывается с приветствием и последней версией. Не при перезагрузке страницы.
+   При самом первом входе над новостями — приветствие с «Открыть Базу знаний». Не при перезагрузке страницы.
    В прототипе входом считаются открытие прототипа в новой вкладке браузера, «Войти как» и вход по логину и паролю. */
 // От новых к старым: по дате выхода, в один день — по времени публикации (последняя запись «Опубликовано» в истории), затем по номеру версии
 const newsPubAt=n=>((n.hist||[]).filter(h=>h.to==='Опубликовано').pop()||{}).at||n._ua||'';
@@ -63,10 +63,9 @@ function whatsNew(how){if(navigator.webdriver&&!store.get('wntest',false))return
   if(how==='open'){let seen=null;try{seen=sessionStorage.getItem('bu.wn.'+S.me)}catch(e){}if(seen)return}
   try{sessionStorage.setItem('bu.wn.'+S.me,'1')}catch(e){}
   const r=newsRead(),vis=newsVis().sort(newsSort);let l=vis.filter(n=>n.login&&!r.has(n.id));const unread=l.length;
-  const first=!store.get('kbw.'+S.me,false);if(!l.length&&!first)return;store.set('kbw.'+S.me,true);
-  if(!l.length){const last=vis.find(n=>n.ver);if(last)l=[last]}
+  if(!l.length)return;const first=!store.get('kbw.'+S.me,false);store.set('kbw.'+S.me,true);
   const fresh=new Set(l.filter(n=>!r.has(n.id)).map(n=>n.id));l.forEach(n=>r.add(n.id));renderSide();renderSheetDot();if(typeof dbSoon==='function')dbSoon();
-  setTimeout(()=>openModal({size:'wide',render:()=>({title:'Что нового',sub:unread?`${unread} ${plural(unread,'новость','новости','новостей')} с вашего прошлого входа`:'Последняя версия',
+  setTimeout(()=>openModal({size:'wide',render:()=>({title:'Что нового',sub:`${unread} ${plural(unread,'новость','новости','новостей')} с вашего прошлого входа`,
     body:`${first?`<div class="note">${ic('grad')}<span><b>Добро пожаловать в Buhuchet.kg: начните с Базы знаний.</b> В «Базе знаний» — уроки по вашим модулям с кнопками «Перейти» и «Показать как», статьи инструкции и ваш уровень знаний. Программа строится из ваших прав: проходите шаги, и уровень вырастет от «Новичка» до «Эксперта».</span></div>`:''}
       ${l.map(n=>`<section class="wn-item"><div class="row" style="gap:8px;flex-wrap:wrap">${newsPill(n.type)}<span class="muted">${fmtD(n.date)}${n.ver?' · версия '+esc(n.ver):''}</span>${fresh.has(n.id)?'<span class="pill sm red">Новое</span>':''}</div><h3>${esc(n.t)}</h3><div class="kb-art md">${mdHtml(n.md)}</div>${n.link&&newsLinkOk(n.link)?`<button class="btn sm" data-wnmore="${n.id}">${ic('right','sm')}Подробнее: ${esc(newsLinkTxt(n.link))}</button>`:''}</section>`).join('')}`,
     foot:`${first?`<button class="btn" id="wn-kb">${ic('grad','sm')}Открыть Базу знаний</button>`:''}<div class="grow"></div><button class="btn ghost" id="wn-all">${ic('bell','sm')}Все новости</button><button class="btn cta" data-close>Понятно</button>`,

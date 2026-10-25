@@ -140,3 +140,9 @@ body.wl-open{overflow:hidden}
 }
 .wl-taxes{display:flex;flex-direction:column;gap:6px}.wl-tax{border:1px solid var(--border);border-radius:var(--r-l);padding:8px 12px}
 .sh-common{gap:8px;align-items:flex-start;margin-top:8px;cursor:pointer}.sh-common input{margin-top:3px}
+/* Полоса-таймер шага «Посмотреть» (v57): «Смотрите экран… 3» */
+#ckbar.look{flex-wrap:wrap;row-gap:6px;padding-right:6px}
+#ckbar .ck-tm{flex:1 0 100%;order:9;height:4px;border-radius:2px;background:var(--btn);overflow:hidden;margin:0 6px 2px 0}
+#ckbar .ck-tm i{display:block;height:100%;background:var(--accent,var(--green));animation:ck-tm linear forwards;transform-origin:left}
+@keyframes ck-tm{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){#ckbar .ck-tm i{animation:none}}

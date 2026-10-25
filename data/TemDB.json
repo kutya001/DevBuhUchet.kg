@@ -357,7 +357,8 @@
   "onboard": {
    "state": "new"
   },
-  "repConfirm": true
+  "repConfirm": true,
+  "payFirst": true
  },
  "roles": [
   {

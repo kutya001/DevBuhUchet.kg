@@ -5,6 +5,8 @@
 const CKS=DB.kbProgress;const CK={active:null,bar:false,barOff:false,shown:{},q:[],quiet:0};
 const ckReset=()=>{CKS.u={};CK.active=null;CK.bar=false;CK.shown={};KB.memo={}};
 // G(): where «Перейти» leads; mod/tab/hl are reused by «Показать как». after() opens a form right away.
+// «Перейти» у шага сдачи при «Сдаче отчёта только после оплаты»: отчёт, который можно сдать сразу — вид «Сдача» или уже оплаченный, с ближайшим сроком
+const subPick=()=>visReports().filter(r=>OPEN.has(r.status)&&!tR(r).payOnly&&!r.superseded&&!subPayWhy(r)&&(actOf(r)==='sub'||r.paid>0)).sort((a,b)=>a.due<b.due?-1:1)[0];
 const G=(mod,tab,hl,mhl,after)=>{const f=()=>{if(mod)go(mod,tab);if(after)setTimeout(after,mod?220:0);else ckFlash(hl,mhl)};Object.assign(f,{mod,tab,hl,mhl});return f};
 const hasLog=(ent,id,re)=>HIST.some(h=>h.ent===ent&&(id==null||h.id===id)&&(!re||re.test(h.what||'')));
 const CKG=[
@@ -42,7 +44,7 @@ const CKG=[
   {id:'assign',star:1,perm:'assign',done:()=>CPS.some(c=>c.assign.length),go:G('reports','matrix','#add-btn','#fab',()=>massAssignDlg())},
   {id:'matrix',learn:1,at:['reports.matrix'],go:G('reports','matrix','#mbody')},
   {id:'rtabs',learn:1,at:['reports.week'],go:G('reports','week','#tabs')},
-  {id:'submit',star:1,staff:1,perm:'changeStatus',done:()=>REPORTS.some(r=>r.status==='Сдан'),go:G('reports','week','#mbody .gscroll, #mbody .gcards')},
+  {id:'submit',star:1,staff:1,perm:'changeStatus',done:()=>REPORTS.some(r=>r.status==='Сдан'),go:G('reports','week','#mbody .gscroll, #mbody .gcards',null,()=>{const r=payFirstOn()&&subPick();if(r)openReport(r);else ckFlash('#mbody .gscroll, #mbody .gcards')})},
   {id:'accept',staff:1,perm:'repConfirm',feat:()=>repConfOn(),done:()=>REPORTS.some(r=>r.status==='Сдан'&&r.confAt&&EMP.some(e=>e.id===r.confBy)),go:G('reports','waiting','#mbody .gscroll, #mbody .gcards')},
   {id:'bulk',learn:1,hit:'bulk',go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
   {id:'ver',learn:1,done:()=>REPORTS.some(r=>r.ver>0),go:G('reports','all','#mbody .gscroll, #mbody .gcards')},
@@ -211,7 +213,8 @@ function ckBase(noSync){ckAll().forEach(i=>{if(!ckDone(i)&&(i.ev||i.done)){let o
 // Первое использование функции засчитывает шаг «Сделать» и шаги «Посмотреть» раздела «Работа со списками и интерфейсом»; остальные «Посмотреть» — только показом или статьёй
 function ckHit(name){if(TOUR.on)return;ckAll().forEach(i=>{if(i.hit===name&&(!i.learn||i.g==='lists')&&ckMark(i,'use'))CK.q.push(i)});ckSoon()}
 // Само открытие экрана шаг «Посмотреть» не засчитывает: только «Перейти» из урока и 3 секунды на экране (ckLook), показ или статья
-function ckVisit(){}
+// Ушёл с экрана шага раньше 3 секунд — таймер сбрасывается, шаг не засчитывается
+function ckVisit(){const L=CK.look;if(!L)return;const i=ckFind(L.id);if(!i||!ckOnScr(i)){ckLookStop();ckBar()}}
 // Статья прочитана: открыта и прокручена до конца; засчитывает связанный шаг «Посмотреть»
 function kbArtRead(a,stepId){if(!a||!a.id)return;const u=ckU();const fresh=!u.arts[a.id];if(fresh)u.arts[a.id]={at:nowStamp()};
   const l=ckAll().filter(i=>i.learn&&(i.id===stepId||i.art===a.id)&&ckMark(i,'art'));if(l.length||fresh){kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();if(S.mod==='kb'&&!MODALS.length)renderPage()}
@@ -223,11 +226,16 @@ function ckGo(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=true;CK.ba
 // (решение заказчика 25.10.2026; ушёл с экрана раньше — не засчитывается)
 const CK_LOOK=3000;
 const ckOnScr=i=>{const scr=S.mod+(S.tab?'.'+S.tab:'');return (i.at||[]).some(a=>a===scr||a===S.mod)};
-function ckLook(i){clearTimeout(CK.lt);if(!i.learn||!i.at||ckDone(i))return;
-  CK.lt=setTimeout(()=>{if(CK.active!==i.id||ckDone(i)||TOUR.on||!ckOnScr(i)||!ckMark(i,'visit'))return;kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();ckBar();ckDoneDlg(i)},CK_LOOK)}
+// Внизу экрана — полоса-таймер «Смотрите экран… 3»; стартует после прокрутки «Перейти» к нужному месту; у уже засчитанного шага таймера нет
+function ckLook(i){ckLookStop();if(!i.learn||!i.at||ckDone(i))return;
+  CK.lst=setTimeout(()=>{if(CK.active!==i.id||TOUR.on||!ckOnScr(i))return;CK.look={id:i.id,end:Date.now()+CK_LOOK};CK.bar=true;CK.barOff=false;ckBar();
+    CK.lt=setInterval(()=>{const L=CK.look;if(!L||L.id!==i.id||CK.active!==i.id||TOUR.on||!ckOnScr(i)){ckLookStop();ckBar();return}
+      if(Date.now()<L.end){const n=$('#ckbar [data-ckt]');if(n)n.textContent=Math.max(1,Math.ceil((L.end-Date.now())/1000));return}
+      ckLookStop();if(ckDone(i)||!ckMark(i,'visit')){ckBar();return}kbSync(false);renderSide();if(typeof renderSheetDot==='function')renderSheetDot();ckBar();ckDoneDlg(i,'look')},200)},i.go&&i.go.hl?450:150)}
+function ckLookStop(){clearInterval(CK.lt);clearTimeout(CK.lst);CK.look=null}
 function ckHow(id){const i=ckFind(id);if(!i)return;CK.active=id;CK.bar=false;CK.barOff=false;tourStep(i)}
-function ckDoneDlg(i){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(i.id);
-  openModal({noMax:true,size:'mid',render:()=>({title:`Готово: шаг «${esc(i.t)}» выполнен`,sub:(()=>{const s=kbStat();return `База знаний: ${esc(s.lv[s.cur].n)} · ${s.pct} %`})(),
+function ckDoneDlg(i,how){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(i.id);
+  openModal({noMax:true,size:'mid',render:()=>({title:how==='look'?`Шаг выполнен: вы посмотрели «${esc(i.t)}»`:`Готово: шаг «${esc(i.t)}» выполнен`,sub:(()=>{const s=kbStat();return `База знаний: ${esc(s.lv[s.cur].n)} · ${s.pct} %`})(),
     body:`<p style="margin:0;color:var(--muted);line-height:1.55">${nx?`Следующий шаг — «${esc(nx.t)}».`:'Все шаги вашей программы пройдены.'} Можно вернуться к Базе знаний, сразу перейти к следующему шагу или остаться здесь.</p>`,
     foot:`<button class="btn ghost" id="ckd-stay">Остаться здесь</button>${nx?`<button class="btn" id="ckd-next" title="${esc(nx.t)}">Следующий шаг: ${esc(nx.t.length>34?nx.t.slice(0,32)+'…':nx.t)}</button>`:''}<button class="btn cta" id="ckd-back">Вернуться к Базе знаний</button>`,
     mount(el,m){$('#ckd-stay',el).onclick=()=>{m.close();CK.bar=true;ckBar()};const n=$('#ckd-next',el);if(n)n.onclick=()=>{m.close();ckGo(nx.id)};
@@ -235,5 +243,6 @@ function ckDoneDlg(i){if(CK.shown[i.id])return;CK.shown[i.id]=1;const nx=ckNext(
 function ckBar(){let b=$('#ckbar');const i=CK.active&&ckFind(CK.active);const show=i&&CK.bar&&!CK.barOff&&S.mod!=='kb'&&!TOUR.on;
   if(!b){b=document.createElement('div');b.id='ckbar';b.setAttribute('role','status');document.body.appendChild(b);
     b.addEventListener('click',e=>{if(e.target.closest('[data-ckb=back]')){CK.bar=false;go('kb','lessons')}if(e.target.closest('[data-ckb=x]')){CK.barOff=true;ckBar()}})}
-  b.hidden=!show;if(!show)return;const d=ckDone(i);
+  b.hidden=!show;b.classList.toggle('look',!!(show&&CK.look&&CK.look.id===i.id));if(!show)return;const d=ckDone(i);
+  if(CK.look&&CK.look.id===i.id){const rem=Math.max(0,CK.look.end-Date.now());b.innerHTML=`${ic('eye','sm')}<span class="grow">Смотрите экран… <b data-ckt>${Math.max(1,Math.ceil(rem/1000))}</b> <span class="faint">· ${esc(i.t)}</span></span><span class="ck-tm" aria-hidden="true"><i style="animation-duration:${rem}ms"></i></span><button class="icon-btn sm" data-ckb="x" aria-label="Закрыть плашку">${ic('x','sm')}</button>`;return}
   b.innerHTML=`${ic(d?'ok':'grad','sm')}<span class="grow">Урок: <b>${esc(i.t)}</b>${d?' <span class="ck-ok">выполнено</span>':''}</span><button class="btn sm cta" data-ckb="back">К Базе знаний</button><button class="icon-btn sm" data-ckb="x" aria-label="Закрыть плашку">${ic('x','sm')}</button>`}

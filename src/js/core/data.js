@@ -171,6 +171,30 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       if(db.meta.mode==='demo'){const dc=DBSRC.demo.db.contractors||[],dr=DBSRC.demo.db.reports||[];
         (db.contractors||[]).forEach(c=>{const f=dc.find(x=>x.id===c.id&&x.inn===c.inn);if(f)(c.assign||[]).forEach(a=>{if(!['enq','enm'].includes(a.t)||a.en)return;const fa=(f.assign||[]).find(y=>y.t===a.t&&y.from===a.from);if(fa&&fa.en){a.en=structuredClone(fa.en);delete a.rate}})});
         (db.reports||[]).forEach(x=>{const f=!x.lines&&dr.find(y=>y.id===x.id&&y.cp===x.cp&&y.t===x.t&&y.pkey===x.pkey);if(f&&f.lines&&f.sum===x.sum)x.lines=structuredClone(f.lines)})}}}
+  // Реквизиты по номеру телефона (v57, решение заказчика 25.10.2026): банки сверены с реестром Нацбанка и получили «Переводы по номеру телефона» — записи, которые администратор не менял,
+  // берутся из refDB.json по коду, новые добавляются; переименованные банки и дубль «А-Банк» переименовываются в реквизитах. Счёт организации становится «Расчётным счётом»
+  // с назначением «Налоги и обслуживание», прежний основной — основной для налогов и для обслуживания; реквизиты сотрудников — «Счёт или кошелёк». Тексты страницы контрагента,
+  // пояснения для контрагента у видов отчётов, записи «Налогов» 23.10 и строки группировки справочников — из refDB.json; в демо-данных реквизиты как в demoDB.json
+  if(!db.meta.v57){db.meta.v57=1;const ren={'А-Банк':'АБанк'};
+    const bd=db.ref.dictionaries&&db.ref.dictionaries.banks,rb=r.dictionaries&&r.dictionaries.banks;
+    if(bd&&rb){const its=bd.items;rb.items.forEach(f=>{const i=its.findIndex(x=>(x.code||'')===f.code);if(i<0){if(!its.some(x=>x.name===f.name))its.push(structuredClone(f));return}const x=its[i];
+        if((x._ua||'')<='2026-10-18 09:54'){if(x.name!==f.name&&!ren[x.name])ren[x.name]=f.name;its[i]=structuredClone(f)}else if(x.byPhone==null)x.byPhone=!!f.byPhone});
+      its.forEach(x=>{if(x.byPhone==null)x.byPhone=x.type==='Электронный кошелёк'})}
+    const rn=n=>ren[n]||n;const o=db.organization;
+    if(o){(o.accounts||[]).forEach(a=>{if(!a.kind){a.kind='acc';a.use='both';a.mainTax=a.mainFee=!!a.main;delete a.main;if(a.name==null)a.name=o.name||''}if(a.kind==='phone')a.banks=(a.banks||[]).map(rn);else a.bank=rn(a.bank)});
+      if((o.accounts||[]).length)['mainTax','mainFee'].forEach(k=>{if(!o.accounts.some(a=>a[k]))o.accounts[0][k]=true});
+      if(o.pageSec&&!o.pageSec.includes('pay'))o.pageSec.unshift('pay')}
+    (db.employees||[]).forEach(e=>(e.wallets||[]).forEach(w=>{if(!w.kind)w.kind='acc';if(w.kind==='phone')w.banks=(w.banks||[]).map(rn);else w.prov=rn(w.prov)}));
+    const u=db.ref.kbUi,ru=r.kbUi;if(u&&ru&&ru.page&&!u.page)u.page=structuredClone(ru.page);
+    const rk=Object.fromEntries((r.reportTypes||[]).map(x=>[x.id,x]));(db.ref.reportTypes||[]).forEach((x,i,a)=>{const f=rk[x.id];if(!f)return;if(['enq','enm'].includes(x.id)&&(x._ua||'')==='2026-10-23 15:45'){a[i]=structuredClone(f);return}if(x.clientNote==null&&f.clientNote)x.clientNote=f.clientNote});
+    (db.ref.taxes||[]).forEach((x,i,a)=>{if(['НАЛ-10','НАЛ-15'].includes(x.code)&&(x._ua||'')==='2026-10-24 21:10'){const f=(r.taxes||[]).find(y=>y.code===x.code);if(f)a[i]=structuredClone(f)}});
+    (db.ref.dictGroups||[]).forEach(g=>{const fg=(r.dictGroups||[]).find(x=>x.group===g.group);(g.tabs||[]).forEach((t,i)=>{const ft=fg&&fg.tabs.find(x=>x.tab===t.tab);
+      if(ft&&((t.tab==='Виды отчётов'&&!/clientNote/.test(t.recordNotes||''))||(t.tab==='Банки'&&t.about==='Банки и электронные кошельки КР.')))g.tabs[i]=structuredClone(ft)})});
+    if(db.meta.mode==='demo'){const dd=DBSRC.demo.db,dg=s=>String(s||'').replace(/\D/g,'').replace(/^996/,'0');
+      if(o&&!(o.accounts||[]).some(a=>a.kind==='phone')){const ph=((dd.organization||{}).accounts||[]).filter(a=>a.kind==='phone');if(ph.length){if(ph.some(a=>a.mainFee))o.accounts.forEach(a=>a.mainFee=false);o.accounts.push(...structuredClone(ph))}}
+      (db.employees||[]).forEach(e=>{const f=(dd.employees||[]).find(x=>x.id===e.id&&x.login===e.login);if(!f||!(f.wallets||[]).length)return;const nums=new Set(f.wallets.map(w=>dg(w.kind==='phone'?w.phone.digits:w.num)));
+        if((e.wallets||[]).every(w=>w.kind!=='phone'&&nums.has(dg(w.num))))e.wallets=structuredClone(f.wallets)})}}
+  if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
   if(!db.kbProgress.u)db.kbProgress.u={};

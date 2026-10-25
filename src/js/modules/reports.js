@@ -24,24 +24,26 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'type',label:'Вид отчёта',type:'enum',w:140,val:r=>T[r.t].short,html:r=>`<span title="${esc(T[r.t].name)}">${esc(T[r.t].short)}</span>${r.ver?` <span class="tag blue">уточн. ${r.ver}</span>`:''}${isMobile()?' '+actPill(actOf(r),1):''}`},
  {key:'act',label:'Что сделать',type:'enum',w:175,deskOnly:true,val:r=>ACT_L[actOf(r)],html:r=>actPill(actOf(r),1)},
  {key:'rate',label:'Ставка',type:'enum',w:130,val:r=>rateOf(r,true),hide:true},
- {key:'organ',label:'Орган',type:'enum',w:110,val:r=>T[r.t].organ,hide:!!o.compact},
+ {key:'organ',label:'Орган',type:'enum',w:110,val:r=>T[r.t].organ,hide:true},
  {key:'period',label:'Период',type:'enum',w:112,val:r=>r.plabel,sortVal:r=>r.pkey},
  {key:'due',label:'Срок сдачи',type:'date',w:176,val:r=>r.due,html:dueHtml},
- {key:'days',label:'Дней до срока',type:'int',w:132,num:true,val:r=>isDone(r)?null:diffDays(r.due,TODAY),html:daysHtml,hide:!!o.compact},
+ {key:'days',label:'Дней до срока',type:'int',w:132,num:true,val:r=>isDone(r)?null:diffDays(r.due,TODAY),html:daysHtml,hide:true},
  {key:'status',label:'Статус сдачи',type:'enum',w:175,val:r=>tR(r).payOnly?'—':r.status,html:r=>tR(r).payOnly?'<span class="faint">—</span>':scaleMini('rep',r.status,r)},
  ...(o.waiting?[{key:'wait',label:'Ждёт, дней',type:'int',w:100,num:true,val:r=>repWait(r)?repWaitDays(r):null,html:r=>{const d=repWaitDays(r);return d>=(ORG.waitDays||3)?`<span class="pill orange sm" title="Дольше ${ORG.waitDays||3} дн.: старшим бухгалтерам ушло напоминание">${d}</span>`:String(d)}},{key:'subby',label:'Сдал',type:'enum',w:130,val:r=>empName(r.subBy||r.resp)}]:[]),
- {key:'sub',label:'Дата сдачи',type:'date',w:108,val:r=>tR(r).payOnly?null:r.subDate,html:r=>tR(r).payOnly?'<span class="faint">—</span>':r.subDate?fmtD(r.subDate):'',hide:!!o.compact},
- {key:'sum',label:'Сумма к уплате',type:'money',w:140,num:true,total:true,val:r=>tR(r).sum?r.sum:null,html:r=>!tR(r).sum?'<span class="faint">—</span>':r.sum==null?'<span class="faint">не указана</span>':fmtM(r.sum)+(r.auto?` <span title="Повторяющаяся сумма из назначения">${ic('repeat','sm')}</span>`:'')},
+ {key:'sub',label:'Дата сдачи',type:'date',w:108,val:r=>tR(r).payOnly?null:r.subDate,html:r=>tR(r).payOnly?'<span class="faint">—</span>':r.subDate?fmtD(r.subDate):'',hide:true},
+ // Суммы всегда в одном порядке (решение заказчика 25.10.2026): «К уплате» → «Получено от контрагента» → «Оплачено в бюджет» (под суммой — статус оплаты); на телефоне — одной строкой плитки
+ {key:'sum',label:'К уплате',cl:'К уплате',cline:true,type:'money',w:130,num:true,total:true,val:r=>tR(r).sum?r.sum:null,cv:r=>r.sum==null?'не указана':fmtM(r.sum,false),html:r=>!tR(r).sum?'<span class="faint">—</span>':r.sum==null?'<span class="faint">не указана</span>':fmtM(r.sum)+(r.auto?` <span title="Повторяющаяся сумма из назначения">${ic('repeat','sm')}</span>`:'')},
  ...(tp?[
+ {key:'got',label:'Получено от контрагента',cl:'Получено',cline:true,type:'money',w:170,num:true,total:true,val:r=>tR(r).sum&&r.sum>0?r.got:null,cv:r=>fmtM(r.got,false),html:r=>!(tR(r).sum&&r.sum>0)?'<span class="faint">—</span>':`<span class="mwrap"><span class="${r.got>=r.sum?'green':''}">${fmtM(r.got)}</span>${canRecv(r)&&r.got+(r.selfPaid||0)<r.sum?` <button class="btn xs" data-recv="${r.id}" title="Принять деньги от контрагента под этот отчёт">${ic('plus','sm')}Принять</button>`:''}</span>`},
+ {key:'paid',label:'Оплачено в бюджет',cl:'Оплачено',cline:true,type:'money',w:178,num:true,total:true,val:r=>tR(r).sum?r.paid:null,cv:r=>fmtM(r.paid,false)+(r.payOverdue?` <span class="pill red sm">${ic('alert')}просрочено</span>`:''),html:r=>!tR(r).sum?'<span class="faint">—</span>':`<div class="sum-st"><span class="tnum">${fmtM(r.paid)}</span>${scaleMini0('pay',r.payStatus,r)}${r.payOverdue?`<span class="pill red sm" title="Срок оплаты прошёл">${ic('alert')}просрочено</span>`:''}</div>`},
+ {key:'left',label:'Осталось оплатить',type:'money',w:140,num:true,total:true,val:r=>tR(r).sum&&r.sum>0?Math.max(0,Math.round((r.sum-r.paid)*100)/100):null,hide:true},
  {key:'paydue',label:'Срок оплаты',type:'date',w:116,val:r=>tR(r).sum?r.payDue:null,html:r=>tR(r).sum?`<span class="${r.payOverdue?'red strong':''}">${fmtD(r.payDue)}</span>`:'<span class="faint">—</span>',hide:true},
- {key:'paystatus',label:'Статус оплаты',type:'enum',w:170,val:r=>tR(r).sum?r.payStatus:'—',html:r=>!tR(r).sum?'<span class="faint">—</span>':scaleMini('pay',r.payStatus,r)+(canRecv(r)&&r.sum>0&&(r.recv||0)<r.sum&&r.paid<r.sum?` <button class="btn xs" data-recv="${r.id}" title="Принять деньги от контрагента под этот отчёт">${ic('plus','sm')}Принять деньги</button>`:'')+(r.payOverdue?` <span class="pill red sm" title="Срок оплаты прошёл">${ic('alert')}просрочено</span>`:'')},
- {key:'paid',label:'Оплачено',type:'money',w:126,num:true,total:true,val:r=>tR(r).sum?r.paid:null,html:r=>tR(r).sum?fmtM(r.paid):'<span class="faint">—</span>',hide:!!o.compact},
- {key:'money',label:'Деньги',type:'enum',w:290,val:moneyTxt,html:moneyHtml}]:[]),
+ {key:'paystatus',label:'Статус оплаты',type:'enum',w:170,val:r=>tR(r).sum?r.payStatus:'—',html:r=>!tR(r).sum?'<span class="faint">—</span>':scaleMini('pay',r.payStatus,r)+(r.payOverdue?` <span class="pill red sm" title="Срок оплаты прошёл">${ic('alert')}просрочено</span>`:''),hide:true},
+ {key:'money',label:'Деньги (сверка)',type:'enum',w:290,val:moneyTxt,html:moneyHtml,hide:true}]:[]),
  {key:'ovk',label:'Просрочка',type:'enum',w:140,val:r=>r.overdue&&r.payOverdue?'Сдача и оплата':r.overdue?'Сдача':r.payOverdue?'Оплата':'',hide:true},
  {key:'pays',label:'Что уплачивается',type:'text',w:220,val:r=>tR(r).sum?paysTxt(T[r.t]):'',hide:true},
  {key:'resp',label:'Ответственный',type:'enum',w:132,val:r=>empName(r.resp),hide:!!o.compact&&!seeAll('reports')},
  {key:'fcode',label:'Код формы',type:'text',w:110,val:r=>T[r.t].code||'',cls:'mono',hide:true},
- {key:'funds',label:'Средства от контрагента',type:'enum',w:190,val:r=>!r.sum||!tR(r).sum?'':(r.recv||0)>=r.sum?'Получены':(r.recv||0)>0?'Получены частично':'Ожидаем',hide:true},
  {key:'pfull',label:'Период полностью',type:'text',w:170,val:r=>r.phuman,sortVal:r=>r.pkey,hide:true},
  {key:'duebase',label:'Срок по закону',type:'date',w:120,val:r=>r.dueBase,hide:true},
  ...(repConfOn()?[{key:'conf',label:'Подтверждение',type:'enum',w:190,val:r=>repMark(r)===REP_MK.wait?stl(REP_MK.wait):repMark(r)?repConfTxt(r):'',html:r=>{const k=repMark(r);return !k?'<span class="faint">—</span>':k===REP_MK.wait?`<span class="pill yellow sm">${ic('hourglass')}${esc(repConfTxt(r))}</span>`:`<span class="pill green sm">${ic('check')}${esc(repConfTxt(r))}</span>`},hide:true},
@@ -55,7 +57,7 @@ const repRowClass=r=>r.overdue||r.payOverdue?'overdue':r.status==='Не треб
 function repGrid(host,id,rows,extra={}){
   return grid(host,Object.assign({id,cols:reportCols(extra),rows,title:'cp',noun:['отчёт','отчёта','отчётов'],rowClass:repRowClass,actions:reportActions,open:openReport,
     sort:{key:'due',dir:1},preset:S.preset,simulateLoad:extra.load,
-    bulk:can('changeStatus')?[{label:'Отметить сданными',icon:'send',run:(rs,done)=>{const ok=rs.filter(r=>OPEN.has(r.status)&&!tR(r).payOnly);if(!ok.length){toast('Среди выбранных нет отчётов, которые можно сдать','alert',true);return}submitDlg(ok,done)}}]:null,
+    bulk:can('changeStatus')?[{label:'Отметить сданными',icon:'send',run:(rs,done)=>{const ok=rs.filter(r=>OPEN.has(r.status)&&!tR(r).payOnly);if(!ok.length){toast('Среди выбранных нет отчётов, которые можно сдать','alert',true);return}if(ok.length===1&&subPayWhy(ok[0])){toast(subPayWhy(ok[0]),'lock',true);return}submitDlg(ok,done)}}]:null,
     empty:{icon:'ok',title:extra.emptyTitle||'Отчётов нет',text:extra.emptyText||''}},extra.cfg||{}));
 }
 // «Сдать» — not yet submitted reports that need submitting; «Уплатить» — not yet paid reports that need paying.
@@ -123,7 +125,7 @@ function renderCalendar(body){
 function reportActions(r){
   const t=tR(r),st=t.payOnly?'—':r.status,cs=can('changeStatus');const no='Нет права менять статус';const it=[];
   it.push({label:'Открыть карточку',icon:'file',run:()=>openReport(r)});
-  if(OPEN.has(st))it.push({label:'Отметить сданным',icon:'send',disabled:!cs,reason:!cs&&no,run:()=>submitDlg([r])});
+  if(OPEN.has(st)){const w=subPayWhy(r);it.push({label:'Отметить сданным',icon:'send',disabled:!cs||!!w,reason:!cs?no:w,run:()=>submitDlg([r])})}
   if(st==='К сдаче')it.push({label:'Взять в работу',icon:'clock',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'В работе')});
   if(repWait(r)){const why=repConfWhy(r);it.push({label:'Подтвердить',icon:'check',sub:'Сдача проверена старшим бухгалтером',disabled:!!why,reason:why,run:()=>repConfDlg([r])},{label:'На исправление',icon:'refresh',sub:'Вернуть ответственному с причиной',disabled:!!why,reason:why,run:()=>repFixDlg(r)})}
   if(st==='Сдан')it.push({label:'Требует исправления',icon:'alert',sub:'Орган не принял отчёт',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'Требует исправления')});
@@ -131,7 +133,7 @@ function reportActions(r){
   if(t.sum&&r.status!=='Не требуется')it.push({label:'Указать сумму',icon:'coins',disabled:!can('changeSum'),reason:!can('changeSum')&&'Нет права менять сумму',run:()=>sumDlg(r)});
   if(feat('taxpay')&&t.sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'){const ok=r.money&&r.money.s==='ok';
     it.push({label:'Принять деньги',icon:'download',sub:'Поступление от контрагента под этот отчёт',disabled:!can('money'),reason:'Нет права на учёт денег',run:()=>recvDlg(r)});
-    it.push({label:'Отметить оплаченным',icon:'wallet',disabled:!ok||!can('money'),reason:!can('money')?'Нет права на учёт денег':!ok?`Денег контрагента не хватает: ${som(r.money?r.money.n:r.sum-r.paid)}`:'',run:()=>payDlg(r)});
+    it.push({label:'Отметить оплаченным',icon:'wallet',sub:ok?'':`Денег контрагента не хватает${r.money&&r.money.n?': '+som(r.money.n):''} — или «Оплатил контрагент сам»`,disabled:!can('money'),reason:'Нет права на учёт денег',run:()=>payDlg(r)});
     it.push({label:'Напомнить в WhatsApp',icon:'chat',run:()=>waDlg({r})})}
   if(feat('files')&&can('filesUpload'))it.push({label:'Прикрепить файл',icon:'clip',run:()=>fileDlg(r)});
   if(st==='Сдан')it.push({label:'Создать уточнённый',icon:'repeat',disabled:!cs,reason:!cs&&no,run:()=>createRevision(r)});

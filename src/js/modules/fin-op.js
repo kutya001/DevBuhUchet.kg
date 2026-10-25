@@ -8,10 +8,10 @@ const opKind=d=>d.src==='op'?opBase(d.ref.kind):d.src;
 const opCpId=d=>d.own?d.own.cp:d.ref.cp;
 const opDelOf=d=>d.src==='op'?(d.ref.kind.endsWith('_x')?{at:d.ref.xAt,by:d.ref.xBy,why:d.ref.xWhy}:null):d.ref.del||(d.own&&d.own.del)||null;
 const OP_OWN={fee:['Оплата за обслуживание','purple'],pt:['Оплата по проекту','blue'],sp:['Оплата разовой услуги','orange'],svc:['Разовая услуга','orange']};
-const opMeta=d=>OPK[opKind(d)]||OP_OWN[opKind(d)];
+const opMeta=d=>d.src==='op'&&d.ref.self&&opKind(d)==='pay'?OP_SELF:OPK[opKind(d)]||OP_OWN[opKind(d)];
 const opAmt=d=>{const x=d.ref;return d.src!=='op'?x.amount:opBase(x.kind)==='in'?(x.total??x.amount):Math.abs(x.amount)};
 const permTitle=p=>(PERM_REF.find(x=>x.id===p)||{name:p}).name;
-const accName=a=>a==='org'?'счёт организации':'счёт '+empName(a);
+const accName=a=>a==='org'?'счёт организации':a==='client'?'контрагент оплатил сам, без наших счетов':'счёт '+empName(a);
 // Номер новой оплаты за обслуживание: не повторяет уже выданные (записи не удаляются, но части поступления пересоздаются при его изменении)
 function fpId(){let i=FEEPAYS.length+1;while(FEEPAYS.some(f=>f.id==='f'+i+'n'))i++;return 'f'+i+'n'}
 // В форме изменения поступления: сколько уже потрачено на налоги и какие оплаты мешают уменьшить его сильнее
@@ -60,7 +60,7 @@ function opWin(d){if(!d)return;if(d.src==='svc')return serviceCard(d.ref);
     else kv.push(['За что',v.rep?`<button class="linkbtn" id="ow-rep">${esc(v.what)}</button>`:esc(v.what)]);
     if(d.src==='pt'){const p=d.own;kv.push(['Проект: получено',`<span class="tnum">${som(projPaid(p))}${p.plan?' из '+som(p.plan):''}</span>`])}
     if(d.src==='sp'){const s=d.own;kv.push(['Услуга: получено',`<span class="tnum">${som(svcPaid(s))} из ${som(s.amount)}</span>`])}
-    kv.push(k==='fee'?['Куда поступили',`${ic(v.to==='owner'?'user':'building','sm')} ${esc(fpToName(v.to||'org'))}`]:[k==='xfer'?'На счёт':'Счёт',v.acc==='org'?`${ic('building','sm')} организации`:`${ic('user','sm')} сотрудника ${esc(empName(v.acc))}`]);
+    kv.push(k==='fee'?['Куда поступили',`${ic(v.to==='owner'?'user':'building','sm')} ${esc(fpToName(v.to||'org'))}`]:[k==='xfer'?'На счёт':'Счёт',v.acc==='org'?`${ic('building','sm')} организации`:v.acc==='client'?`${ic('building','sm')} не наш: контрагент оплатил сам`:`${ic('user','sm')} сотрудника ${esc(empName(v.acc))}`]);
     if(v.note&&v.note!==v.what)kv.push(['Примечание',esc(v.note)]);
     const corr=k==='in'?OPS.filter(y=>y.kind==='corr'&&y.ref===x.id):[];
     const lockNote=!v.del&&(eL||dL)?`<div class="note">${ic('lock')}<span>${esc(eL||dL)}</span></div>`:'';
@@ -91,7 +91,7 @@ function opActs(d,open=true){const v=opView(d),k=v.k;if(v.del)return [open&&{lab
     {label:k==='bonus'?'Отменить списание':k==='refund'?'Отменить возврат':'Удалить',icon:['bonus','refund'].includes(k)?'history':'trash',danger:true,disabled:!!dL,reason:dL,run:()=>opDelDlg(d)}].filter(Boolean)}
 // Ограничение суммы при изменении: поступление — не ниже потраченного, списание и оплата — не больше свободных денег, транш — не больше плана
 function opMax(d){const k=opKind(d),x=d.ref,c=CPM[opCpId(d)],a=opAmt(d);
-  if(k==='pay')return {max:a+c.avail,msg:`Денег контрагента не хватает: на счёте ещё ${som(c.avail)}, оплата может быть не больше ${som(a+c.avail)}`};
+  if(k==='pay'&&!x.self)return {max:a+c.avail,msg:`Денег контрагента не хватает: на счёте ещё ${som(c.avail)}, оплата может быть не больше ${som(a+c.avail)}`};
   if(k==='bonus'||k==='refund')return {max:a+c.free,msg:`Свободный остаток контрагента ${som(c.free)}: сумма может быть не больше ${som(a+c.free)}`};
   if(k==='xfer')return {max:orgHeld(c)+a,msg:`На счёте организации по этому контрагенту ${som(orgHeld(c))}: перевод может быть не больше ${som(orgHeld(c)+a)}`};
   if(k==='pt'&&d.own.plan){const mx=d.own.plan-(projPaid(d.own)-a);return {max:mx,msg:`Больше планируемой стоимости проекта: транш может быть не больше ${som(mx)}`}}
@@ -103,7 +103,7 @@ function opEditDlg(d){const k=opKind(d),x=d.ref;const L=opLock(d,'edit');if(L)re
   if(k==='fee')return x.op?inDlg(CPM[x.cp],OPS.find(y=>y.id===x.op)):feePayDlg(CPM[x.cp],x);
   const v=opView(d),c=v.c,a0=v.amount,sg0=k==='corr'?(x.amount<0?'-':'+'):null;
   const note0=k==='xfer'?(x.note||'').replace(/^Со счёта организации на счёт [^.]*\.?\s*/,''):v.note;
-  const hasAcc=['pay','bonus','refund','corr','xfer'].includes(k);
+  const hasAcc=['pay','bonus','refund','corr','xfer'].includes(k)&&!x.self;
   const accs=[...(k==='xfer'?[]:[['org','Счёт организации']]),...EMP.filter(e=>(e.active&&e.role!=='owner')||e.id===x.holder).map(e=>[e.id,'Счёт '+e.short+(e.id===c.resp?' — ответственный':'')])];
   const lim=opMax(d);const sgn=s=>s==null?'':s==='-'?'−':'+';
   openModal({form:true,render:()=>({title:'Изменить: '+v.label.toLowerCase(),sub:`${esc(c.name)} · ${sgn(sg0)}${som(a0)} от ${fmtD(x.date)}`,body:`<div class="form">

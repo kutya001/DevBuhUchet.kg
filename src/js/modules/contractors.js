@@ -98,7 +98,7 @@ const repUnfinished=r=>!r.superseded&&r.status!=='Не требуется'&&(r.s
 function transferCp(c,to){const from=c.resp;if(from===to)return;c.resp=to;
   REPORTS.filter(r=>r.cp===c.id&&repUnfinished(r)&&(r.resp===from||!r.resp)).forEach(r=>r.resp=to);
   TASKS.filter(t=>t.cp===c.id&&t.exec===from&&taskOpen(t)).forEach(t=>t.exec=to);
-  if(c.paysTo==='emp')OPS.filter(o=>o.cp===c.id).forEach(o=>o.holder=to);
+  if(c.paysTo==='emp')OPS.filter(o=>o.cp===c.id&&!o.self).forEach(o=>o.holder=to);
   log('cp',c.id,`Ответственный: ${empName(from)||'—'} → ${empName(to)}`,c.id)}
 function archiveDlg(cs,done){
   confirmDlg({title:cs.length>1?`Отправить в архив ${cs.length} контрагентов?`:`Отправить в архив ${esc(cs[0].name)}?`,text:'Удалить контрагента с отчётами нельзя, его можно только архивировать. Отчёты за периоды после текущего месяца получат статус «Не требуется»; отчёты за уже обслуженные периоды остаются к сдаче, сданные — без изменений.',ok:'В архив',danger:true,run:()=>{

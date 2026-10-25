@@ -2,7 +2,7 @@
  "meta": {
   "file": "demoDB.json",
   "version": 1,
-  "exported": "2026-10-24 22:00",
+  "exported": "2026-10-25 12:00",
   "description": "Демо-данные организации «Бухгалтер Плюс» для прототипа Buhuchet.kg"
  },
  "organization": {
@@ -17,10 +17,30 @@
   "head": "Садыков Эркин Маратович",
   "accounts": [
    {
+    "kind": "acc",
     "bank": "Optima Bank",
     "acc": "1091 8200 0456 7012",
     "bik": "109018",
-    "main": true
+    "name": "ОсОО «Бухгалтер Плюс»",
+    "use": "both",
+    "mainTax": true,
+    "mainFee": false
+   },
+   {
+    "kind": "phone",
+    "phone": {
+     "cc": "KG",
+     "digits": "996700901234"
+    },
+    "banks": [
+     "M-Bank",
+     "Бакай Банк",
+     "О!Банк"
+    ],
+    "name": "ОсОО «Бухгалтер Плюс»",
+    "use": "fee",
+    "mainTax": false,
+    "mainFee": true
    }
   ],
   "features": {
@@ -416,12 +436,14 @@
   "repConfirm": true,
   "slug": "buhgalter-plyus",
   "pageSec": [
-   "contacts",
+   "pay",
    "reports",
    "money",
+   "fee",
    "kpi",
-   "fee"
-  ]
+   "contacts"
+  ],
+  "payFirst": true
  },
  "roles": [
   {
@@ -583,8 +605,15 @@
    "lastIn": "сегодня, 08:52",
    "wallets": [
     {
-     "prov": "M-Bank",
-     "num": "0555 100 200",
+     "kind": "phone",
+     "phone": {
+      "cc": "KG",
+      "digits": "996555100200"
+     },
+     "banks": [
+      "M-Bank",
+      "О!Деньги"
+     ],
      "name": "Эркин С.",
      "main": true
     }
@@ -609,6 +638,7 @@
    "lastIn": "сегодня, 09:14",
    "wallets": [
     {
+     "kind": "acc",
      "prov": "Optima Bank",
      "num": "4169 5853 0011 2290",
      "name": "Мээрим К.",
@@ -635,12 +665,20 @@
    "lastIn": "вчера, 18:40",
    "wallets": [
     {
-     "prov": "M-Bank",
-     "num": "0555 123 456",
+     "kind": "phone",
+     "phone": {
+      "cc": "KG",
+      "digits": "996555123456"
+     },
+     "banks": [
+      "M-Bank",
+      "Бакай Банк"
+     ],
      "name": "Алишер Т.",
      "main": true
     },
     {
+     "kind": "acc",
      "prov": "Бакай Банк",
      "num": "0700 123 456",
      "name": "",
@@ -667,8 +705,14 @@
    "lastIn": "сегодня, 09:02",
    "wallets": [
     {
-     "prov": "Бакай Банк",
-     "num": "0772 456 789",
+     "kind": "phone",
+     "phone": {
+      "cc": "KG",
+      "digits": "996772456789"
+     },
+     "banks": [
+      "Бакай Банк"
+     ],
      "name": "Айгерим С.",
      "main": true
     }
@@ -712,7 +756,8 @@
    "lastIn": "вчера, 12:05",
    "wallets": [
     {
-     "prov": "А-Банк",
+     "kind": "acc",
+     "prov": "АБанк",
      "num": "0550 778 899",
      "name": "Жылдыз О.",
      "main": true
