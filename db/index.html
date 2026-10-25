@@ -187,6 +187,11 @@ ul.list li{margin:4px 0}
 .legend{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
 .types{display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
 .types code{color:var(--blue)}
+.fns{display:flex;flex-direction:column}
+.fn{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:4px 14px;padding:9px 0;border-top:1px solid var(--border)}
+.fn:first-child{border-top:0;padding-top:0}
+.fn>code{color:var(--blue);word-break:break-word}
+@media (max-width:899px){.fn{grid-template-columns:1fr}}
 
 /* телефон */
 @media (max-width:899px){
@@ -314,7 +319,7 @@ function init(db){
   IN=new Map(db.tables.map(t=>[t.name,[]]));
   db.tables.forEach(t=>t.columns.forEach(c=>{if(c.fk){const to=c.fk.split('.')[0];IN.get(to)&&IN.get(to).push({t,c})}}));
   const act=db.tables.filter(t=>t.status==='actual').length;
-  $('#sub').textContent=`${plural(db.tables.length,'таблица','таблицы','таблиц')} · ${act} уже в базе · обновлено ${fmtDate(db.meta.updated)}`;
+  $('#sub').textContent=`${plural(db.tables.length,'таблица','таблицы','таблиц')} · ${act} уже в базе · ${fmtDate(db.meta.updated)}`;$('#sub').title='Описание обновлено '+fmtDate(db.meta.updated);
   renderFilters();renderList();renderEnums();renderRules();fillDiagramSelect();
   route();
 }
@@ -608,6 +613,7 @@ function renderRules(){
   const m=DB.meta;
   $('#rules').innerHTML=`
   <div class="box"><h2>Общие правила базы</h2><ul class="list">${m.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
+  ${(DB.functions||[]).length?`<div class="box"><h2>Функции базы</h2><p class="muted" style="margin:0 0 10px">Функции в схеме app, которые вызывает приложение. Метка SECURITY DEFINER — функция работает с правами владельца схемы и обходит RLS, поэтому отдаёт только узко нужное.</p><div class="fns">${DB.functions.map(f=>`<div class="fn"><code>${esc(f.name)}</code><div><b style="font-weight:600">${esc(f.ru)}</b>${f.definer?' <span class="badge b-fk">SECURITY DEFINER</span>':''} <span class="faint" style="font-size:12px">${esc(f.migration)}</span><div class="muted" style="font-size:14px">${esc(f.desc)}</div></div></div>`).join('')}</div></div>`:''}
   <div class="box"><h2>Как читать</h2><div class="legend">
     ${statusBadge('actual')}<span>${esc(m.statuses.actual.desc)}</span>
     ${statusBadge('planned')}<span>${esc(m.statuses.planned.desc)}</span>

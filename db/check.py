@@ -48,6 +48,11 @@ for t in db['tables']:
             elif target_col['type'] != c['type']:
                 errors.append(f'{col}: тип {c["type"]}, а у {c["fk"]} — {target_col["type"]}')
 
+for f in db.get('functions', []):
+    for key in ('name', 'ru', 'desc', 'migration'):
+        if not f.get(key):
+            errors.append(f'функция {f.get("name", "?")}: пусто поле «{key}»')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
