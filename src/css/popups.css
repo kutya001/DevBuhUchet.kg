@@ -79,7 +79,7 @@
 .kc-miss{align-items:center}
 @media (max-width:767px){.kw-li{flex-wrap:wrap}.kw-list .kw-li>.grow{flex-basis:100%}.kc-miss{flex-wrap:wrap}.kc-miss>.grow{flex-basis:calc(100% - 30px)}.kc-miss .btn{width:100%;justify-content:center}}
 .kcell{background:none;border:0;padding:2px 4px;border-radius:5px;font:inherit;color:inherit;cursor:pointer;font-variant-numeric:tabular-nums}
-.kcell:hover{background:var(--row-hover)}.kcell.emp{color:var(--b-yellow);font-style:italic}
+.kcell:hover{background:var(--row-hover)}.kcell.emp{color:var(--yellow);font-style:italic}
 .kset{display:flex;flex-direction:column;gap:8px}
 .kset-i{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--pane);cursor:pointer}
 .kset-i.arch{opacity:.65}.kset-i.over{border-color:var(--b-blue);box-shadow:0 0 0 2px var(--sel)}.kset-i.dragging{opacity:.4}
