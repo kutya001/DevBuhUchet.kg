@@ -151,7 +151,7 @@ function grid(host,cfg){
       keys=Object.keys(cnt).sort((a,b)=>a===c.pin?-1:b===c.pin?1:a===''?1:b===''?-1:COLL.compare(a,b));on=f?new Set(f.vals):new Set(keys);
       // Показываются первые 500 значений; «Найти значение» ищет по всем, отметки скрытых значений сохраняются
       fmatch=q=>q?keys.filter(k=>norm(k).includes(q)):keys;
-      fvals=q=>{const m=fmatch(q);return {html:m.slice(0,GRID_ENUM_MAX).map(k=>`<label data-v="${esc(norm(k))}"><input type="checkbox" class="gf-v" value="${esc(k)}" ${on.has(k)?'checked':''}> ${k===''?'<i class="faint">(Пусто)</i>':esc(k)}<span class="n">${cnt[k]}</span></label>`).join(''),more:m.length>GRID_ENUM_MAX?`Показаны первые ${fmtM(GRID_ENUM_MAX,false)} значений из ${fmtM(m.length,false)} — сузьте список поиском или другими фильтрами`:'',all:m.every(k=>on.has(k))}};
+      fvals=q=>{const m=fmatch(q);return {html:m.slice(0,GRID_ENUM_MAX).map(k=>`<label data-v="${esc(norm(k))}"><input type="checkbox" class="gf-v" value="${esc(k)}" ${on.has(k)?'checked':''}> ${k===''?'<i class="faint">(Пусто)</i>':esc(k)}<span class="n">${cnt[k]}</span></label>`).join(''),more:m.length>GRID_ENUM_MAX?`Показаны первые ${fmtM(GRID_ENUM_MAX,false)} значений из ${fmtM(m.length,false)} — сузьте список поиском`:'',all:m.every(k=>on.has(k))}};
       const v0=fvals('');
       body=`${keys.length>8?`<input class="inp" id="gf-find" placeholder="Найти значение">`:''}<div class="fl-list"><label><input type="checkbox" id="gf-all" ${v0.all?'checked':''}> <b>Выбрать все</b></label><div id="gf-vals">${v0.html}</div></div><div class="hint" id="gf-more" ${v0.more?'':'hidden'}>${esc(v0.more)}</div>`}
     const ing=(s.group||[]).includes(c.key);
