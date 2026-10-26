@@ -1,6 +1,8 @@
 'use strict';
 // Единый компонент списка (grid): столбцы, сортировка, группировка, фильтры, карточки
 /* ═════════════ UnifiedDataGrid ═════════════ */
+// «Все записи» — до 5 000 строк за раз, дальше страницы по 5 000 (решение заказчика 26.10.2026)
+const GRID_ALL_MAX=5000;
 const GS={};let ACTIVE=[];let FAIL_NEXT=false;const CLOSED=new Set();
 const norm=s=>String(s??'').toLowerCase().replace(/ё/g,'е').replace(/ /g,' ');
 const strip=s=>norm(s).replace(/[\s\-()+.,№«»"]/g,'');
@@ -72,7 +74,7 @@ function grid(host,cfg){
   }
   function refresh(){
     const {all,rows,vc,ac}=compute();g.rows=rows;
-    const total=rows.length;const size=s.size==='all'?Math.max(total,1):s.size;const pages=Math.max(1,Math.ceil(total/size));if(s.page>=pages)s.page=pages-1;
+    const total=rows.length;const size=s.size==='all'?Math.min(Math.max(total,1),GRID_ALL_MAX):s.size;const pages=Math.max(1,Math.ceil(total/size));if(s.page>=pages)s.page=pages-1;
     const gt=gcols().length?groupTree(rows,0,''):null;g.tree=gt;
     const pr=gt?rows:rows.slice(s.page*size,s.page*size+size);
     const view=cfg.fixedView||s.view||(isMobile()?'cards':'table');
@@ -96,7 +98,7 @@ function grid(host,cfg){
     else if(!total)h+=emptyHtml(all.length||fk.length||(S.search&&cfg.search!==false));
     else h+=view==='table'?tableHtml(pr,vc,rows,gt):cardsHtml(pr,vc,rows,gt);
     if(total&&gt)h+=`<div class="gfoot"><span>Групп: ${gt.length} · записей: ${total}</span><div class="grow"></div><button class="linkbtn" data-a="gall">Развернуть все</button><button class="linkbtn" data-a="gnone">Свернуть все</button></div>`;
-    else if(total)h+=`<div class="gfoot"><span>Показано ${s.page*size+1}–${Math.min(total,(s.page+1)*size)} из ${total}</span><div class="grow"></div><label>На странице ${sel('pg-'+cfg.id,[[25,'25'],[50,'50'],[100,'100'],['all','Все записи']],s.size,'data-a="size" style="display:inline-block;width:auto"')}</label><button class="icon-btn sm" data-a="prev" ${s.page?'':'disabled'} aria-label="Назад">${ic('left')}</button><span class="tnum">${s.page+1} / ${pages}</span><button class="icon-btn sm" data-a="next" ${s.page<pages-1?'':'disabled'} aria-label="Вперёд">${ic('right')}</button></div>`;
+    else if(total)h+=`<div class="gfoot"><span>Показано ${fmtM(s.page*size+1,false)}–${fmtM(Math.min(total,(s.page+1)*size),false)} из ${fmtM(total,false)}</span><div class="grow"></div><label>На странице ${sel('pg-'+cfg.id,[[25,'25'],[50,'50'],[100,'100'],['all','Все записи']],s.size,'data-a="size" style="display:inline-block;width:auto"')}</label><button class="icon-btn sm" data-a="prev" ${s.page?'':'disabled'} aria-label="Назад">${ic('left')}</button><span class="tnum">${s.page+1} / ${pages}</span><button class="icon-btn sm" data-a="next" ${s.page<pages-1?'':'disabled'} aria-label="Вперёд">${ic('right')}</button></div>`;
     const sc=host.querySelector('.gscroll');const keep=sc?[sc.scrollTop,sc.scrollLeft]:null;
     host.className='grid';host.dataset.density=s.density;host.dataset.width=s.width;host.innerHTML=h;
     const sc2=host.querySelector('.gscroll');if(sc2&&keep){sc2.scrollTop=keep[0];sc2.scrollLeft=keep[1]}
