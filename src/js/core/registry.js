@@ -22,7 +22,7 @@ const ADM=[
  {id:'l10n',title:'Локализация',short:'Языки',icon:'globe',desc:'Словарь текстов интерфейса. Сейчас включён только русский язык; добавление других заложено в логику.',render:renderL10n},
  {id:'kb',title:'База знаний',short:'База знаний',icon:'grad',desc:'Обучение работе с системой: уроки с практикой по вашим правам, статьи инструкции и ваш уровень знаний — от «Новичка» до «Эксперта».',tabs:kbTabs,render:renderKB},
  {id:'kbadm',title:'База знаний (содержимое)',short:'Обучение',icon:'layers',desc:'Содержимое «Базы знаний» для всех организаций: статьи, шаги уроков с правами и условиями отметки, уровни. Организации его только проходят.',tabs:kbAdmTabs,add:kbAdmAdd,render:renderKbAdm},
- {id:'tg',title:'Телеграм',short:'Телеграм',icon:'tg',desc:'Бот платформы: журнал отправленных сообщений и ошибок, повтор отправки, рассылка объявлений.',tabs:()=>[{id:'log',label:'Журнал',icon:'list'},{id:'bot',label:'Настройка бота',icon:'sliders'},{id:'cast',label:'Рассылка',icon:'send'}],add:()=>[{label:'Объявление',icon:'send',run:()=>go('tg','cast')}],render:renderTg},
+ {id:'tg',title:'Телеграм',short:'Телеграм',icon:'tg',desc:'Бот платформы: журнал отправленных сообщений и ошибок, повтор отправки, рассылка объявлений.',tabs:()=>[{id:'log',label:'Журнал',icon:'list'},{id:'bot',label:'Бот платформы',icon:'tg'},{id:'cast',label:'Рассылка',icon:'send'}],add:()=>[{label:'Объявление',icon:'send',run:()=>go('tg','cast')}],render:renderTg},
 ];
 const mods=()=>isAdmin()?ADM:BIZ.filter(m=>(!m.feature||feat(m.feature))&&(!m.perm||can(m.perm))&&(m.id!=='fin'||taxVis()||moneyVis()));
 const curMod=()=>{const l=mods();return l.find(m=>m.id===S.mod)||l[0]};
