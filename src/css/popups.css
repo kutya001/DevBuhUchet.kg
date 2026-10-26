@@ -17,7 +17,7 @@
 .fl-list label .n{margin-left:auto;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
 .pop-actions{display:flex;gap:6px;justify-content:flex-end}
 .cover{position:fixed;inset:0;z-index:50;background:var(--cover);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px 16px;animation:fade .2s}
-.modal{background:var(--pane);border:1px solid var(--border-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-l);width:min(580px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;animation:slideUp .3s forwards;min-width:0}
+.modal{background:var(--pane);border:1px solid var(--border-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-l);width:min(580px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;animation:slideUp .25s forwards;min-width:0}
 .modal.wide{width:min(1100px,100%);height:min(860px,calc(100dvh - 48px))}
 .modal.mid{width:min(780px,100%)}
 .mh{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 10px 22px}
