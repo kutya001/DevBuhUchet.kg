@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "updated": "2026-10-26",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main c02d744",
-    "what": "Фактические миграции 0000–0021: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, история изменений и история статусов, настройки вида списков, ГКЭД, справочники (JSON), словарь текстов интерфейса, журнал расписания; RLS, роль buhuchet_app, функции базы и правило сортировки app.ru_natural."
+    "ref": "main 88efe4f",
+    "what": "Фактические миграции 0000–0023: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, история изменений и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь), мелкие справочники (JSON), словарь текстов интерфейса, журнал расписания; RLS, роль buhuchet_app, функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -123,7 +123,9 @@
   "numeric(10,2)": "Число с двумя знаками после запятой.",
   "numeric(20,4)": "Число с четырьмя знаками после запятой.",
   "integer[]": "Список целых чисел.",
-  "text[]": "Список строк."
+  "text[]": "Список строк.",
+  "smallint": "Небольшое целое число (день, месяц).",
+  "smallint[]": "Список небольших целых чисел."
  },
  "enums": [
   {
@@ -280,36 +282,9 @@
    ]
   },
   {
-   "name": "gked_target",
-   "ru": "К чему относится связь ГКЭД",
-   "desc": "",
-   "values": [
-    {
-     "v": "regime",
-     "ru": "Режим"
-    },
-    {
-     "v": "benefit",
-     "ru": "Льгота"
-    },
-    {
-     "v": "en_rate",
-     "ru": "Ставка единого налога"
-    },
-    {
-     "v": "tax",
-     "ru": "Налог"
-    },
-    {
-     "v": "report_type",
-     "ru": "Вид отчёта"
-    }
-   ]
-  },
-  {
    "name": "report_kind",
    "ru": "Тип вида отчёта",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение report_types_kind_check.",
    "values": [
     {
      "v": "regime",
@@ -330,7 +305,7 @@
   {
    "name": "period_kind",
    "ru": "Период",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение report_types_period_check.",
    "values": [
     {
      "v": "M",
@@ -2293,12 +2268,12 @@
      "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
     },
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_types.id"
+     "fk": "report_types.code"
     },
     {
      "name": "enabled",
@@ -2374,7 +2349,7 @@
    ],
    "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
    "uniques": [
-    "PK (org_id, report_type_id)"
+    "PK (org_id, report_type_code)"
    ],
    "issue": "#8",
    "source": "demoDB.organization.types"
@@ -2734,11 +2709,11 @@
      "desc": "Обслуживается, Приостановлен или В архиве."
     },
     {
-     "name": "ugns_id",
+     "name": "tax_office_code",
      "ru": "УГНС",
      "type": "text",
      "null": true,
-     "fk": "ugns.id"
+     "fk": "tax_offices.code"
     },
     {
      "name": "gked_code",
@@ -3016,7 +2991,7 @@
      "ru": "Льгота",
      "type": "text",
      "null": false,
-     "fk": "benefits.code"
+     "fk": "tax_benefits.code"
     },
     {
      "name": "valid_from",
@@ -3341,11 +3316,11 @@
      "onDelete": "cascade"
     },
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.id"
+     "fk": "report_types.code"
     },
     {
      "name": "from_date",
@@ -3430,7 +3405,7 @@
    "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
    "indexes": [
     "(org_id, contractor_id)",
-    "(org_id, report_type_id)"
+    "(org_id, report_type_code)"
    ],
    "issue": "поток Б (отчёты)",
    "source": "demoDB.contractors[].assign; modules/tax-pick.js"
@@ -3757,11 +3732,11 @@
      "fk": "contractors.id"
     },
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.id"
+     "fk": "report_types.code"
     },
     {
      "name": "assignment_id",
@@ -4014,8 +3989,8 @@
     "(org_id, contractor_id, period_start)"
    ],
    "uniques": [
-    "(org_id, contractor_id, report_type_id, period_start, correction_no) — у не-разовых",
-    "(org_id, contractor_id, report_type_id, event_date) — у разовых"
+    "(org_id, contractor_id, report_type_code, period_start, correction_no) — у не-разовых",
+    "(org_id, contractor_id, report_type_code, event_date) — у разовых"
    ],
    "issue": "поток Б, #17",
    "source": "demoDB.reports; modules/reports.js, report-card.js; ТЗ «Модуль Отчёты»"
@@ -6415,7 +6390,7 @@
    "ru": "Справочники платформы (начальная загрузка)",
    "group": "dicts",
    "status": "actual",
-   "desc": "Временное хранилище этапа 0: каждый раздел refDB.json прототипа лежит одной строкой как JSON. Задача #20 разложит нужные разделы по своим таблицам (ниже), остальное останется здесь.",
+   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь).",
    "columns": [
     {
      "name": "key",
@@ -6423,7 +6398,7 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Имя раздела refDB.json: reportTypes, holidays, taxes, enRates, messageTemplates, kbArticles, news, onboarding и т. д.",
+     "desc": "Имя раздела refDB.json, например taxes, enRates, messageTemplates, kbArticles, dictionaries (в нём остались формы собственности, банки, категории задач, причины изменения срока и др.).",
      "status": "actual"
     },
     {
@@ -6470,10 +6445,11 @@
    ],
    "logic": [
     "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
-    "Разделы, которые останутся в JSON и после #20: тексты сообщений (messageTemplates), база знаний (kbArticles, kbSteps, kbShows, kbLevels, kbUi), опросник (onboarding), коды телефонов, группы ГКЭД."
+    "Сюда не копируются reportTypes, holidays, workingSaturdays, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits: у них свои таблицы; db:seed --update удаляет их старые копии.",
+    "Остаются здесь: налоги и ставки ЕН, формы собственности, банки, категории задач, причины изменения срока, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
    ],
    "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишет только команда загрузки pnpm db:seed.",
-   "issue": "этап 0 (сделано), #20 (разложить по таблицам)",
+   "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
    "source": "packages/db/src/schema/platform.ts",
    "migration": "0001_foundation_tables"
   },
@@ -6669,105 +6645,11 @@
    "migration": "0001_foundation_tables"
   },
   {
-   "name": "gked_links",
-   "ru": "Связи ГКЭД",
+   "name": "authorities",
+   "ru": "Органы",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Какие коды ГКЭД подходят или не подходят к режиму, льготе, ставке единого налога, налогу или виду отчёта. По ним программа предлагает и предупреждает при выборе.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "target_kind",
-     "ru": "К чему относится",
-     "type": "gked_target",
-     "null": false,
-     "desc": "Режим, льгота, ставка ЕН, налог или вид отчёта."
-    },
-    {
-     "name": "target_code",
-     "ru": "Код записи",
-     "type": "text",
-     "null": false,
-     "desc": "Например «РЕЖ-02», «ЛЬГ-01», «ЕНС-01», «nds»."
-    },
-    {
-     "name": "gked_code",
-     "ru": "Код ГКЭД",
-     "type": "text",
-     "null": false,
-     "fk": "gked_items.code",
-     "desc": "Код любого уровня: связь действует на него и все коды ниже."
-    },
-    {
-     "name": "mode",
-     "ru": "Как действует",
-     "type": "text",
-     "null": false,
-     "default": "'in'",
-     "desc": "in — подходит, ex — исключение (не подходит, даже если подходит код выше)."
-    },
-    {
-     "name": "note",
-     "ru": "Пояснение",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "active",
-     "ru": "Действует",
-     "type": "boolean",
-     "null": false,
-     "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
-    },
-    {
-     "name": "version",
-     "ru": "Версия записи",
-     "type": "integer",
-     "null": false,
-     "default": "1"
-    }
-   ],
-   "logic": [
-    "Если у записи нет ни одной связи, она подходит к любому ГКЭД.",
-    "Сверка связей ведётся в «ГКЭД — сверка связей.md»."
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "uniques": [
-    "(target_kind, target_code, gked_code)"
-   ],
-   "issue": "#20",
-   "source": "refDB: поле gked {in, ex, note} у reportTypes, regimes, benefits, enRates, taxes"
-  },
-  {
-   "name": "organs",
-   "ru": "Госорганы",
-   "group": "dicts",
-   "status": "planned",
-   "desc": "Куда сдаются отчёты и платятся налоги: ГНС, Соцфонд, Нацстатком, Дирекция ПВТ и др.",
+   "status": "actual",
+   "desc": "Куда сдают отчёты и платят: ГНС, Соцфонд, Нацстатком, Дирекция ПВТ и др. На орган ссылаются виды отчётов и их платежи.",
    "columns": [
     {
      "name": "code",
@@ -6775,7 +6657,8 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «ОРГ-01»."
+     "desc": "Постоянный код, например «ОРГ-01».",
+     "status": "actual"
     },
     {
      "name": "name",
@@ -6783,25 +6666,17 @@
      "type": "text",
      "null": false,
      "unique": true,
-     "desc": "Например «ГНС»."
+     "desc": "Например «ГНС». Уникально (authorities_name_key).",
+     "status": "actual"
     },
     {
-     "name": "note",
-     "ru": "Пояснение",
+     "name": "description",
+     "ru": "Что это",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "site",
-     "ru": "Сайт",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "hours",
-     "ru": "Часы работы",
-     "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "desc": "«Что это и что туда сдают».",
+     "status": "actual"
     },
     {
      "name": "contacts",
@@ -6809,7 +6684,33 @@
      "type": "jsonb",
      "null": false,
      "default": "'[]'",
-     "desc": "Список «подпись — значение»: колл-центр, приёмная…"
+     "desc": "Список {label, value}: колл-центр, приёмная…",
+     "status": "actual"
+    },
+    {
+     "name": "hours",
+     "ru": "Часы работы",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "site",
+     "ru": "Сайт",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "contacts_note",
+     "ru": "Откуда контакты",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Источник контактов, пометка «сверить».",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -6817,34 +6718,62 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.organs"
+   "rls": "Включена. Политика authorities_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.organs",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "logic": [
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ]
   },
   {
    "name": "ownership_forms",
@@ -6921,15 +6850,15 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица с внешним ключом — до «Контрагентов», первой задачей потока А (по умолчанию)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.forms"
   },
   {
    "name": "tax_regimes",
    "ru": "Режимы налогообложения",
    "group": "dicts",
-   "status": "planned",
-   "desc": "ОНР и специальные режимы: патент, единый налог, СЭЗ, ПВТ, майнинг, электронная торговля, игорная деятельность и др.",
+   "status": "actual",
+   "desc": "ОНР и специальные режимы (ст. 46 НК КР): патент, единый налог, СЭЗ, ПВТ и др. Краткое название — так режим назван у контрагента и в видах отчётов.",
    "columns": [
     {
      "name": "code",
@@ -6937,7 +6866,168 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «РЕЖ-01»."
+     "desc": "Постоянный код, например «РЕЖ-01».",
+     "status": "actual"
+    },
+    {
+     "name": "name",
+     "ru": "Краткое название",
+     "type": "text",
+     "null": false,
+     "unique": true,
+     "desc": "Например «ОНР», «Единый налог». Уникально (tax_regimes_name_key).",
+     "status": "actual"
+    },
+    {
+     "name": "full_name",
+     "ru": "Полное название",
+     "type": "text",
+     "null": false,
+     "status": "actual"
+    },
+    {
+     "name": "kind",
+     "ru": "Тип",
+     "type": "text",
+     "null": false,
+     "desc": "general — общий, special — специальный (tax_regimes_kind_check).",
+     "status": "actual"
+    },
+    {
+     "name": "frees",
+     "ru": "Освобождает от",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "who",
+     "ru": "Кто применяет",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "how",
+     "ru": "Как переходят",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "combines",
+     "ru": "Совмещается с",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "accountant_note",
+     "ru": "Для бухгалтера",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Короткая подсказка в форме контрагента.",
+     "status": "actual"
+    },
+    {
+     "name": "article",
+     "ru": "Статья НК",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "gked",
+     "ru": "Виды деятельности (ГКЭД)",
+     "type": "jsonb",
+     "null": true,
+     "desc": "Правило ГКЭД {in, ex, warn, ip, ipEx, itd, main, hint, note…} (GkedRule в @buhuchet/domain): подходящие коды и начала кодов, «Кроме», «Предупреждать при». Пустой in — все виды деятельности. Отдельной таблицы связей ГКЭД нет.",
+     "status": "actual"
+    },
+    {
+     "name": "active",
+     "ru": "Действует",
+     "type": "boolean",
+     "null": false,
+     "default": "true",
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
+    }
+   ],
+   "rls": "Включена. Политика tax_regimes_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.regimes; «Справочники платформы (исчерпывающие).md»",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "logic": [
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ]
+  },
+  {
+   "name": "tax_benefits",
+   "ru": "Налоговые льготы и особые статусы",
+   "group": "dicts",
+   "status": "actual",
+   "desc": "Льготы и статусы (ПКИ, ПВТ, СПиНО, «Крупный налогоплательщик» и др.): что дают, до какой даты, какие отчёты добавляют или убирают, какие сроки меняют.",
+   "columns": [
+    {
+     "name": "code",
+     "ru": "Код",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "desc": "Постоянный код, например «ЛЬГ-29».",
+     "status": "actual"
     },
     {
      "name": "name",
@@ -6945,175 +7035,132 @@
      "type": "text",
      "null": false,
      "unique": true,
-     "desc": "Например «ОНР», «Единый налог»."
+     "desc": "Уникально (tax_benefits_name_key).",
+     "status": "actual"
     },
     {
-     "name": "full_name",
-     "ru": "Полное название",
-     "type": "text",
-     "null": false
-    },
-    {
-     "name": "regime_type",
+     "name": "kind",
      "ru": "Тип",
      "type": "text",
      "null": false,
-     "desc": "«Общий» или «Специальный»."
-    },
-    {
-     "name": "who",
-     "ru": "Кто применяет",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "how",
-     "ru": "Как перейти",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "frees",
-     "ru": "От чего освобождает",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "combines",
-     "ru": "С чем совмещается",
-     "type": "text",
-     "null": true,
-     "desc": "Можно ли второй режим и какой."
-    },
-    {
-     "name": "accountant_note",
-     "ru": "Для бухгалтера",
-     "type": "text",
-     "null": true,
-     "desc": "Короткая подсказка в форме контрагента."
-    },
-    {
-     "name": "article",
-     "ru": "Статья НК",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "active",
-     "ru": "Действует",
-     "type": "boolean",
-     "null": false,
-     "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
-    },
-    {
-     "name": "version",
-     "ru": "Версия записи",
-     "type": "integer",
-     "null": false,
-     "default": "1"
-    }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.regimes"
-  },
-  {
-   "name": "benefits",
-   "ru": "Льготы и особые статусы",
-   "group": "dicts",
-   "status": "planned",
-   "desc": "Налоговые льготы и статусы (ПКИ, ПВТ, СПиНО, крупный налогоплательщик и др.): что дают, до какой даты, какие отчёты убирают или добавляют.",
-   "columns": [
-    {
-     "name": "code",
-     "ru": "Код",
-     "type": "text",
-     "null": false,
-     "pk": true,
-     "desc": "Например «ЛЬГ-29»."
-    },
-    {
-     "name": "name",
-     "ru": "Название",
-     "type": "text",
-     "null": false,
-     "desc": "Например «Резидент ПКИ»."
-    },
-    {
-     "name": "benefit_kind",
-     "ru": "Вид",
-     "type": "text",
-     "null": true,
-     "desc": "Пусто — льгота; status — особый статус (например, «Крупный налогоплательщик»)."
+     "default": "'benefit'",
+     "desc": "benefit — льгота, status — особый статус (tax_benefits_kind_check).",
+     "status": "actual"
     },
     {
      "name": "gives",
      "ru": "Что даёт",
      "type": "text",
-     "null": false
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "article",
+     "ru": "Статья",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "payer",
+     "ru": "Кто может применять",
+     "type": "text",
+     "null": false,
+     "desc": "org, ip или all (tax_benefits_payer_check).",
+     "status": "actual"
     },
     {
      "name": "conditions",
      "ru": "Условия",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "confirm_docs",
-     "ru": "Чем подтверждается",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "who",
-     "ru": "Кому",
+     "name": "confirmation",
+     "ru": "Как подтверждается",
      "type": "text",
      "null": false,
-     "default": "'all'",
-     "desc": "all, org или ip."
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "combines",
+     "ru": "Совмещается с",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "term",
+     "ru": "Срок действия",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Текстом.",
+     "status": "actual"
     },
     {
      "name": "valid_until",
      "ru": "Действует до",
      "type": "date",
      "null": true,
-     "desc": "Конец срока льготы; за 60 дней программа предупреждает."
+     "desc": "Дата окончания по кодексу: за 60 дней — предупреждение.",
+     "status": "actual"
     },
     {
-     "name": "due_override",
-     "ru": "Свои сроки",
+     "name": "verify",
+     "ru": "Сверить",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "status": "actual"
+    },
+    {
+     "name": "verify_note",
+     "ru": "Что сверить",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "gked",
+     "ru": "Виды деятельности (ГКЭД)",
      "type": "jsonb",
      "null": true,
-     "desc": "Если льгота меняет срок вида отчёта: {вид: {день, через сколько месяцев}}."
+     "desc": "Правило ГКЭД {in, ex, warn, ip, ipEx, itd, main, hint, note…} (GkedRule в @buhuchet/domain): подходящие коды и начала кодов, «Кроме», «Предупреждать при». Пустой in — все виды деятельности. Отдельной таблицы связей ГКЭД нет.",
+     "status": "actual"
+    },
+    {
+     "name": "gked_main_only",
+     "ru": "Только основной ГКЭД",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Проверяется только основной вид деятельности.",
+     "status": "actual"
+    },
+    {
+     "name": "tax_code",
+     "ru": "Налог",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Налог или платёж «Налогов и ставок» (НАЛ-…, ПЛТ-…), к которому относится тариф. Без внешнего ключа: налоги пока в platform_reference.",
+     "status": "actual"
     },
     {
      "name": "suggest",
-     "ru": "Подсказки выбора",
+     "ru": "Подсказка",
      "type": "jsonb",
      "null": true,
-     "desc": "Когда предлагать, с чем не совмещается, при каких формах предупреждать."
-    },
-    {
-     "name": "article",
-     "ru": "Статья НК",
-     "type": "text",
-     "null": true
+     "desc": "{basis, preselect, notWith, warnForms, note}: при каком основании предлагать, отмечать ли заранее, с чем не совмещается, при каких формах собственности предупреждать.",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -7121,44 +7168,71 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
+   "rls": "Включена. Политика tax_benefits_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.benefits; «Справочники платформы (исчерпывающие).md»",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
    "logic": [
-    "За 60 дней до конца срока льготы ответственный получает предупреждение."
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.benefits"
+    "За 60 дней до конца срока льготы ответственный получает предупреждение.",
+    "Отчёты, которые статус добавляет или убирает, — tax_benefit_report_types; свои сроки — tax_benefit_due_rules; «Ставится по УГНС» — tax_benefit_offices.",
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ]
   },
   {
-   "name": "benefit_report_effects",
+   "name": "tax_benefit_report_types",
    "ru": "Влияние льготы на отчёты",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Какие виды отчётов льгота убирает у контрагента, а какие добавляет.",
+   "status": "actual",
+   "desc": "Какие виды отчётов статус добавляет, а какие делает ненужными.",
    "columns": [
     {
      "name": "benefit_code",
@@ -7166,35 +7240,155 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "benefits.code",
-     "onDelete": "cascade"
+     "fk": "tax_benefits.code",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе с льготой.",
+     "status": "actual"
     },
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_types.id"
+     "fk": "report_types.code",
+     "status": "actual"
     },
     {
      "name": "effect",
      "ru": "Действие",
      "type": "text",
      "null": false,
-     "desc": "removes — убирает, adds — добавляет."
+     "desc": "adds — добавляет, removes — убирает (tax_benefit_report_types_effect_check).",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.benefits: removes, adds"
+   "rls": "Включена. Политика tax_benefit_report_types_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.benefits[].adds, removes",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "indexes": [
+    "tax_benefit_report_types_type_idx (report_type_code)"
+   ]
+  },
+  {
+   "name": "tax_benefit_offices",
+   "ru": "Льгота по УГНС",
+   "group": "dicts",
+   "status": "actual",
+   "desc": "«Ставится по УГНС»: управления ГНС, при которых статус отмечается у контрагента сам (например, «Крупный налогоплательщик»).",
+   "columns": [
+    {
+     "name": "benefit_code",
+     "ru": "Льгота",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "tax_benefits.code",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе с льготой.",
+     "status": "actual"
+    },
+    {
+     "name": "tax_office_code",
+     "ru": "УГНС",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "tax_offices.code",
+     "status": "actual"
+    }
+   ],
+   "rls": "Включена. Политика tax_benefit_offices_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.benefits[].suggest.ugns",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "indexes": [
+    "tax_benefit_offices_office_idx (tax_office_code)"
+   ]
+  },
+  {
+   "name": "tax_benefit_due_rules",
+   "ru": "Сроки по льготе",
+   "group": "dicts",
+   "status": "actual",
+   "desc": "«Меняет сроки»: у контрагента со статусом отчёты вида получают свой срок сдачи и (или) оплаты тем же правилом, что у вида; пусто — как у вида.",
+   "columns": [
+    {
+     "name": "benefit_code",
+     "ru": "Льгота",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "tax_benefits.code",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе с льготой.",
+     "status": "actual"
+    },
+    {
+     "name": "report_type_code",
+     "ru": "Вид отчёта",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "report_types.code",
+     "status": "actual"
+    },
+    {
+     "name": "due_day",
+     "ru": "День срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "1–31; 31 — последний день месяца.",
+     "status": "actual"
+    },
+    {
+     "name": "due_after",
+     "ru": "Через месяцев",
+     "type": "smallint",
+     "null": true,
+     "desc": "0–12.",
+     "status": "actual"
+    },
+    {
+     "name": "due_month",
+     "ru": "Месяц срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "1–12.",
+     "status": "actual"
+    },
+    {
+     "name": "pay_day",
+     "ru": "День оплаты",
+     "type": "smallint",
+     "null": true,
+     "desc": "1–31.",
+     "status": "actual"
+    },
+    {
+     "name": "pay_after",
+     "ru": "Оплата через месяцев",
+     "type": "smallint",
+     "null": true,
+     "desc": "0–12.",
+     "status": "actual"
+    }
+   ],
+   "rls": "Включена. Политика tax_benefit_due_rules_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.benefits[].dueOverride",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "logic": [
+    "Например, «Крупные налогоплательщики» сдают НДС до последнего дня месяца. Пределы проверяет tax_benefit_due_rules_rule_check."
+   ]
   },
   {
    "name": "report_bases",
    "ru": "Основания для отчётов",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Факты о контрагенте, из-за которых нужны отчёты: «Есть наёмные сотрудники», «Есть имущество», «Попал в выборку Нацстаткома» и др.",
+   "status": "actual",
+   "desc": "Признаки контрагента, при которых нужны сквозные отчёты: «Есть наёмные сотрудники», «Есть имущество», «Попал в выборку Нацстаткома» и др.",
    "columns": [
     {
      "name": "code",
@@ -7202,19 +7396,33 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «employees»."
+     "desc": "Постоянный код, например «employees».",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
-     "null": false
+     "null": false,
+     "unique": true,
+     "desc": "Уникально (report_bases_name_key).",
+     "status": "actual"
     },
     {
      "name": "description",
      "ru": "Описание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Примечание",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -7222,42 +7430,82 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.bases"
+   "rls": "Включена. Политика report_bases_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.bases",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "logic": [
+    "Какие виды отчётов включает основание — из связи report_type_bases (одна связь на обе стороны).",
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ]
   },
   {
-   "name": "base_report_types",
-   "ru": "Отчёты основания",
+   "name": "report_type_bases",
+   "ru": "Основания вида отчёта",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Какие виды отчётов включает основание.",
+   "status": "actual",
+   "desc": "«Основание» сквозного вида отчёта: достаточно любого из оснований. Связь одна на обе стороны — какие виды включает основание, читается отсюда же.",
    "columns": [
+    {
+     "name": "report_type_code",
+     "ru": "Вид отчёта",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "report_types.code",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе с видом.",
+     "status": "actual"
+    },
     {
      "name": "base_code",
      "ru": "Основание",
@@ -7265,164 +7513,173 @@
      "null": false,
      "pk": true,
      "fk": "report_bases.code",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "report_type_id",
-     "ru": "Вид отчёта",
-     "type": "text",
-     "null": false,
-     "pk": true,
-     "fk": "report_types.id"
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.dictionaries.bases[].types"
+   "rls": "Включена. Политика report_type_bases_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.reportTypes[].bases; dictionaries.bases[].types",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "indexes": [
+    "report_type_bases_base_idx (base_code)"
+   ]
   },
   {
    "name": "report_types",
    "ru": "Виды отчётов",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Каталог всех отчётов и платежей (сейчас 145): налоговые, Соцфонд, Нацстатком, Госфиннадзор, ПВТ, экологические и др. Строго стандартизирован платформой: организации только включают нужные.",
+   "status": "actual",
+   "desc": "Каталог всех отчётов и платежей (налоговые, Соцфонд, Нацстатком, Госфиннадзор, ПВТ, экологические и др.). Строго стандартизирован платформой: организации только включают нужные. Главный справочник «Отчетов для сдачи».",
    "columns": [
     {
-     "name": "id",
-     "ru": "Код вида",
+     "name": "code",
+     "ru": "Код",
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «nds», «soc», «enq»."
-    },
-    {
-     "name": "form_code",
-     "ru": "Код формы",
-     "type": "text",
-     "null": true,
-     "desc": "Например «STI-062»."
+     "desc": "Постоянный код вида, например «nds», «nspm», «t1m».",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «НДС»."
+     "desc": "Например «НДС».",
+     "status": "actual"
     },
     {
-     "name": "short",
-     "ru": "Краткое",
+     "name": "short_name",
+     "ru": "Кратко",
      "type": "text",
      "null": false,
-     "desc": "Для узких столбцов."
+     "desc": "Для узких столбцов.",
+     "status": "actual"
     },
     {
-     "name": "organ_code",
-     "ru": "Госорган",
+     "name": "form_code",
+     "ru": "Код формы",
      "type": "text",
      "null": false,
-     "fk": "organs.code",
-     "desc": "Куда сдаётся."
+     "default": "''",
+     "desc": "Форма ГНС (STI-062) или Нацстаткома; «—», если формы нет.",
+     "status": "actual"
     },
     {
-     "name": "kind",
-     "ru": "Тип",
-     "type": "report_kind",
-     "null": false,
-     "desc": "regime — по режиму, cross — по основанию или для всех, internal — внутренний."
-    },
-    {
-     "name": "pick_group",
-     "ru": "Группа выбора",
+     "name": "stat_index",
+     "ru": "Индекс формы",
      "type": "text",
      "null": false,
-     "desc": "regime, basis, status, all, optional, disabled — в каком блоке «Выбора налогов» стоит."
+     "default": "''",
+     "desc": "Индекс формы Нацстаткома.",
+     "status": "actual"
     },
     {
-     "name": "who",
+     "name": "respondents",
      "ru": "Кто сдаёт",
      "type": "text",
      "null": false,
-     "default": "'all'",
-     "desc": "all — все, org — только юрлица, ip — только ИП."
+     "default": "''",
+     "desc": "Текстом.",
+     "status": "actual"
+    },
+    {
+     "name": "authority_code",
+     "ru": "Орган",
+     "type": "text",
+     "null": false,
+     "fk": "authorities.code",
+     "desc": "Куда сдаётся.",
+     "status": "actual"
     },
     {
      "name": "period",
      "ru": "Период",
      "type": "period_kind",
      "null": false,
-     "desc": "M — месяц, Q — квартал, H — полугодие, Y — год."
+     "desc": "M, Q, H или Y (report_types_period_check).",
+     "status": "actual"
     },
     {
      "name": "due_day",
-     "ru": "День срока сдачи",
-     "type": "integer",
-     "null": true,
-     "desc": "Число месяца или 0 — последний день."
+     "ru": "День срока",
+     "type": "smallint",
+     "null": false,
+     "desc": "Число месяца срока сдачи; 31 — последний день месяца. У разового вида — дней от даты события.",
+     "status": "actual"
     },
     {
      "name": "due_after",
-     "ru": "Через сколько месяцев",
-     "type": "integer",
+     "ru": "Через месяцев",
+     "type": "smallint",
      "null": true,
-     "desc": "Сколько месяцев после конца периода (0 — в том же)."
+     "desc": "Сколько месяцев после конца периода (0 — в том же), 0–12.",
+     "status": "actual"
     },
     {
      "name": "due_month",
-     "ru": "Месяц срока (годовые)",
-     "type": "integer",
+     "ru": "Месяц срока",
+     "type": "smallint",
      "null": true,
-     "desc": "Для годовых: номер месяца срока."
+     "desc": "У годовых — месяц срока следующего года (от начала периода — того же).",
+     "status": "actual"
+    },
+    {
+     "name": "due_from",
+     "ru": "Считать от",
+     "type": "text",
+     "null": false,
+     "default": "'end'",
+     "desc": "end — от конца периода, start — от его начала (report_types_due_from_check).",
+     "status": "actual"
     },
     {
      "name": "pay_day",
-     "ru": "День срока оплаты",
-     "type": "integer",
+     "ru": "День оплаты",
+     "type": "smallint",
      "null": true,
-     "desc": "Если оплата в другой день, чем сдача."
+     "desc": "Срок оплаты своим правилом; пусто — как срок сдачи.",
+     "status": "actual"
     },
     {
      "name": "pay_after",
      "ru": "Оплата через месяцев",
-     "type": "integer",
-     "null": true
+     "type": "smallint",
+     "null": true,
+     "status": "actual"
     },
     {
-     "name": "installments",
-     "ru": "Авансовые сроки",
+     "name": "pay_month",
+     "ru": "Месяц оплаты",
+     "type": "smallint",
+     "null": true,
+     "status": "actual"
+    },
+    {
+     "name": "pay_schedule",
+     "ru": "График оплаты",
      "type": "jsonb",
      "null": true,
-     "desc": "Для платежей частями: [[месяц, день], …]."
+     "desc": "Платежи частями: [[месяц, число], …] (налог на имущество — 4 платежа).",
+     "status": "actual"
     },
     {
-     "name": "action",
-     "ru": "Что делать",
-     "type": "text",
-     "null": false,
-     "desc": "sub — сдать, pay — заплатить, both — сдать и заплатить."
-    },
-    {
-     "name": "has_sum",
-     "ru": "Есть сумма к уплате",
-     "type": "boolean",
-     "null": false,
-     "default": "false"
-    },
-    {
-     "name": "pay_only",
-     "ru": "Только платёж",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — отчёта нет, только оплата."
-    },
-    {
-     "name": "shift_holidays",
-     "ru": "Переносить с выходных",
+     "name": "shift_to_workday",
+     "ru": "Переносить с выходного",
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Срок в выходной или праздник переносится на следующий рабочий день."
+     "desc": "Срок в выходной или праздник переносится на следующий рабочий день по производственному календарю.",
+     "status": "actual"
+    },
+    {
+     "name": "skip_quarters",
+     "ru": "Без кварталов",
+     "type": "smallint[]",
+     "null": false,
+     "default": "'{}'",
+     "desc": "Кварталы, за которые отчёт не создаётся, например {4} — без IV квартала.",
+     "status": "actual"
     },
     {
      "name": "one_off",
@@ -7430,139 +7687,212 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Создаётся вручную через «Разовый отчёт» по событию."
+     "desc": "Отчёты создаются только через «Разовый отчёт», срок — от даты события.",
+     "status": "actual"
     },
     {
      "name": "event_label",
-     "ru": "Событие разового",
+     "ru": "Дата события",
      "type": "text",
-     "null": true,
-     "desc": "Например «Дата выдачи лицензии»."
+     "null": false,
+     "default": "''",
+     "desc": "Название даты события у разового вида, например «Дата выдачи лицензии».",
+     "status": "actual"
     },
     {
-     "name": "start_from",
-     "ru": "С какого периода",
-     "type": "text",
-     "null": true,
-     "desc": "start — с начала обслуживания контрагента."
-    },
-    {
-     "name": "per_assignment",
-     "ru": "Отдельно на каждое назначение",
+     "name": "period_per_assignment",
+     "ru": "Период в назначении",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "desc": "Периодичность и срок задаются в назначении контрагенту (как у внутренней отчётности).",
+     "status": "actual"
     },
     {
-     "name": "skip_quarters",
-     "ru": "Пропуск кварталов",
-     "type": "integer[]",
-     "null": true,
-     "desc": "Например [4] — за IV квартал не сдаётся (вместо него годовой)."
+     "name": "act",
+     "ru": "Действие",
+     "type": "text",
+     "null": false,
+     "desc": "sub — сдать, pay — заплатить, both — сдать и заплатить (report_types_act_check).",
+     "status": "actual"
     },
     {
-     "name": "biz_sizes",
-     "ru": "Размер бизнеса",
-     "type": "text[]",
-     "null": true,
-     "desc": "small, medium, large — для кого вид подходит."
+     "name": "payments",
+     "ru": "Что уплачивается",
+     "type": "jsonb",
+     "null": false,
+     "default": "'[]'",
+     "desc": "Список {name, authority, kbk}: платёж, получатель (код органа) и КБК. Отдельной таблицы платежей нет.",
+     "status": "actual"
+    },
+    {
+     "name": "kind",
+     "ru": "Тип",
+     "type": "report_kind",
+     "null": false,
+     "desc": "regime, cross или internal (report_types_kind_check).",
+     "status": "actual"
+    },
+    {
+     "name": "payer",
+     "ru": "Для кого",
+     "type": "text",
+     "null": false,
+     "desc": "org — юрлица, ip — ИП, all — все (report_types_payer_check).",
+     "status": "actual"
     },
     {
      "name": "rates",
      "ru": "Ставки",
      "type": "text[]",
-     "null": true,
-     "desc": "Например [\"12 %\", \"0 %\"]."
+     "null": false,
+     "default": "'{}'",
+     "desc": "Например {\"12 %\",\"0 %\"}.",
+     "status": "actual"
     },
     {
-     "name": "rate_add",
-     "ru": "Дополнительные ставки",
+     "name": "rate_additions",
+     "ru": "Добавляемые строки ставок",
      "type": "jsonb",
-     "null": true,
-     "desc": "Для расчёта строк налога."
+     "null": false,
+     "default": "'[]'",
+     "desc": "Список {k, name, short, rate, rateCashless, rateCash, art} — галочки под основной ставкой (налог с продаж).",
+     "status": "actual"
     },
     {
-     "name": "regimes_not",
-     "ru": "Не для режимов",
-     "type": "text[]",
-     "null": true
-    },
-    {
-     "name": "en_rates_not",
+     "name": "not_for_en_rates",
      "ru": "Не для ставок ЕН",
      "type": "text[]",
-     "null": true
+     "null": false,
+     "default": "'{}'",
+     "desc": "Коды «Ставок единого налога» (ЕНС-…), при которых вид не нужен.",
+     "status": "actual"
+    },
+    {
+     "name": "biz_sizes",
+     "ru": "Размер бизнеса",
+     "type": "text[]",
+     "null": false,
+     "default": "'{}'",
+     "desc": "small, medium, large (report_types_biz_sizes_check); пусто — для всех.",
+     "status": "actual"
+    },
+    {
+     "name": "pick_group",
+     "ru": "Блок подбора",
+     "type": "text",
+     "null": false,
+     "desc": "regime, status, basis, all, optional или disabled — в каком блоке «Выбора налогов» стоит (report_types_pick_group_check).",
+     "status": "actual"
     },
     {
      "name": "preselect",
-     "ru": "Отмечен по умолчанию",
+     "ru": "Отмечать заранее",
      "type": "boolean",
      "null": false,
-     "default": "false",
-     "desc": "В «Выборе налогов» галочка стоит сразу."
+     "default": "true",
+     "desc": "В «Выборе налогов» галочка стоит сразу.",
+     "status": "actual"
+    },
+    {
+     "name": "choice_note",
+     "ru": "Пояснение выбора",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "pick_hint",
+     "ru": "Подсказка подбора",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Под описанием в «Подборе отчётов».",
+     "status": "actual"
     },
     {
      "name": "description",
      "ru": "Описание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "client_note",
      "ru": "Пояснение для контрагента",
      "type": "text",
-     "null": true,
-     "desc": "Показывается на странице контрагента по ссылке."
+     "null": false,
+     "default": "''",
+     "desc": "Показывается на странице контрагента по ссылке.",
+     "status": "actual"
+    },
+    {
+     "name": "article",
+     "ru": "Статья",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Примечание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "article",
-     "ru": "Статья НК",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "stat_index",
-     "ru": "Индекс формы Нацстаткома",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "respondents",
-     "ru": "Кто отчитывается (Нацстатком)",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "source_url",
+     "name": "source",
      "ru": "Источник",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "desc": "Ссылка, откуда взяты сведения.",
+     "status": "actual"
     },
     {
      "name": "verify",
-     "ru": "Нужно сверить",
+     "ru": "Сверить",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Да — сведения ещё не сверены с госорганом; в Админке подсвечено."
+     "desc": "Да — сведения ещё не сверены с госорганом; в Админке подсвечено.",
+     "status": "actual"
     },
     {
      "name": "verify_note",
      "ru": "Что сверить",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "verified_at",
-     "ru": "Сверено с госорганом",
+     "name": "gns_checked_at",
+     "ru": "Сверено с ГНС",
      "type": "date",
-     "null": true
+     "null": true,
+     "desc": "Последняя сверка с ГНС; показывает только Админка, в методах для организаций её нет.",
+     "status": "actual"
+    },
+    {
+     "name": "gns_checked_by",
+     "ru": "Кто сверял",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "gked",
+     "ru": "Виды деятельности (ГКЭД)",
+     "type": "jsonb",
+     "null": true,
+     "desc": "Правило ГКЭД {in, ex, warn, ip, ipEx, itd, main, hint, note…} (GkedRule в @buhuchet/domain): подходящие коды и начала кодов, «Кроме», «Предупреждать при». Пустой in — все виды деятельности. Отдельной таблицы связей ГКЭД нет.",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -7570,60 +7900,87 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
+   "rls": "Включена. Политика report_types_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.reportTypes; «Справочники платформы (исчерпывающие).md»",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
    "logic": [
-    "По виду отчёта, периоду и правилам срока программа сама создаёт отчёты контрагента на каждый период (задача по расписанию).",
-    "Срок, выпавший на выходной или праздник, переносится на следующий рабочий день по производственному календарю.",
-    "Льгота может заменить срок (benefits.due_override), например «Крупные налогоплательщики» сдают НДС до последнего дня месяца.",
-    "Новые виды отчётов организации запрашивают через «Запросить добавление» (dict_change_requests)."
+    "По виду отчёта, периоду и правилам срока программа сама создаёт отчёты контрагента на каждый период (задача по расписанию, поток А).",
+    "Срок проверяет report_types_rule_check: due_day ≥ 1, месяцы 1–12, «через месяцев» 0–12, кварталы 1–4.",
+    "Режимы вида — report_type_regimes (applies / excludes), основания — report_type_bases; льгота может добавить или убрать вид (tax_benefit_report_types) и заменить его срок (tax_benefit_due_rules).",
+    "Новые виды отчётов организации запрашивают через «Запросить добавление» (dict_change_requests).",
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
    "indexes": [
-    "organ_code",
-    "kind"
-   ],
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», reportTypes"
+    "report_types_authority_idx (authority_code)"
+   ]
   },
   {
    "name": "report_type_regimes",
    "ru": "Режимы вида отчёта",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Для каких режимов налогообложения нужен вид отчёта.",
+   "status": "actual",
+   "desc": "«Применимые режимы» и «Не для режимов» вида отчёта — правило подбора отчётов.",
    "columns": [
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_types.id",
-     "onDelete": "cascade"
+     "fk": "report_types.code",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе с видом.",
+     "status": "actual"
     },
     {
      "name": "regime_code",
@@ -7631,69 +7988,25 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "tax_regimes.code"
+     "fk": "tax_regimes.code",
+     "status": "actual"
+    },
+    {
+     "name": "relation",
+     "ru": "Связь",
+     "type": "text",
+     "null": false,
+     "desc": "applies — нужен при режиме, excludes — не нужен при режиме (report_type_regimes_relation_check).",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.reportTypes[].regimes"
-  },
-  {
-   "name": "report_type_pays",
-   "ru": "Платежи по виду отчёта",
-   "group": "dicts",
-   "status": "planned",
-   "desc": "Какие платежи (налоги, взносы) создаёт вид отчёта: получатель и КБК.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "report_type_id",
-     "ru": "Вид отчёта",
-     "type": "text",
-     "null": false,
-     "fk": "report_types.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "name",
-     "ru": "Платёж",
-     "type": "text",
-     "null": false,
-     "desc": "Например «НДС», «Страховые взносы»."
-    },
-    {
-     "name": "organ_code",
-     "ru": "Получатель",
-     "type": "text",
-     "null": false,
-     "fk": "organs.code"
-    },
-    {
-     "name": "kbk",
-     "ru": "КБК",
-     "type": "text",
-     "null": true,
-     "desc": "Код бюджетной классификации."
-    },
-    {
-     "name": "sort_order",
-     "ru": "Порядок",
-     "type": "integer",
-     "null": false,
-     "default": "0"
-    }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.reportTypes[].pays"
+   "rls": "Включена. Политика report_type_regimes_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.reportTypes[].regimes, regimesNot",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "indexes": [
+    "report_type_regimes_regime_idx (regime_code)"
+   ]
   },
   {
    "name": "taxes",
@@ -7773,11 +8086,11 @@
      "null": true
     },
     {
-     "name": "organ_code",
+     "name": "authority_code",
      "ru": "Госорган",
      "type": "text",
      "null": true,
-     "fk": "organs.code"
+     "fk": "authorities.code"
     },
     {
      "name": "article",
@@ -7831,7 +8144,7 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — если на налог понадобится ссылка; правка — Админка (поток Д)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», taxes"
   },
   {
@@ -7851,16 +8164,16 @@
      "onDelete": "cascade"
     },
     {
-     "name": "report_type_id",
+     "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_types.id"
+     "fk": "report_types.code"
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока внутри раздела taxes в platform_reference (#20); вместе с таблицей налогов",
    "source": "refDB.taxes[].reportTypes"
   },
   {
@@ -7965,7 +8278,7 @@
     "Отдельный учёт по видам деятельности разрешён для ЕНС-01, 05, 13, 15 (ст. 423 ч. 7)."
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица с внешним ключом — до «Контрагентов», первой задачей потока А (по умолчанию)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», enRates"
   },
   {
@@ -8063,49 +8376,72 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — с расчётом налога на имущество, если понадобится",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», propertyRates"
   },
   {
-   "name": "ugns",
+   "name": "tax_offices",
    "ru": "Налоговые органы (УГНС)",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Районные управления ГНС, к которым прикреплён контрагент.",
+   "status": "actual",
+   "desc": "Управления ГНС, к которым прикреплён контрагент. Контрагент связан с УГНС по постоянному ключу; код ГНС — отдельное поле и может быть ещё не сверен.",
    "columns": [
     {
-     "name": "id",
-     "ru": "Код",
+     "name": "code",
+     "ru": "Ключ",
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Код УГНС, например «002», или служебный «ugns-large»."
+     "desc": "Постоянный ключ, например «ugns-large», «ugns-bishkek-lenin».",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «УГНС по Ленинскому району г. Бишкек»."
+     "desc": "Например «УГНС по Ленинскому району г. Бишкек».",
+     "status": "actual"
     },
     {
-     "name": "short",
-     "ru": "Краткое",
+     "name": "short_name",
+     "ru": "Кратко",
      "type": "text",
-     "null": false
+     "null": false,
+     "status": "actual"
     },
     {
-     "name": "city",
-     "ru": "Город",
+     "name": "gns_code",
+     "ru": "Код ГНС",
      "type": "text",
-     "null": true
+     "null": true,
+     "desc": "Три цифры (tax_offices_gns_code_check), уникален, если заполнен; пусто — пока администратор не сверил его с ГНС.",
+     "status": "actual"
+    },
+    {
+     "name": "region",
+     "ru": "Город или область",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "verify",
-     "ru": "Нужно сверить",
+     "ru": "Сверить",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "desc": "Да — сведения ещё не сверены; в Админке подсвечено.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Примечание",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -8113,34 +8449,66 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых записях, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.ugns"
+   "rls": "Включена. Политика tax_offices_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.dictionaries.ugns",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "logic": [
+    "Контрагент из Excel или демо-данных с кодом «020» находит УГНС по коду ГНС.",
+    "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ],
+   "uniques": [
+    "tax_offices_gns_code_key (gns_code), только где gns_code заполнен"
+   ]
   },
   {
    "name": "banks",
@@ -8218,7 +8586,7 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — вместе с первыми реквизитами, которые на неё ссылаются (поток В)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.banks"
   },
   {
@@ -8275,7 +8643,7 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — вместе с задачами (поток Б)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.cats"
   },
   {
@@ -8333,67 +8701,88 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — вместе с «Изменить срок» (поток А)",
    "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.reasons"
   },
   {
-   "name": "calendar_days",
+   "name": "production_calendar",
    "ru": "Производственный календарь",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Праздники и рабочие субботы. По нему сроки переносятся с выходных на рабочий день.",
+   "status": "actual",
+   "desc": "Праздники, переносы Кабинета министров и рабочие субботы КР. По нему сроки переносятся с нерабочего дня на следующий рабочий.",
    "columns": [
     {
      "name": "day",
-     "ru": "Дата",
-     "type": "date",
+     "ru": "День",
+     "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Конкретная дата; ежегодные праздники разворачиваются на каждый год."
+     "desc": "«MM-DD» — праздник каждый год, «YYYY-MM-DD» — только этот день (production_calendar_day_check: «MM-DD» только у праздника).",
+     "status": "actual"
     },
     {
-     "name": "day_kind",
+     "name": "kind",
      "ru": "Что за день",
      "type": "text",
      "null": false,
-     "desc": "holiday — выходной праздник, workday — рабочая суббота."
+     "desc": "holiday — праздник, transfer — перенос выходного, workday — рабочая суббота (production_calendar_kind_check).",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
-     "null": true,
-     "desc": "Например «Нооруз»."
+     "null": false,
+     "default": "''",
+     "desc": "Например «Нооруз».",
+     "status": "actual"
     },
     {
-     "name": "yearly",
-     "ru": "Каждый год",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — праздник с постоянной датой (01-01, 03-21…)."
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     },
     {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id"
+     "name": "version",
+     "ru": "Версия",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
    ],
+   "rls": "Включена. Политика production_calendar_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "source": "refDB.holidays, workingSaturdays",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
    "logic": [
-    "Изменение календаря пересчитывает ещё не сданные сроки; что пересчитано, видно в журнале календаря."
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
-   "source": "refDB.holidays, workingSaturdays, calendarAudit"
+    "Правила дня — в @buhuchet/domain: isWorkingDay, nextWorkingDay, calendarYear (календарь года для вкладки «Календарь»).",
+    "Изменение календаря пересчитывает ещё не сданные сроки (поток А); что пересчитано, видно в журнале календаря.",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
+    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+   ]
   },
   {
    "name": "phone_codes",
@@ -8468,7 +8857,7 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "раздел platform_reference (#20); своя таблица не нужна, пока на коды никто не ссылается",
    "source": "refDB.phoneCodes"
   },
   {
@@ -8538,7 +8927,7 @@
     }
    ],
    "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "#20",
+   "issue": "пока раздел platform_reference (#20); своя таблица — вместе с очередью сообщений Telegram (поток Б)",
    "source": "refDB.messageTemplates, templateNotes"
   },
   {
@@ -8696,7 +9085,7 @@
     }
    ],
    "rls": "Включена. Данные платформы: читает и меняет только администратор платформы через API.",
-   "issue": "#20",
+   "issue": "поток Д (Админка: загрузка справочников из Excel)",
    "source": "refDB.dictLoads, admin/platform-dicts-io.js"
   },
   {
@@ -8794,7 +9183,7 @@
     }
    ],
    "rls": "Включена. Организация видит свои запросы; администратор платформы — все.",
-   "issue": "#20",
+   "issue": "поток А («Запросить добавление» в «Справочниках»), поток Д (рассмотрение в Админке)",
    "source": "demoDB.dictRequests"
   },
   {
