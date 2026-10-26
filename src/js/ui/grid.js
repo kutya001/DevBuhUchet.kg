@@ -3,6 +3,8 @@
 /* ═════════════ UnifiedDataGrid ═════════════ */
 // «Все записи» — до 5 000 строк за раз, дальше страницы по 5 000 (решение заказчика 26.10.2026)
 const GRID_ALL_MAX=5000;
+// В фильтре-галочках — не больше 500 значений; «В Excel» — не больше 50 000 строк (решение заказчика 26.10.2026)
+const GRID_ENUM_MAX=500,GRID_XLS_MAX=50000;
 const GS={};let ACTIVE=[];let FAIL_NEXT=false;const CLOSED=new Set();
 const norm=s=>String(s??'').toLowerCase().replace(/ё/g,'е').replace(/ /g,' ');
 const strip=s=>norm(s).replace(/[\s\-()+.,№«»"]/g,'');
@@ -141,22 +143,30 @@ function grid(host,cfg){
     return h;
   }
   function filterPop(btn,c){
-    const f=s.filters[c.key];const t=ftype(c);let body='';
+    const f=s.filters[c.key];const t=ftype(c);let body='',keys=[],on=null,fmatch=null,fvals=null;
     if(t==='text')body=`<input class="inp" id="gf-q" placeholder="Содержит…" value="${esc(f?f.q:'')}">`;
     if(t==='num')body=`<div class="row" style="flex-wrap:nowrap">${inp('gf-from',f&&f.from!=null?f.from:'','placeholder="От" inputmode="decimal"')}${inp('gf-to',f&&f.to!=null?f.to:'','placeholder="До" inputmode="decimal"')}</div><div class="hint">Границы включительно</div>`;
     if(t==='date')body=`<div class="fld"><label class="lbl" for="gf-from">С даты</label>${inp('gf-from',f?f.from||'':'','type="date"')}</div><div class="fld"><label class="lbl" for="gf-to">По дату</label>${inp('gf-to',f?f.to||'':'','type="date"')}</div>`;
     if(t==='enum'){const all=(typeof cfg.rows==='function'?cfg.rows():cfg.rows);const cnt={};all.forEach(r=>{const v=c.val(r);const k=v==null?'':String(v);cnt[k]=(cnt[k]||0)+1});
-      const keys=Object.keys(cnt).sort((a,b)=>a===c.pin?-1:b===c.pin?1:a===''?1:b===''?-1:COLL.compare(a,b));const on=f?new Set(f.vals):new Set(keys);
-      body=`${keys.length>8?`<input class="inp" id="gf-find" placeholder="Найти значение">`:''}<div class="fl-list"><label><input type="checkbox" id="gf-all" ${on.size===keys.length?'checked':''}> <b>Выбрать все</b></label>${keys.map(k=>`<label data-v="${esc(norm(k))}"><input type="checkbox" class="gf-v" value="${esc(k)}" ${on.has(k)?'checked':''}> ${k===''?'<i class="faint">(Пусто)</i>':esc(k)}<span class="n">${cnt[k]}</span></label>`).join('')}</div>`}
+      keys=Object.keys(cnt).sort((a,b)=>a===c.pin?-1:b===c.pin?1:a===''?1:b===''?-1:COLL.compare(a,b));on=f?new Set(f.vals):new Set(keys);
+      // Показываются первые 500 значений; «Найти значение» ищет по всем, отметки скрытых значений сохраняются
+      fmatch=q=>q?keys.filter(k=>norm(k).includes(q)):keys;
+      fvals=q=>{const m=fmatch(q);return {html:m.slice(0,GRID_ENUM_MAX).map(k=>`<label data-v="${esc(norm(k))}"><input type="checkbox" class="gf-v" value="${esc(k)}" ${on.has(k)?'checked':''}> ${k===''?'<i class="faint">(Пусто)</i>':esc(k)}<span class="n">${cnt[k]}</span></label>`).join(''),more:m.length>GRID_ENUM_MAX?`Показаны первые ${fmtM(GRID_ENUM_MAX,false)} значений из ${fmtM(m.length,false)} — сузьте список поиском или другими фильтрами`:'',all:m.every(k=>on.has(k))}};
+      const v0=fvals('');
+      body=`${keys.length>8?`<input class="inp" id="gf-find" placeholder="Найти значение">`:''}<div class="fl-list"><label><input type="checkbox" id="gf-all" ${v0.all?'checked':''}> <b>Выбрать все</b></label><div id="gf-vals">${v0.html}</div></div><div class="hint" id="gf-more" ${v0.more?'':'hidden'}>${esc(v0.more)}</div>`}
     const ing=(s.group||[]).includes(c.key);
     openPop(btn,`<h4>${esc(c.label)}</h4>${body}<button class="linkbtn" id="gf-grp" style="margin-top:8px;font-size:12.5px">${ic('layers','sm')} ${ing?'Убрать группировку по этому столбцу':'Группировать по этому столбцу'}</button><div class="pop-actions"><button class="btn sm ghost" id="gf-clr">Очистить</button><button class="btn sm cta" id="gf-ok">Применить</button></div>`,{cls:'pad',mount(el){
-      const all=$('#gf-all',el);if(all)all.onchange=()=>$$('.gf-v',el).forEach(x=>{if(x.closest('label').style.display!=='none')x.checked=all.checked});
-      const fd=$('#gf-find',el);if(fd)fd.oninput=()=>{const q=norm(fd.value);$$('.fl-list label[data-v]',el).forEach(l=>l.style.display=l.dataset.v.includes(q)?'':'none')};
+      const all=$('#gf-all',el),fd=$('#gf-find',el),fq=()=>fd?norm(fd.value):'';
+      if(t==='enum'){const show=()=>{const v=fvals(fq());$('#gf-vals',el).innerHTML=v.html;const mo=$('#gf-more',el);mo.textContent=v.more;mo.hidden=!v.more;all.checked=v.all};
+        // «Выбрать все» отмечает все значения, подходящие под «Найти значение», в том числе не показанные
+        all.onchange=()=>{fmatch(fq()).forEach(k=>all.checked?on.add(k):on.delete(k));$$('.gf-v',el).forEach(x=>x.checked=all.checked)};
+        $('#gf-vals',el).onchange=e=>{const x=e.target.closest('.gf-v');if(!x)return;x.checked?on.add(x.value):on.delete(x.value);all.checked=fmatch(fq()).every(k=>on.has(k))};
+        if(fd)fd.oninput=show}
       const apply=()=>{let nf=null;
         if(t==='text'){const q=$('#gf-q',el).value.trim();if(q)nf={type:'text',q}}
         if(t==='num'){const a=parseNum($('#gf-from',el).value),b=parseNum($('#gf-to',el).value);if(!isNaN(a)||!isNaN(b))nf={type:'num',from:isNaN(a)?null:a,to:isNaN(b)?null:b}}
         if(t==='date'){const a=$('#gf-from',el).value,b=$('#gf-to',el).value;if(a||b)nf={type:'date',from:a||null,to:b||null}}
-        if(t==='enum'){const v=$$('.gf-v',el).filter(x=>x.checked).map(x=>x.value);if(v.length<$$('.gf-v',el).length)nf={type:'enum',vals:v}}
+        if(t==='enum'){const v=keys.filter(k=>on.has(k));if(v.length<keys.length)nf={type:'enum',vals:v}}
         if(nf)s.filters[c.key]=nf;else delete s.filters[c.key];s.page=0;closePop();refresh()};
       $('#gf-grp',el).onclick=()=>{if(ing)s.group=s.group.filter(k=>k!==c.key);else if(s.group.length<2)s.group=[...s.group,c.key];else{s.group=[s.group[0],c.key];toast('Не больше двух уровней — второй уровень заменён')}s.closed=new Set();gsave(cfg.id);closePop();refresh()};
       $('#gf-ok',el).onclick=apply;$('#gf-clr',el).onclick=()=>{delete s.filters[c.key];s.page=0;closePop();refresh()};
@@ -207,15 +217,17 @@ function grid(host,cfg){
         if(a==='gnone'){const all=[];const w=arr=>arr.forEach(x=>{all.push(x.path);if(x.sub)w(x.sub)});w(g.tree||[]);s.closed=new Set(all);refresh()}
         if(a==='opts')menu(b,[{label:'Обычно',icon:'list',on:s.density==='normal',run:()=>{s.density='normal';gsave(cfg.id);refresh()}},{label:'Компактно',icon:'menu',on:s.density==='compact',run:()=>{s.density='compact';gsave(cfg.id);refresh()}},{sep:true},{label:'На весь экран',icon:'columns',on:s.width==='full',run:()=>{s.width='full';gsave(cfg.id);refresh()}},{label:'По центру',icon:'table',on:s.width==='center',run:()=>{s.width='center';gsave(cfg.id);refresh()}},{sep:true},{label:'Сбросить вид',icon:'refresh',sub:'Столбцы, порядок, ширины, сортировка, группировка, плотность',run:()=>{delete GS[cfg.id];store.set('g5.'+cfg.id,{});const ns=gst(cfg);Object.assign(s,ns,{filters:s.filters});GS[cfg.id]=s;refresh();toast('Вид списка сброшен')}}]);
         // «В Excel» — файл .xlsx со всеми отфильтрованными записями и видимыми столбцами (решение заказчика 26.10.2026); в окне внутри другой страницы (артефакт claude.ai) скачивание может быть запрещено — тогда строки ещё и копируются для вставки в Excel
+        // Больше 50 000 строк не выгружается: в файл идут первые 50 000, уведомление просит сузить фильтр
         if(a==='xls'){ckHit('xls');const vc=[...vis(),...cols().filter(c=>c.xls&&!vis().includes(c))];const isN=c=>NUMT.includes(c.type);
-          const sheet=[vc.map(c=>({v:c.label,s:XL_ST.head})),...g.rows.map(r=>vc.map(c=>{const v=c.val(r);if(isN(c))return v==null||v===''||isNaN(v)?'':+v;return colTxt(c,r).replace(/\s*\n\s*/g,' ')}))];
+          const xr=g.rows.slice(0,GRID_XLS_MAX),tot=g.rows.length,cut=tot>xr.length&&`Выгружено ${fmtM(xr.length,false)} строк из ${fmtM(tot,false)} — сузьте фильтр, чтобы выгрузить остальные`;
+          const sheet=[vc.map(c=>({v:c.label,s:XL_ST.head})),...xr.map(r=>vc.map(c=>{const v=c.val(r);if(isN(c))return v==null||v===''||isNaN(v)?'':+v;return colTxt(c,r).replace(/\s*\n\s*/g,' ')}))];
           const md=host.closest('.modal'),m0=curMod(),t0=modTabs(m0).find(t=>t.id===S.tab);const ttl=md?(md.querySelector('.mh h2')||{}).textContent||'Список':m0.title+(t0&&t0.label!==m0.title?' — '+t0.label:'');
-          const nm=`${ttl.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)} ${fmtD(TODAY)}.xlsx`,n=g.rows.length,cnt=`${n} ${plural(n,'запись','записи','записей')}`;
+          const nm=`${ttl.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)} ${fmtD(TODAY)}.xlsx`,n=xr.length,cnt=`${n} ${plural(n,'запись','записи','записей')}`;
           xlSave(xlWrite([{name:(md?'Список':m0.short||m0.title),rows:sheet,freeze:{y:1},widths:vc.map(c=>Math.max(8,Math.min(60,Math.round((c.w||120)/7))))}]),nm);
           let framed=false;try{framed=window.self!==window.top}catch(e){framed=true}
-          if(!framed)toast(`Скачан файл «${nm}»: ${cnt}`,'download');
-          else{const tsv=[vc.map(c=>c.label).join('\t'),...g.rows.map(r=>vc.map(c=>{const v=c.val(r);if(isN(c))return v==null?'':String(v).replace('.',',');return colTxt(c,r).replace(/[\t\n]/g,' ')}).join('\t'))].join('\n');
-            const msg=`Файл «${nm}» скачивается (${cnt}). Если здесь скачивание запрещено, строки скопированы — вставьте их в Excel`;try{navigator.clipboard.writeText(tsv).then(()=>toast(msg,'download'),()=>toast(`Файл «${nm}» скачивается (${cnt})`,'download'))}catch(e){toast(`Файл «${nm}» скачивается (${cnt})`,'download')}}}
+          if(!framed)toast(cut||`Скачан файл «${nm}»: ${cnt}`,cut?'alert':'download');
+          else{const tsv=[vc.map(c=>c.label).join('\t'),...xr.map(r=>vc.map(c=>{const v=c.val(r);if(isN(c))return v==null?'':String(v).replace('.',',');return colTxt(c,r).replace(/[\t\n]/g,' ')}).join('\t'))].join('\n');
+            const m1=cut?cut+'.':`Файл «${nm}» скачивается (${cnt}).`,ico=cut?'alert':'download',msg=`${m1} Если здесь скачивание запрещено, строки скопированы — вставьте их в Excel`;try{navigator.clipboard.writeText(tsv).then(()=>toast(msg,ico),()=>toast(m1,ico))}catch(e){toast(m1,ico)}}}
         if(a==='retry'){cfg.error=false;cfg.loading=true;refresh();setTimeout(()=>{cfg.loading=false;if(host.isConnected)refresh()},400);return}
         if(a==='clrall'){s.filters={};s.page=0;if(S.search){clearSearch();ACTIVE.forEach(x=>x.refresh())}else refresh()}
         if(a==='clrq'){clearSearch();ACTIVE.forEach(x=>x.refresh())}
