@@ -223,7 +223,10 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       {const a=art('a19_3'),m=ref('a19_3').match(/<li>«Запросы» — просьбы организаций[^<]*<\/li>/),o='<li>«Запросы» — просьбы организаций добавить значение («Добавлено» / «Отклонить»)</li>';if(a&&a.html&&m&&a.html.includes(o))a.html=a.html.replace(o,m[0])}}}
   // Снова включённый показатель обязателен с идущего месяца (решение заказчика 27.10.2026): фраза в статье «Показатели контрагентов» у данных, сохранённых раньше, если её не меняли
   if(!db.meta.v60){db.meta.v60=1;const a=(db.ref.kbArticles||[]).find(x=>x.id==='a_kpi'),o='<li>Если показатель снова включить, его нужно вносить с текущего месяца заполнения; более ранние месяцы не требуются (месяц можно изменить в «с …»)</li>',
-    n=((((r.kbArticles||[]).find(x=>x.id==='a_kpi')||{}).html||'').match(/<li>Если показатель снова включить,[^<]*<\/li>/)||[])[0];if(a&&a.html&&n&&a.html.includes(o))a.html=a.html.replace(o,n)}
+    n=((((r.kbArticles||[]).find(x=>x.id==='a_kpi')||{}).html||'').match(/<li>Если показатель снова включить,[^<]*<\/li>/)||[])[0];if(a&&a.html&&n&&a.html.includes(o))a.html=a.html.replace(o,n);
+    // Контакты органа правятся в «Админке» (решение заказчика 27.10.2026): подсказки полей и строка «Органы» в статье «Справочники платформы»
+    const uf=(db.ref.kbUi||{}).fields,rf=(r.kbUi||{}).fields;if(uf&&rf)['vd-ct','vd-hours','vd-site','vd-cn'].forEach(k=>{if(!(k in uf)&&rf[k])uf[k]=structuredClone(rf[k])});
+    const b=(db.ref.kbArticles||[]).find(x=>x.id==='a19_3'),bo='<li>«Органы» — ГНС, Соцфонд, Нацстатком, Таможня и др.</li>',bn=((((r.kbArticles||[]).find(x=>x.id==='a19_3')||{}).html||'').match(/<li>«Органы» — [^<]*<\/li>/)||[])[0];if(b&&b.html&&bn&&b.html.includes(bo))b.html=b.html.replace(bo,bn)}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
