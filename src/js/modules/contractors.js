@@ -195,7 +195,7 @@ function assignDlg(c){
 }
 function massAssignDlg(){
   const st={t:(RT.find(x=>x.id==='nds'&&x.active!==false&&ORG.types.nds&&ORG.types.nds.on)||RT.find(x=>x.active!==false&&ORG.types[x.id]&&ORG.types[x.id].on)||{}).id,sel:new Set(),rate:null};
-  openModal({form:true,size:'mid',render:m=>{const t=T[st.t];const cps=visCps();
+  openModal({form:true,size:'mid',render:m=>{const t=T[st.t];const cps=visCps(false,'reports');
     if(!t)return {title:'Назначить отчёт нескольким контрагентам',body:`<div class="note">${ic('info')}<span>В организации не включён ни один вид отчёта. Включите нужные виды в «Справочники → Виды отчётов».</span></div>`,foot:`<div class="grow"></div><button class="btn" data-close>Закрыть</button>`};
     return {title:'Назначить отчёт нескольким контрагентам',sub:'Выберите вид отчёта и отметьте компании',body:`${fld('Вид отчёта',sel('ma-t',RT.filter(x=>ORG.types[x.id]&&ORG.types[x.id].on&&x.active!==false).map(x=>[x.id,`${x.name} · ${x.organ}`]),st.t),{id:'ma-t'})}
     ${isEnT(t)?`<div class="note">${ic('info')}<span>Ставка единого налога подставится каждому контрагенту по его основному и дополнительным ГКЭД и статусам — строками справочника «Ставки единого налога», например «ЕНС-04 · 4 % безнал + 6 % нал». Изменить её можно в карточке контрагента, кнопка «Ставки».</span></div>`:t.rates&&t.rates.length>1?fld('Ставка для отмеченных',sel('ma-rate',t.rates,st.rate||t.rates[1]),{id:'ma-rate',hint:'Ставку отдельного контрагента потом можно изменить в его карточке'}):''}

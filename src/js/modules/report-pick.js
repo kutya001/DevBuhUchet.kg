@@ -226,7 +226,8 @@ function pkApply(c,sel,{rates,forced}={}){const cur=new Set(c.assign.filter(a=>!
 function pkConfirm(c,sel,opts,done){const cur=new Set(c.assign.filter(a=>!a.to).map(a=>a.t));const add=[...sel].filter(x=>!cur.has(x)),rem=[...cur].filter(x=>!sel.has(x));
   if(!add.length&&!rem.length){done&&done(null);return}
   confirmDlg({title:'Изменить отчёты контрагента?',text:pkChangesHtml(c,add,rem),ok:'Сохранить',danger:rem.length>0,run:()=>{const r=pkApply(c,sel,opts);done&&done(r)}})}
-const pkEdit=c=>(can('createCp')||can('assign'))&&!c.archived;
+// С областью «Свои» в «Отчетах для сдачи» назначать отчёты можно только своим контрагентам (ТЗ «Роли», решение заказчика 27.10.2026)
+const pkEdit=c=>!c.archived&&(can('createCp')||can('assign'))&&(seeAll('reports')||c.resp===S.me);
 // «Подобрать отчёты» из списка и меню открывает карточку контрагента на вкладке «Подбор отчётов»
 function pickForCp(c){openCp(c,'pick')}
 // Назначенные отчёты, которые статусы контрагента делают ненужными

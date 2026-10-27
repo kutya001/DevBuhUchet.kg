@@ -228,7 +228,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     const uf=(db.ref.kbUi||{}).fields,rf=(r.kbUi||{}).fields;if(uf&&rf)['vd-ct','vd-hours','vd-site','vd-cn'].forEach(k=>{if(!(k in uf)&&rf[k])uf[k]=structuredClone(rf[k])});
     const b=(db.ref.kbArticles||[]).find(x=>x.id==='a19_3'),bo='<li>«Органы» — ГНС, Соцфонд, Нацстатком, Таможня и др.</li>',bn=((((r.kbArticles||[]).find(x=>x.id==='a19_3')||{}).html||'').match(/<li>«Органы» — [^<]*<\/li>/)||[])[0];if(b&&b.html&&bn&&b.html.includes(bo))b.html=b.html.replace(bo,bn);
     // Плата за обслуживание (решение заказчика 27.10.2026): с какого месяца начисления и когда месяц просрочен — в статье «Контрагенты»
-    const c7=(db.ref.kbArticles||[]).find(x=>x.id==='a7'),o7='по месяцам (только с правом). «Принять оплату',n7=((((r.kbArticles||[]).find(x=>x.id==='a7')||{}).html||'').match(/по месяцам \(только с правом\)\. Начисления идут[^<]*?«Принять оплату/)||[])[0];if(c7&&c7.html&&n7&&c7.html.includes(o7))c7.html=c7.html.replace(o7,n7)}
+    const c7=(db.ref.kbArticles||[]).find(x=>x.id==='a7'),o7='по месяцам (только с правом). «Принять оплату',n7=((((r.kbArticles||[]).find(x=>x.id==='a7')||{}).html||'').match(/по месяцам \(только с правом\)\. Начисления идут[^<]*?«Принять оплату/)||[])[0];if(c7&&c7.html&&n7&&c7.html.includes(o7))c7.html=c7.html.replace(o7,n7);
+    // «Свои» в «Отчетах для сдачи» (решение заказчика 27.10.2026): строка «Кто что видит» в статье «Отчеты для сдачи»
+    const c8=(db.ref.kbArticles||[]).find(x=>x.id==='a8'),o8='<li>Бухгалтер без права «Видеть все отчёты…» видит только отчёты, где он ответственный.</li>',n8=((((r.kbArticles||[]).find(x=>x.id==='a8')||{}).html||'').match(/<li>Бухгалтер с областью «Свои контрагенты»[^<]*<\/li>/)||[])[0];if(c8&&c8.html&&n8&&c8.html.includes(o8))c8.html=c8.html.replace(o8,n8)}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
