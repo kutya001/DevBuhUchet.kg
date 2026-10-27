@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 22,
+  "schemaVersion": 23,
   "updated": "2026-10-27",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main ed85eda",
-    "what": "Фактические миграции 0000–0038: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи» и «Локализация», функции базы и правило сортировки app.ru_natural."
+    "ref": "main 79b54b3",
+    "what": "Фактические миграции 0000–0040: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи» и «Локализация», функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -1856,8 +1856,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами.",
-     "status": "actual"
+     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке. Составной внешний ключ audit_log_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE SET NULL (contractor_id): у удалённого контрагента записи истории остаются, пропадает только ссылка (миграция 0040).",
+     "status": "actual",
+     "onDelete": "set null"
     },
     {
      "name": "action",
@@ -1918,7 +1919,7 @@
    ],
    "issue": "#4 (сделано)",
    "source": "demoDB.history; ТЗ «Общие правила для всей платформы»",
-   "migration": "0005_history_actor_check, 0006_audit_log, 0007_audit_log_append_only"
+   "migration": "0005_history_actor_check, 0006_audit_log, 0007_audit_log_append_only, 0040_contractors_guards"
   },
   {
    "name": "platform_audit_log",
@@ -2826,8 +2827,29 @@
    "name": "contractors",
    "ru": "Контрагенты",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Клиенты бухгалтерской фирмы (компании и ИП), которых она обслуживает. Центр всей базы: к контрагенту привязаны отчёты, деньги, задачи, проекты, показатели и файлы.",
+   "status": "actual",
+   "desc": "Клиенты бухгалтерской фирмы (компании и ИП), которых она обслуживает. Центр всей базы: к контрагенту привязаны отчёты, деньги, задачи, проекты, показатели и файлы. Справочные значения — постоянными кодами справочников платформы.",
+   "rls": "Включена. Политика contractors_isolation: только своя организация. Область «Свои контрагенты» — условие responsible_employee_id = сотрудник во всех запросах API (contractorScope); контрагент вне области — 404, как чужой организации.",
+   "uniques": [
+    "contractors_org_inn_key (org_id, inn) — ИНН уникален в организации среди всех контрагентов, включая архив",
+    "contractors_id_org_unique (id, org_id) — цель составных ссылок на контрагента своей организации"
+   ],
+   "issue": "#61 (сделано); экраны — #65 (форма), #66 (список), #67 (карточка)",
+   "source": "demoDB.contractors; ТЗ «Модуль Контрагенты» → «Регистрация контрагентов», «Сверка с ГКЭД», «Ответственный», «Плата за обслуживание»; прототип modules/contractors.js (addCpDlg, editCpDlg, transferDlg, cpActions), core/gked.js (gkCheck); packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors, 0040_contractors_guards",
+   "logic": [
+    "Проверки сохранения одни для создания и «Изменить» (checkContractor): ИНН, телефон по «Кодам телефонов», поля, только действующие значения справочников, ГКЭД только подклассы, дубль ИНН (называет найденного, в том числе в архиве), сверка с ГКЭД. Создание — одна транзакция.",
+    "Сверка с ГКЭД — порт прототипа gkCheck (packages/domain/src/contractors/gked.ts): запрет режима — 400 gked_blocked; вопрос о праве на режим — 400 gked_confirm_required, пока форма не подтвердит; подтверждение хранится в gked_confirmation и сбрасывается при смене ГКЭД, режима, формы.",
+    "История — общая audit_log (entity contractor): создание, «было → стало», смена ответственного, удаление; своей таблицы истории закреплений нет.",
+    "Ставку, «День оплаты» и «Первый неполный месяц» видит и задаёт только право на плату при включённой функции; без права — null в ответе и 403 на запись.",
+    "Удаление — только не архивного и без отчётов, денег и проектов (contractorDeleteRefusal, 409 contractor_in_use). Таблицы отчётов, денег и проектов ссылаются на контрагента с ON DELETE RESTRICT, чтобы запрет держала и база; история и файлы удалённого остаются (ON DELETE SET NULL).",
+    "Набор отчётов собирается из режима, второго режима, формы собственности, льгот, оснований и ГКЭД («Выбор налогов», задача 2.07).",
+    "Архив и приостановка — задача 2.12; создание «Из свидетельства и выписки» (PDF на сервере, распознавание rus+kir) — 2.17."
+   ],
+   "indexes": [
+    "contractors_responsible_idx (org_id, responsible_employee_id) — «Мои контрагенты» и область «Свои»",
+    "contractors_service_idx (org_id, service_status) — вкладки и архив"
+   ],
    "columns": [
     {
      "name": "id",
@@ -2836,7 +2858,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -2845,52 +2868,32 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «ОсОО «Ала-Тоо Трейд»»."
-    },
-    {
-     "name": "form_code",
-     "ru": "Форма собственности",
-     "type": "text",
-     "null": false,
-     "fk": "ownership_forms.code",
-     "desc": "Обязательна."
+     "desc": "Например «ОсОО «Ала-Тоо Трейд»».",
+     "status": "actual"
     },
     {
      "name": "inn",
      "ru": "ИНН",
      "type": "text",
      "null": false,
-     "desc": "14 цифр; уникален в организации. Входит в адрес страницы контрагента."
+     "desc": "Ровно 14 цифр (contractors_inn_check); уникален в организации вместе с архивом. Входит в адрес страницы контрагента.",
+     "status": "actual"
     },
     {
-     "name": "regime_code",
-     "ru": "Режим налогообложения",
+     "name": "phone",
+     "ru": "Телефон",
      "type": "text",
      "null": false,
-     "fk": "tax_regimes.code"
-    },
-    {
-     "name": "regime2_code",
-     "ru": "Второй режим",
-     "type": "text",
-     "null": true,
-     "fk": "tax_regimes.code",
-     "desc": "Если совмещает режимы (например, ОНР + патент)."
-    },
-    {
-     "name": "responsible_id",
-     "ru": "Ответственный",
-     "type": "uuid",
-     "null": false,
-     "fk": "employees.id",
-     "desc": "Бухгалтер, который ведёт контрагента. Обязателен."
+     "desc": "В формате +996…: код страны и цифры; код проверяет API по «Кодам телефонов».",
+     "status": "actual"
     },
     {
      "name": "kind",
@@ -2898,82 +2901,145 @@
      "type": "cp_kind",
      "null": false,
      "default": "'regular'",
-     "desc": "regular — постоянное, oneoff — разовое."
+     "desc": "regular — постоянное, oneoff — разовое (contractors_kind_check).",
+     "status": "actual"
     },
     {
-     "name": "status",
-     "ru": "Обслуживание",
-     "type": "service_status",
+     "name": "form_code",
+     "ru": "Форма собственности",
+     "type": "text",
      "null": false,
-     "default": "'active'",
-     "desc": "Обслуживается, Приостановлен или В архиве."
+     "fk": "ownership_forms.code",
+     "desc": "Обязательна.",
+     "status": "actual"
+    },
+    {
+     "name": "regime_code",
+     "ru": "Режим налогообложения",
+     "type": "text",
+     "null": true,
+     "fk": "tax_regimes.code",
+     "desc": "Пусто только у заведённых без режима; форма требует.",
+     "status": "actual"
+    },
+    {
+     "name": "regime2_code",
+     "ru": "Второй режим",
+     "type": "text",
+     "null": true,
+     "fk": "tax_regimes.code",
+     "desc": "Если совмещает режимы (например, ОНР + патент); только при основном и не равен ему (contractors_regime2_check).",
+     "status": "actual"
+    },
+    {
+     "name": "gked",
+     "ru": "Основной ГКЭД",
+     "type": "text",
+     "null": true,
+     "fk": "gked_items.code",
+     "desc": "Только подкласс. Пуст только у заведённых раньше или загруженных без него: при сохранении карточки его требует API.",
+     "status": "actual"
     },
     {
      "name": "tax_office_code",
      "ru": "УГНС",
      "type": "text",
      "null": true,
-     "fk": "tax_offices.code"
-    },
-    {
-     "name": "gked_code",
-     "ru": "Основной ГКЭД",
-     "type": "text",
-     "null": true,
-     "fk": "gked_items.code",
-     "desc": "Только подкласс."
+     "fk": "tax_offices.code",
+     "status": "actual"
     },
     {
      "name": "biz_size",
      "ru": "Размер бизнеса",
      "type": "text",
-     "null": true,
-     "desc": "small, medium, large — по выручке за 12 месяцев."
+     "null": false,
+     "default": "'small'",
+     "desc": "small, medium, large (contractors_biz_size_check, BIZ_SIZES).",
+     "status": "actual"
     },
     {
-     "name": "phone",
-     "ru": "Телефон",
-     "type": "text",
-     "null": true
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Бухгалтер, который ведёт контрагента. Пусто — после блокировки сотрудника (контрагент подсвечивается). Составной внешний ключ contractors_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id): сотрудник чужой организации не станет ответственным и в обход API.",
+     "status": "actual"
     },
     {
      "name": "head",
      "ru": "Руководитель",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "contact",
      "ru": "Контактное лицо",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "service_start",
-     "ru": "Начало обслуживания",
-     "type": "date",
      "null": false,
-     "desc": "С этой даты создаются отчёты."
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "contract",
-     "ru": "Договор",
+     "name": "contract_no",
+     "ru": "Номер договора",
      "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "«№ 160/24 от 16.07.2024» прототипа разбит на номер и дату.",
+     "status": "actual"
+    },
+    {
+     "name": "contract_date",
+     "ru": "Дата договора",
+     "type": "date",
      "null": true,
-     "desc": "Например «№ 160/24 от 16.07.2024»."
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Примечание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "client_note",
-     "ru": "Заметка для контрагента",
+     "name": "registration",
+     "ru": "Данные из свидетельства",
+     "type": "jsonb",
+     "null": false,
+     "default": "'{}'",
+     "desc": "ContractorRegistration: полное наименование, рег. номер, ОКПО, юридический адрес, почта, даты регистрации и перерегистрации, число учредителей, иностранное участие.",
+     "status": "actual"
+    },
+    {
+     "name": "start_date",
+     "ru": "Начало обслуживания",
+     "type": "date",
+     "null": false,
+     "desc": "С этой даты создаются отчёты; у разового — дата первого обращения. В «Изменить» не меняется.",
+     "status": "actual"
+    },
+    {
+     "name": "first_month_mode",
+     "ru": "Первый неполный месяц",
      "type": "text",
-     "null": true,
-     "desc": "Показывается на странице контрагента."
+     "null": false,
+     "default": "'full'",
+     "desc": "prorate — пропорционально дням, full — полный месяц, next — со следующего (contractors_first_month_check). Без поля в форме — full (docs/deviations.md п. А-1 продукта).",
+     "status": "actual"
+    },
+    {
+     "name": "fee_day",
+     "ru": "День оплаты обслуживания",
+     "type": "smallint",
+     "null": false,
+     "default": "10",
+     "desc": "Число месяца от 1 до 28 (contractors_fee_day_check).",
+     "status": "actual"
     },
     {
      "name": "pays_to",
@@ -2981,7 +3047,33 @@
      "type": "text",
      "null": false,
      "default": "'emp'",
-     "desc": "emp — на счёт ответственного сотрудника, org — на счёт организации."
+     "desc": "emp — на счёт ответственного сотрудника, org — на счёт организации (contractors_pays_to_check, PAYS_TO); использует поток В.",
+     "status": "actual"
+    },
+    {
+     "name": "service_status",
+     "ru": "Обслуживание",
+     "type": "service_status",
+     "null": false,
+     "default": "'active'",
+     "desc": "active — обслуживается, paused — приостановлен, archived — в архиве (contractors_service_check). Архивные в списке — только с фильтром «Статус обслуживания».",
+     "status": "actual"
+    },
+    {
+     "name": "gked_confirmation",
+     "ru": "Подтверждение права на режим",
+     "type": "jsonb",
+     "null": true,
+     "desc": "ContractorGkedConfirmation: подпись набора данных (sig), кто подтвердил (сотрудник), дата по Бишкеку и вопрос. Действует, пока набор данных не изменился.",
+     "status": "actual"
+    },
+    {
+     "name": "client_note",
+     "ru": "Заметка для контрагента",
+     "type": "text",
+     "null": true,
+     "desc": "Показывается на странице контрагента. Поля пока нет: придёт со страницей контрагента (2.42–2.43, поток Е).",
+     "status": "planned"
     },
     {
      "name": "one_sum",
@@ -2989,7 +3081,8 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Одна сумма сразу на налоги и обслуживание; программа сама раскладывает."
+     "desc": "Одна сумма сразу на налоги и обслуживание; программа сама раскладывает. Поля пока нет: придёт с деньгами по отчётам (2.19, #75, поток В).",
+     "status": "planned"
     },
     {
      "name": "need_in_file",
@@ -2997,79 +3090,41 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Поступление без платёжки или чека не сохраняется."
-    },
-    {
-     "name": "fee_day",
-     "ru": "День оплаты обслуживания",
-     "type": "integer",
-     "null": true,
-     "desc": "Число месяца."
-    },
-    {
-     "name": "first_month",
-     "ru": "Первый месяц обслуживания",
-     "type": "text",
-     "null": false,
-     "default": "'full'",
-     "desc": "prorate — по дням, full — полностью, next — со следующего месяца."
+     "desc": "Поступление без платёжки или чека не сохраняется. Поля пока нет: придёт с деньгами по отчётам (2.19, #75, поток В).",
+     "status": "planned"
     },
     {
      "name": "sf_tariff",
      "ru": "Тариф Соцфонда",
      "type": "text",
      "null": true,
-     "desc": "spino, general или pvtpki."
+     "desc": "spino, general или pvtpki. Полей Соцфонда пока нет: придут с тарифом Соцфонда (2.08, #64).",
+     "status": "planned"
     },
     {
      "name": "sf_flags",
      "ru": "Признаки для тарифа Соцфонда",
      "type": "jsonb",
      "null": true,
-     "desc": "{cashless, registry, confirmed, gov}: зарплата безналично, реестр загружен, тариф подтверждён ГНС, госфинансирование."
+     "desc": "{cashless, registry, confirmed, gov}: зарплата безналично, реестр загружен, тариф подтверждён ГНС, госфинансирование. Придёт с 2.08 (#64).",
+     "status": "planned"
     },
     {
      "name": "sf_manual",
      "ru": "Тариф выбран вручную",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "planned",
+     "desc": "Придёт с 2.08 (#64)."
     },
     {
      "name": "sf_manual_why",
      "ru": "Причина ручного выбора",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "gked_ok",
-     "ru": "Подтверждение ГКЭД",
-     "type": "jsonb",
      "null": true,
-     "desc": "Кто и когда подтвердил, что ГКЭД подходит к режиму, несмотря на предупреждение."
-    },
-    {
-     "name": "reg_data",
-     "ru": "Данные из свидетельства",
-     "type": "jsonb",
-     "null": true,
-     "desc": "Полное наименование, рег. номер, ОКПО, адрес, почта, даты регистрации, учредители, иностранное участие."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "status": "planned",
+     "desc": "Придёт с 2.08 (#64)."
     },
     {
      "name": "created_by",
@@ -3077,7 +3132,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных и загрузок — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -3085,7 +3141,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -3093,34 +3168,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — 409 record_changed («Запись изменена другим пользователем»).",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Набор отчётов собирается из режима, второго режима, формы собственности, льгот, оснований и ГКЭД («Выбор налогов»).",
-    "Сотрудник с областью «Свои контрагенты» видит только тех, где он ответственный (или ответственный назначения).",
-    "Смена ответственного или массовая передача пишется в историю; старые отчёты остаются за тем, кто их сдал.",
-    "Архив: новые отчёты не создаются, данные остаются; восстановить может право archiveRest.",
-    "Создание «Из свидетельства и выписки»: PDF разбирается на сервере (текст + распознавание rus+kir), поля заполняются автоматически."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, responsible_id)",
-    "(org_id, status)",
-    "name (поиск, pg_trgm)"
-   ],
-   "uniques": [
-    "(org_id, inn)"
-   ],
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors; modules/contractor-form.js, contractor-card.js; ТЗ «Модуль Контрагенты»"
+   ]
   },
   {
    "name": "contractor_gked_extra",
    "ru": "Дополнительные ГКЭД",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Дополнительные виды деятельности контрагента.",
+   "status": "actual",
+   "desc": "Дополнительные виды деятельности контрагента (ГКЭД): сколько угодно, в порядке указания; основной не повторяется (проверяет API).",
+   "rls": "Включена. Политика contractor_gked_extra_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].gked2; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_gked_extra_code_idx (org_id, gked) — фильтр списка по ГКЭД с дополнительными кодами"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -3128,8 +3193,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3138,120 +3204,105 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_gked_extra_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
-     "name": "gked_code",
+     "name": "gked",
      "ru": "ГКЭД",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "gked_items.code"
+     "fk": "gked_items.code",
+     "desc": "Только подкласс.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок, в котором коды указаны.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].gked2"
+   ]
   },
   {
    "name": "contractor_benefits",
    "ru": "Льготы контрагента",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Какие льготы и особые статусы есть у контрагента и с какой даты по какую.",
+   "status": "actual",
+   "desc": "Льготы и особые статусы контрагента со сроком действия; за 60 дней до окончания — предупреждение.",
+   "rls": "Включена. Политика contractor_benefits_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].ben; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_benefits_code_idx (benefit_code)"
+   ],
    "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
     {
      "name": "org_id",
      "ru": "Организация",
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
+     "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_benefits_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "benefit_code",
      "ru": "Льгота",
      "type": "text",
      "null": false,
-     "fk": "tax_benefits.code"
+     "pk": true,
+     "fk": "tax_benefits.code",
+     "desc": "Одна льгота у контрагента — одной строкой (первичный ключ contractor_id, benefit_code).",
+     "status": "actual"
     },
     {
      "name": "valid_from",
      "ru": "С",
      "type": "date",
-     "null": true
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "valid_to",
      "ru": "По",
      "type": "date",
      "null": true,
-     "desc": "За 60 дней до конца — предупреждение."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Не раньше «С» (contractor_benefits_dates_check). За 60 дней до конца — предупреждение.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, benefit_code, valid_from)"
-   ],
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].ben"
+   ]
   },
   {
    "name": "contractor_bases",
    "ru": "Основания контрагента",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Отмеченные основания: «Есть наёмные сотрудники», «Есть имущество» и т. д.",
+   "status": "actual",
+   "desc": "Отмеченные основания для сквозных отчётов: «Есть наёмные сотрудники», «Есть имущество» и т. д.",
+   "rls": "Включена. Политика contractor_bases_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].bases; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_bases_code_idx (base_code)"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -3259,8 +3310,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3269,7 +3321,9 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_bases_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "base_code",
@@ -3277,12 +3331,10 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_bases.code"
+     "fk": "report_bases.code",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].bases"
+   ]
   },
   {
    "name": "contractor_service_periods",
@@ -3382,8 +3434,20 @@
    "name": "contractor_tariffs",
    "ru": "Тарифы обслуживания",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Сколько контрагент платит фирме за обслуживание и с какого месяца. История тарифов сохраняется.",
+   "status": "actual",
+   "desc": "Журнал ставок обслуживания: сколько контрагент платит фирме и с какого месяца. Запись не меняется и не удаляется: новая ставка — новая запись.",
+   "rls": "Включена. Политика contractor_tariffs_isolation: только своя организация. У роли приложения отозваны UPDATE, DELETE и TRUNCATE (миграция 0040): журнал только дополняется; вместе с контрагентом записи удаляет каскад внешнего ключа.",
+   "issue": "#61 (сделано: первая запись); журнал полностью — #77 (поток В)",
+   "source": "demoDB.contractors[].tariffs; ТЗ «Плата за обслуживание»; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors, 0040_contractors_guards",
+   "logic": [
+    "Сейчас пишется только первая запись — «Первая ставка» при создании контрагента, с месяца начала обслуживания (как прототип start.slice(0, 7)).",
+    "Начисление за месяц берёт последнюю ставку, начавшуюся не позже этого месяца (задача 2.21).",
+    "Ограничительная политика вставки «автор — текущий пользователь» — на усмотрение потока В (совет ревью безопасности #61)."
+   ],
+   "indexes": [
+    "contractor_tariffs_contractor_idx (org_id, contractor_id, valid_from) — действующая ставка на месяц"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3392,7 +3456,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3400,8 +3465,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3409,51 +3475,43 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_tariffs_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "amount",
      "ru": "Сумма",
      "type": "bigint",
      "null": false,
-     "desc": "Плата за период. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
+     "desc": "Плата за период, не меньше 0 (contractor_tariffs_amount_check). В тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
-     "name": "from_month",
-     "ru": "С месяца",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "per",
-     "ru": "Период",
-     "type": "period_kind",
+     "name": "period",
+     "ru": "Периодичность",
+     "type": "text",
      "null": false,
      "default": "'M'",
-     "desc": "M — в месяц, Q — в квартал, Y — в год."
+     "desc": "M — в месяц, Y — в год (contractor_tariffs_period_check, TARIFF_PERIODS).",
+     "status": "actual"
+    },
+    {
+     "name": "valid_from",
+     "ru": "С месяца",
+     "type": "date",
+     "null": false,
+     "desc": "Первое число месяца (contractor_tariffs_month_check).",
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Примечание",
      "type": "text",
-     "null": true,
-     "desc": "Например «Ставка на 2026 год»."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "desc": "Например «Первая ставка» или «Ставка на 2026 год».",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -3461,26 +3519,18 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — демо-данные или загрузка.",
+     "status": "actual"
     },
     {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Начисление за месяц берёт последний тариф, начавшийся не позже этого месяца; нужен право tariff."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, from_month)"
-   ],
-   "issue": "этап 2 · #61 (первая запись), #77 (журнал полностью)",
-   "source": "demoDB.contractors[].tariffs"
+   ]
   },
   {
    "name": "assignments",
@@ -3929,7 +3979,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "report_type_code",
@@ -4440,7 +4492,8 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "desc": "Чьи деньги."
+     "desc": "Чьи деньги. ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта).",
+     "onDelete": "restrict"
     },
     {
      "name": "kind",
@@ -4677,7 +4730,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "month",
@@ -4821,7 +4876,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "name",
@@ -5033,7 +5090,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "name",
@@ -6221,7 +6280,7 @@
    ],
    "issue": "#60 (сделано)",
    "source": "ТЗ «Файловый менеджер»; прототип modules/files.js, modules/services.js filesBox; demoDB.files; packages/db/src/schema/files.ts",
-   "migration": "0036_files, 0037_files_column_grants",
+   "migration": "0036_files, 0037_files_column_grants, 0040_contractors_guards",
    "logic": [
     "Загрузка идёт мимо API: запись создаётся pending, браузер кладёт файл в хранилище по подписанной ссылке (2 минуты), затем API проверяет размер и делает файл ready. Не больше 300 начатых загрузок в час от пользователя.",
     "Скачивание — по временной ссылке на 15 минут.",
@@ -6279,8 +6338,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Контрагент записи; пусто — общий файл организации. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами (2.05).",
-     "status": "actual"
+     "desc": "Контрагент записи; пусто — общий файл организации. Составной внешний ключ files_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE SET NULL (contractor_id): у удалённого контрагента файлы остаются, пропадает только ссылка (миграция 0040).",
+     "status": "actual",
+     "onDelete": "set null"
     },
     {
      "name": "name",
