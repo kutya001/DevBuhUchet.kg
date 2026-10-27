@@ -221,6 +221,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
       const art=id=>(db.ref.kbArticles||[]).find(x=>x.id===id),ref=id=>((r.kbArticles||[]).find(x=>x.id===id)||{}).html||'';
       {const a=art('a16'),m=ref('a16').match(/<li>Что стало с запросом,[^<]*<\/li>/),o='Запрос уйдёт администратору платформы.</li>';if(a&&a.html&&m&&!a.html.includes('Мои запросы')&&a.html.includes(o))a.html=a.html.replace(o,o+m[0])}
       {const a=art('a19_3'),m=ref('a19_3').match(/<li>«Запросы» — просьбы организаций[^<]*<\/li>/),o='<li>«Запросы» — просьбы организаций добавить значение («Добавлено» / «Отклонить»)</li>';if(a&&a.html&&m&&a.html.includes(o))a.html=a.html.replace(o,m[0])}}}
+  // Снова включённый показатель обязателен с идущего месяца (решение заказчика 27.10.2026): фраза в статье «Показатели контрагентов» у данных, сохранённых раньше, если её не меняли
+  if(!db.meta.v60){db.meta.v60=1;const a=(db.ref.kbArticles||[]).find(x=>x.id==='a_kpi'),o='<li>Если показатель снова включить, его нужно вносить с текущего месяца заполнения; более ранние месяцы не требуются (месяц можно изменить в «с …»)</li>',
+    n=((((r.kbArticles||[]).find(x=>x.id==='a_kpi')||{}).html||'').match(/<li>Если показатель снова включить,[^<]*<\/li>/)||[])[0];if(a&&a.html&&n&&a.html.includes(o))a.html=a.html.replace(o,n)}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
