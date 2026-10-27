@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 20,
+  "schemaVersion": 21,
   "updated": "2026-10-27",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main fa52a61",
-    "what": "Фактические миграции 0000–0033: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», история изменений и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока), мелкие справочники (JSON), словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации» и «Учётные записи», функции базы и правило сортировки app.ru_natural."
+    "ref": "main e870f53",
+    "what": "Фактические миграции 0000–0037: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», история изменений и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации» и «Учётные записи», функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -334,11 +334,11 @@
   {
    "name": "account_kind",
    "ru": "Вид реквизитов",
-   "desc": "",
+   "desc": "Хранится как text с проверкой базы (org_accounts_kind_check, employee_wallets_kind_check); список — REQUISITE_KINDS в @buhuchet/domain.",
    "values": [
     {
      "v": "acc",
-     "ru": "Расчётный счёт"
+     "ru": "Расчётный счёт (у сотрудника — счёт или кошелёк)"
     },
     {
      "v": "phone",
@@ -1998,6 +1998,16 @@
      "status": "actual"
     },
     {
+     "name": "file_id",
+     "ru": "Файл",
+     "type": "uuid",
+     "null": true,
+     "fk": "files.id",
+     "onDelete": "restrict",
+     "desc": "Файл к смене статуса (например, квитанция о приёме); пусто — без файла. Составной внешний ключ status_history_file_fk (file_id, org_id) → files (id, org_id), удалить такой файл строкой нельзя (restrict).",
+     "status": "actual"
+    },
+    {
      "name": "actor_user_id",
      "ru": "Кто",
      "type": "uuid",
@@ -2016,15 +2026,6 @@
      "default": "now()",
      "desc": "Время записи; при вставке должно быть ровно now() — подделать время нельзя.",
      "status": "actual"
-    },
-    {
-     "name": "file_id",
-     "ru": "Файл",
-     "type": "uuid",
-     "null": true,
-     "fk": "files.id",
-     "status": "planned",
-     "desc": "Файл к смене статуса (например, квитанция). Поля пока нет: придёт с модулем «Файлы», компонент «История статусов» его уже показывает."
     }
    ],
    "rls": "Включена. Политика status_history_isolation: роль приложения видит и добавляет только записи своей организации. Ограничивающая политика status_history_insert_guard на вставку: автор — текущий пользователь, время — now(), автор — пользователь этой организации или администратор платформы (app.history_actor_allowed). У роли приложения отозваны UPDATE, DELETE и TRUNCATE (миграция 0021).",
@@ -2033,7 +2034,7 @@
    ],
    "issue": "#17 (сделано)",
    "source": "ui/status-scale.js; ТЗ «Шкала статусов»; docs/decisions.md п. 33 продукта",
-   "migration": "0020_status_history, 0021_status_history_append_only",
+   "migration": "0020_status_history, 0021_status_history_append_only, 0036_files",
    "logic": [
     "Коды статусов по шкалам проверяет база (status_history_status_check), список — STATUS_SCALE_DEFS в packages/domain/src/common/status.ts; названия — в словаре (status.<шкала>.<код>), цвет и значок — по справочнику «Статусы». Новый код на шкале — новая миграция ограничения.",
     "Шкала report: todo, in_progress, submitted, needs_fix, not_required и отметки подтверждения сдачи waiting, confirmed — на шаге «Сдан», шага «Принят» нет.",
@@ -2406,8 +2407,22 @@
    "name": "org_accounts",
    "ru": "Реквизиты организации",
    "group": "org",
-   "status": "planned",
-   "desc": "Куда контрагенты платят организации: расчётный счёт в банке или перевод по номеру телефона. Отдельно — для налогов и для оплаты обслуживания.",
+   "status": "actual",
+   "desc": "Куда контрагенты переводят деньги организации на налоги и за обслуживание: «Расчётный счёт» (банк, номер, БИК) или «Перевод по номеру телефона» (номер и банки, к которым он привязан). «Назначение» и по одному «Основному» для налогов и для обслуживания.",
+   "rls": "Включена. Политика org_accounts_isolation: только своя организация.",
+   "issue": "#74 (сделано)",
+   "source": "ТЗ «Моя организация» → «Реквизиты организации для приёма денег»; demoDB.organization.accounts; core/requisites.js; packages/db/src/schema/money.ts",
+   "migration": "0034_money_requisites",
+   "logic": [
+    "Основной счёт для налогов и для обслуживания — не больше одного на организацию (частичные уникальные индексы org_accounts_main_tax_key, org_accounts_main_fee_key); основной подставляется в напоминания и на страницу контрагента («Как оплатить»).",
+    "Счёт «только для обслуживания» не бывает основным для налогов, и наоборот (org_accounts_main_check).",
+    "Удаление счёта прошлые поступления не меняет: они хранят свои реквизиты. Порядок в списке — порядок добавления."
+   ],
+   "indexes": [
+    "org_accounts_org_idx (org_id, created_at) — список реквизитов организации",
+    "org_accounts_main_tax_key (org_id) WHERE main_tax — один основной для налогов",
+    "org_accounts_main_fee_key (org_id) WHERE main_fee — один основной для обслуживания"
+   ],
    "columns": [
     {
      "name": "id",
@@ -2416,7 +2431,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -2424,15 +2440,17 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "cascade",
+     "desc": "Чья запись; удаляется вместе с организацией. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "kind",
      "ru": "Вид",
      "type": "account_kind",
      "null": false,
-     "desc": "acc — расчётный счёт, phone — перевод по номеру телефона."
+     "desc": "acc — расчётный счёт, phone — перевод по номеру телефона (org_accounts_kind_check). Какие поля заполнены у каждого вида — org_accounts_fields_check.",
+     "status": "actual"
     },
     {
      "name": "bank_code",
@@ -2440,79 +2458,75 @@
      "type": "text",
      "null": true,
      "fk": "banks.code",
-     "desc": "Для расчётного счёта."
+     "desc": "Банк расчётного счёта; у перевода по номеру — пусто.",
+     "status": "actual"
     },
     {
      "name": "account_no",
      "ru": "Номер счёта",
      "type": "text",
      "null": true,
-     "desc": "16 цифр."
+     "desc": "Обязателен у расчётного счёта, до 40 знаков (org_accounts_length_check).",
+     "status": "actual"
     },
     {
      "name": "bik",
      "ru": "БИК",
      "type": "text",
      "null": true,
-     "desc": "6 цифр."
+     "desc": "Ровно 6 цифр у расчётного счёта; у перевода по номеру — пусто.",
+     "status": "actual"
     },
     {
      "name": "phone",
      "ru": "Телефон",
      "type": "text",
      "null": true,
-     "desc": "Для перевода по номеру."
+     "desc": "Номер «+996…» (от 6 до 15 цифр после «+»); только у перевода по номеру.",
+     "status": "actual"
     },
     {
      "name": "phone_banks",
      "ru": "Банки для перевода",
      "type": "text[]",
-     "null": true,
-     "desc": "Коды банков, через которые можно перевести по номеру."
+     "null": false,
+     "default": "'{}'",
+     "desc": "Коды справочника «Банковские провайдеры» (banks.code), к которым привязан номер: от 1 до 50 у перевода по номеру, пусто у счёта. Без внешнего ключа (массив): коды проверяет API.",
+     "status": "actual"
     },
     {
      "name": "holder_name",
      "ru": "Получатель",
      "type": "text",
-     "null": false
+     "null": false,
+     "default": "''",
+     "desc": "Так, как его видит отправитель в приложении банка; до 200 знаков.",
+     "status": "actual"
     },
     {
      "name": "purpose",
-     "ru": "Для чего",
+     "ru": "Назначение",
      "type": "text",
      "null": false,
      "default": "'both'",
-     "desc": "tax — налоги, fee — обслуживание, both — для всего."
+     "desc": "both — для всего, tax — налоги, fee — обслуживание (org_accounts_purpose_check, ACCOUNT_PURPOSES в @buhuchet/domain).",
+     "status": "actual"
     },
     {
      "name": "main_tax",
      "ru": "Основной для налогов",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "main_fee",
      "ru": "Основной для обслуживания",
      "type": "boolean",
      "null": false,
-     "default": "false"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -2520,7 +2534,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -2528,7 +2543,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -2536,23 +2570,30 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Только один основной счёт для налогов и один для обслуживания.",
-    "Реквизиты показываются контрагенту в «Как оплатить» на странице по ссылке и в сообщениях WhatsApp."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #74",
-   "source": "demoDB.organization.accounts; core/requisites.js"
+   ]
   },
   {
    "name": "employee_wallets",
    "ru": "Реквизиты сотрудников",
    "group": "org",
-   "status": "planned",
-   "desc": "Личные счета сотрудников, на которые контрагенты переводят деньги на налоги (виртуальные счета сотрудника по контрагентам).",
+   "status": "actual",
+   "desc": "Реквизиты сотрудника — «виртуальный счёт» для денег на налоги: «Счёт или кошелёк» (провайдер и номер) или «Перевод по номеру телефона», имя получателя и один «Основной». Ведёт только сам сотрудник в «Мой профиль»; владелец и главный бухгалтер видят их в карточке сотрудника.",
+   "rls": "Включена. Политика employee_wallets_isolation: только своя организация. Ограничительные employee_wallets_insert_own, employee_wallets_update_own, employee_wallets_delete_own: добавлять, менять и удалять можно только реквизиты сотрудника текущего пользователя; остальные в организации их только читают.",
+   "issue": "#74 (сделано)",
+   "source": "ТЗ «Профиль пользователя» → «Мои реквизиты для переводов», «Виртуальные счета сотрудников»; demoDB.employees[].wallets; packages/db/src/schema/money.ts; docs/deviations.md п. В-1 продукта",
+   "migration": "0034_money_requisites",
+   "logic": [
+    "Основной — не больше одного у сотрудника (частичный уникальный индекс employee_wallets_main_key).",
+    "Сотрудник — составной внешний ключ (employee_id, org_id) → employees (id, org_id): реквизиты не привязать к сотруднику чужой организации."
+   ],
+   "indexes": [
+    "employee_wallets_employee_idx (employee_id, created_at) — реквизиты сотрудника по порядку добавления",
+    "employee_wallets_org_idx (org_id)",
+    "employee_wallets_main_key (employee_id) WHERE is_main — один основной"
+   ],
    "columns": [
     {
      "name": "id",
@@ -2561,7 +2602,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -2569,8 +2611,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "cascade",
+     "desc": "Чья запись; удаляется вместе с организацией. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "employee_id",
@@ -2578,68 +2621,68 @@
      "type": "uuid",
      "null": false,
      "fk": "employees.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ employee_wallets_employee_fk (employee_id, org_id) → employees (id, org_id); удаляется вместе с сотрудником.",
+     "status": "actual"
     },
     {
      "name": "kind",
      "ru": "Вид",
      "type": "account_kind",
      "null": false,
-     "desc": "acc или phone."
+     "desc": "acc — счёт или кошелёк, phone — перевод по номеру телефона (employee_wallets_kind_check, employee_wallets_fields_check).",
+     "status": "actual"
     },
     {
      "name": "bank_code",
-     "ru": "Банк",
+     "ru": "Банк или кошелёк",
      "type": "text",
      "null": true,
-     "fk": "banks.code"
+     "fk": "banks.code",
+     "desc": "У счёта обязателен; у перевода по номеру — пусто.",
+     "status": "actual"
     },
     {
      "name": "account_no",
      "ru": "Номер счёта",
      "type": "text",
-     "null": true
+     "null": true,
+     "desc": "Обязателен у счёта, до 40 знаков (employee_wallets_length_check).",
+     "status": "actual"
     },
     {
      "name": "phone",
      "ru": "Телефон",
      "type": "text",
-     "null": true
+     "null": true,
+     "desc": "Номер «+996…» (от 6 до 15 цифр после «+»); только у перевода по номеру.",
+     "status": "actual"
     },
     {
      "name": "phone_banks",
      "ru": "Банки для перевода",
      "type": "text[]",
-     "null": true
+     "null": false,
+     "default": "'{}'",
+     "desc": "Коды справочника «Банковские провайдеры» (banks.code), к которым привязан номер: от 1 до 50 у перевода по номеру, пусто у счёта. Без внешнего ключа (массив): коды проверяет API.",
+     "status": "actual"
     },
     {
      "name": "holder_name",
      "ru": "Получатель",
      "type": "text",
-     "null": false
+     "null": false,
+     "default": "''",
+     "desc": "До 200 знаков.",
+     "status": "actual"
     },
     {
      "name": "is_main",
      "ru": "Основной",
      "type": "boolean",
      "null": false,
-     "default": "false"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -2647,7 +2690,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -2655,7 +2699,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -2663,12 +2726,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #74",
-   "source": "demoDB.employees[].wallets"
+   ]
   },
   {
    "name": "contractors",
@@ -4250,6 +4311,7 @@
     }
    ],
    "logic": [
+    "Модуль «Файлы» (#60) хранит источник в самом файле (files.source_kind, files.source_id), а квитанцию к смене статуса — status_history.file_id. Эта таблица понадобится, только если задаче сдачи отчёта (#70) нужен один файл у нескольких записей или отметка «что за файл»; иначе её не будет.",
     "Для «Сдан» файл отчёта и квитанция обязательны, если так отмечено в «Отчётах организации»."
    ],
    "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
@@ -5258,6 +5320,7 @@
     }
    ],
    "logic": [
+    "Модуль «Файлы» (#60) хранит источник в самом файле (files.source_kind, files.source_id): модуль денег (#78) добавляет свой вид источника. Эта таблица понадобится, только если один файл нужен у нескольких операций; иначе её не будет.",
     "Если у контрагента «Файл к поступлению обязателен», поступление без файла не сохраняется."
    ],
    "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
@@ -6058,8 +6121,30 @@
    "name": "files",
    "ru": "Файлы",
    "group": "files",
-   "status": "planned",
-   "desc": "Все загруженные файлы: договоры, отчёты, квитанции, платёжки, Excel. Сам файл лежит в хранилище S3, в базе — описание и ключ.",
+   "status": "actual",
+   "desc": "Файлы организации до 20 МБ: договоры, отчёты, квитанции, платёжки, Excel. Сам файл лежит в хранилище S3 под ключом org/<org_id>/files/<id>, здесь — описание, состояние и источник: к какой записи он прикреплён и контрагент этой записи (для области «Свои контрагенты» и Файлового менеджера).",
+   "rls": "Включена. Политика files_isolation: только своя организация. Ограничительные: files_insert_guard — новый файл только от текущего пользователя и в состоянии pending; files_update_guard — удалённый файл не меняется и не возвращается, удаляет (deleted_by) тот, кто вошёл; files_delete_pending — строку можно удалить, только пока загрузка не закончена. Менять роль приложения может только state, contractor_id, note, deleted_at, deleted_by, updated_by, updated_at и version (REVOKE UPDATE и GRANT UPDATE по столбцам, миграция 0037); TRUNCATE отозван.",
+   "uniques": [
+    "files_storage_key_unique (storage_key)",
+    "files_id_org_unique (id, org_id) — цель составных ссылок на файл из той же организации"
+   ],
+   "issue": "#60 (сделано)",
+   "source": "ТЗ «Файловый менеджер»; прототип modules/files.js, modules/services.js filesBox; demoDB.files; packages/db/src/schema/files.ts",
+   "migration": "0036_files, 0037_files_column_grants",
+   "logic": [
+    "Загрузка идёт мимо API: запись создаётся pending, браузер кладёт файл в хранилище по подписанной ссылке (2 минуты), затем API проверяет размер и делает файл ready. Не больше 300 начатых загрузок в час от пользователя.",
+    "Скачивание — по временной ссылке на 15 минут.",
+    "Удаление — отметка deleted с автором и временем (на файл могут ссылаться «История статусов» и история записи); сам объект стирается из хранилища. Свой файл удаляется без права в течение суток, чужой — с правом «Удалять файлы» (filesDelete).",
+    "Незаконченные загрузки старше суток удаляет задача по расписанию files.cleanup-pending; других удалений строк нет.",
+    "Источник: пока только manual — «Загружен вручную» (FILE_SOURCE_KINDS в @buhuchet/domain). Модуль, у записей которого есть блок «Файлы», добавляет свой вид и подключает его в API (FILE_SOURCES); ссылку на запись проверяет модуль записи.",
+    "Права: filesView — смотреть, filesUpload — загружать, filesDelete — удалять чужие файлы.",
+    "Файлы только через общий разъём S3: Supabase Storage сейчас, MinIO или другой S3 при переезде на VPS."
+   ],
+   "indexes": [
+    "files_source_idx (org_id, source_kind, source_id, created_at) WHERE state = 'ready' — блок «Файлы» записи",
+    "files_contractor_idx (org_id, contractor_id) WHERE contractor_id is not null — файлы контрагента",
+    "files_pending_idx (org_id, created_at) WHERE state = 'pending' — уборка незаконченных загрузок"
+   ],
    "columns": [
     {
      "name": "id",
@@ -6067,8 +6152,8 @@
      "type": "uuid",
      "null": false,
      "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Задаёт API до вставки: из него строится ключ хранилища. Значения по умолчанию нет.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -6077,42 +6162,25 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
-     "name": "storage_key",
-     "ru": "Ключ в хранилище",
+     "name": "source_kind",
+     "ru": "Источник",
      "type": "text",
      "null": false,
-     "unique": true,
-     "desc": "Путь объекта в S3: <организация>/<год>/<номер>. Скачивание — по временной ссылке."
+     "desc": "Вид записи, к которой прикреплён файл (столбец «Источник» Файлового менеджера); строчные латинские буквы и «_», до 40 знаков (files_source_kind_check). manual — «Загружен вручную».",
+     "status": "actual"
     },
     {
-     "name": "name",
-     "ru": "Имя файла",
-     "type": "text",
-     "null": false,
-     "desc": "Например «Договор_обслуживания_1851.pdf»."
-    },
-    {
-     "name": "mime",
-     "ru": "Тип",
-     "type": "text",
-     "null": false,
-     "desc": "Например application/pdf."
-    },
-    {
-     "name": "size_bytes",
-     "ru": "Размер, байт",
-     "type": "bigint",
-     "null": false
-    },
-    {
-     "name": "sha256",
-     "ru": "Контрольная сумма",
-     "type": "text",
+     "name": "source_id",
+     "ru": "Запись-источник",
+     "type": "uuid",
      "null": true,
-     "desc": "Чтобы не хранить одинаковые файлы дважды."
+     "desc": "Номер записи-источника; пусто — у «Загружен вручную». Внешнего ключа нет: запись любого модуля.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -6120,58 +6188,69 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Пусто — общий файл организации."
+     "desc": "Контрагент записи; пусто — общий файл организации. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами (2.05).",
+     "status": "actual"
     },
     {
-     "name": "folder",
-     "ru": "Папка",
+     "name": "name",
+     "ru": "Имя файла",
      "type": "text",
-     "null": true,
-     "desc": "Например «Шаблоны»."
+     "null": false,
+     "desc": "Как у пользователя, например «Договор_обслуживания_1851.pdf»; от 1 до 255 знаков (files_name_check).",
+     "status": "actual"
+    },
+    {
+     "name": "content_type",
+     "ru": "Тип содержимого",
+     "type": "text",
+     "null": false,
+     "desc": "По расширению файла, например application/pdf. Программы, сценарии и веб-страницы не загружаются.",
+     "status": "actual"
+    },
+    {
+     "name": "size_bytes",
+     "ru": "Размер, байт",
+     "type": "bigint",
+     "null": false,
+     "desc": "От 0 до 20 971 520 (20 МБ, files_size_check).",
+     "status": "actual"
+    },
+    {
+     "name": "storage_key",
+     "ru": "Ключ в хранилище",
+     "type": "text",
+     "null": false,
+     "unique": true,
+     "desc": "Ровно org/<org_id>/files/<id> (files_key_check): запись не может указать на чужой файл. Уникален.",
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Комментарий",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "deleted_at",
-     "ru": "Удалён",
-     "type": "timestamptz",
      "null": true,
-     "desc": "Удалённый файл виден в корзине; навсегда стирается позже."
+     "desc": "Комментарий ручной загрузки (Файловый менеджер).",
+     "status": "actual"
     },
     {
-     "name": "deleted_by",
-     "ru": "Кто удалил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
+     "name": "state",
+     "ru": "Состояние",
+     "type": "text",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "'pending'",
+     "desc": "pending — загрузка начата, ready — файл в хранилище и виден, deleted — удалён (files_state_check).",
+     "status": "actual"
     },
     {
      "name": "created_by",
-     "ru": "Кто создал",
+     "ru": "Кто загрузил",
      "type": "uuid",
-     "null": true,
+     "null": false,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "onDelete": "restrict",
+     "default": "app.current_user_id()",
+     "desc": "По умолчанию — пользователь запроса (политика files_insert_guard). Составной внешний ключ files_created_by_fk (created_by, org_id) → users (id, org_id).",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -6179,7 +6258,43 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "deleted_at",
+     "ru": "Удалён",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Заполнены вместе с «Кто удалил» ровно у состояния deleted (files_deleted_check).",
+     "status": "actual"
+    },
+    {
+     "name": "deleted_by",
+     "ru": "Кто удалил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Только пользователь запроса (политика files_update_guard).",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда начата загрузка.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -6187,20 +6302,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Файлы только через общий разъём S3: Supabase Storage сейчас, MinIO или другой S3 при переезде на VPS.",
-    "Права: filesView — смотреть, filesUpload — загружать, filesDelete — удалять."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, contractor_id)",
-    "(org_id, folder)"
-   ],
-   "issue": "этап 2 · #60",
-   "source": "demoDB.files; modules/files.js; План «Файлы»"
+   ]
   },
   {
    "name": "kb_progress",
@@ -6438,7 +6543,7 @@
    "ru": "Справочники платформы (начальная загрузка)",
    "group": "dicts",
    "status": "actual",
-   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь).",
+   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь); банки — задача #74 (banks).",
    "columns": [
     {
      "name": "key",
@@ -6446,7 +6551,7 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles, dictionaries (в нём остались банки и категории задач).",
+     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles, dictionaries (в нём остались категории задач).",
      "status": "actual"
     },
     {
@@ -6493,8 +6598,8 @@
    ],
    "logic": [
     "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
-    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons: у них свои таблицы; db:seed --update удаляет их старые копии.",
-    "Остаются здесь: налоги, банки, категории задач, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
+    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks: у них свои таблицы; db:seed --update удаляет их старые копии.",
+    "Остаются здесь: налоги, категории задач, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
    ],
    "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишет только команда загрузки pnpm db:seed.",
    "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
@@ -8656,10 +8761,18 @@
   },
   {
    "name": "banks",
-   "ru": "Банки и платёжные сервисы",
+   "ru": "Банковские провайдеры",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Банки и кошельки для реквизитов: расчётный счёт или перевод по номеру телефона.",
+   "status": "actual",
+   "desc": "Справочник платформы «Банковские провайдеры»: банки и электронные кошельки для реквизитов организации и сотрудников. В «Переводе по номеру телефона» выбираются только провайдеры с «Переводы по номеру телефона».",
+   "rls": "Включена. Политика banks_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0035); правку из Админки (поток Д) сделает узкая функция администратора платформы.",
+   "issue": "#74 (сделано); правка в Админке — поток Д (#92)",
+   "source": "refDB.dictionaries.banks; ТЗ «Справочники платформы» → «Банковские провайдеры»; packages/db/src/schema/platform-dicts.ts",
+   "migration": "0034_money_requisites, 0035_banks_read_only",
+   "logic": [
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду, как у других справочников платформы (раздел dictionaries.banks в platform_reference больше не копируется).",
+    "Значение не удаляется, а отключается (active): реквизиты ссылаются на код, поэтому переименование банка их не ломает."
+   ],
    "columns": [
     {
      "name": "code",
@@ -8667,7 +8780,8 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «БНК-01»."
+     "desc": "Постоянный код: БНК-01 … — банки, КШЛ-01 … — кошельки.",
+     "status": "actual"
     },
     {
      "name": "name",
@@ -8675,28 +8789,33 @@
      "type": "text",
      "null": false,
      "unique": true,
-     "desc": "Например «Бакай Банк»."
+     "desc": "Например «Бакай Банк». Уникально (banks_name_key).",
+     "status": "actual"
     },
     {
-     "name": "bank_type",
-     "ru": "Тип",
+     "name": "kind",
+     "ru": "Вид",
      "type": "text",
      "null": false,
-     "desc": "«Банк» или «Платёжный сервис»."
+     "desc": "bank — банк, wallet — электронный кошелёк (banks_kind_check, BANK_KINDS в @buhuchet/domain).",
+     "status": "actual"
     },
     {
      "name": "by_phone",
-     "ru": "Перевод по телефону",
+     "ru": "Переводы по номеру телефона",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Да — можно указывать в реквизитах «перевод по номеру»."
+     "desc": "Да — провайдер предлагается в «Переводе по номеру телефона».",
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Пояснение",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -8704,34 +8823,53 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых реквизитах, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, заведший значение в Админке; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы, поправивший значение в Админке; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "этап 2 · #74 (своя таблица); пока раздел platform_reference",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.banks"
+   ]
   },
   {
    "name": "task_categories",
