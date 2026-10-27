@@ -146,3 +146,5 @@ body.wl-open{overflow:hidden}
 #ckbar .ck-tm i{display:block;height:100%;background:var(--accent,var(--green));animation:ck-tm linear forwards;transform-origin:left}
 @keyframes ck-tm{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @media (prefers-reduced-motion:reduce){#ckbar .ck-tm i{animation:none}}
+/* Ссылка-действие в уведомлении («Мои запросы» после отправки запроса) */
+.toast-a{border:0;background:transparent;color:inherit;font:inherit;font-weight:650;text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0 2px;white-space:nowrap}
