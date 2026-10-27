@@ -248,7 +248,7 @@ function waDlg({r,cp,fee,page}){
   const st={on:new Set(wallets.map((w,i)=>w.main?i:-1).filter(i=>i>=0))};
   const build=()=>{const req=wallets.filter((w,i)=>st.on.has(i)).map(w=>rqTxt(w.a)).join('; ');
     if(page)return TPL.waPage.replaceAll('{контрагент}',c.name).replaceAll('{ссылка}','https://'+pgUrl(c)).replaceAll('{код}',c.page.code);
-    if(fee){const months=feeMonths(c).filter(m=>(feeCharge(c,m)-feeGot(c,m))>0);const m=months[months.length-1];const fr=feeAcc?rqTxt(feeAcc):'';
+    if(fee){const months=feeMonths(c).filter(m=>feeDue(c,m)<=TODAY&&(feeCharge(c,m)-feeGot(c,m))>0);const m=months[months.length-1];const fr=feeAcc?rqTxt(feeAcc):'';
       const t=TPL.waFee.replaceAll('{контрагент}',c.name).replaceAll('{месяц}',months.map(ymLabel).join(', ')).replaceAll('{сумма}',som(c.feeDebt)).replaceAll('{дата}',(()=>{const d=m?mkDate(+m.slice(0,4),+m.slice(5,7)+1,c.feeDay):TODAY;return fmtD(d<TODAY?addDays(TODAY,1):d)})()).replaceAll('{реквизиты}',fr||'—');
       return fr&&!TPL.waFee.includes('{реквизиты}')?`${t} Реквизиты для оплаты: ${fr}.`:t}
     return TPL.waTax.replaceAll('{контрагент}',c.name).replaceAll('{отчёт}',T[r.t].name).replaceAll('{период}',r.phuman).replaceAll('{срок}',fmtD(r.due)).replaceAll('{сумма}',som(r.sum-r.paid)).replaceAll('{дата}',fmtD(r.payDue<TODAY?addDays(TODAY,1):addDays(r.payDue,-2)<TODAY?r.payDue:addDays(r.payDue,-2))).replaceAll('{реквизиты}',req||'—')};

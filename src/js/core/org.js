@@ -87,7 +87,9 @@ const cpStatus=c=>c.archived?'В архиве':inService(c,ym(TODAY))?'Обсл�
 const pTxt=m=>m.slice(5)+'.'+m.slice(0,4);
 const periodsText=c=>(c.periods||[]).map(p=>`${pTxt(p.from)}–${p.to?pTxt(p.to):'…'}`).join(', ');
 const fileName=(t,r)=>`квитанция_${t.short.replace(/[\s.\/]+/g,'')}_${r.plabel.replace(/[\s.]+/g,'-')}.pdf`;
-function feeMonths(c){if(c.kind==='oneoff')return [];const out=[];let m=maxIso(c.start.slice(0,7),TODAY.slice(0,4)+'-01');const end=ym(TODAY);while(m<=end){if(inService(c,m))out.push(m);m=addMonths(m,1)}return out}
+// Месяцы платы за обслуживание: с более позднего из месяца начала обслуживания и месяца, когда контрагента завели в программе, по идущий месяц;
+// долг прошлых лет остаётся (решение заказчика 27.10.2026, продукт п. В-5)
+function feeMonths(c){if(c.kind==='oneoff')return [];const out=[];let m=maxIso(c.start.slice(0,7),(c._ca||'').slice(0,7));const end=ym(TODAY);while(m<=end){if(inService(c,m))out.push(m);m=addMonths(m,1)}return out}
 function feeCharge(c,m){const t=tariffAt(c,m);if(!t)return 0;if(t.per==='Y')return m.slice(5)===t.from.slice(5)?t.amount:0;
   if(m===c.start.slice(0,7)&&c.start.slice(8)!=='01'){if(c.first==='next')return 0;if(c.first==='prorate'){const days=+lastDay(m).slice(8);const left=days-(+c.start.slice(8))+1;return Math.round(t.amount*left/days)}}
   return t.amount}

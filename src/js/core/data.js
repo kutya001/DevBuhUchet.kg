@@ -226,7 +226,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     n=((((r.kbArticles||[]).find(x=>x.id==='a_kpi')||{}).html||'').match(/<li>Если показатель снова включить,[^<]*<\/li>/)||[])[0];if(a&&a.html&&n&&a.html.includes(o))a.html=a.html.replace(o,n);
     // Контакты органа правятся в «Админке» (решение заказчика 27.10.2026): подсказки полей и строка «Органы» в статье «Справочники платформы»
     const uf=(db.ref.kbUi||{}).fields,rf=(r.kbUi||{}).fields;if(uf&&rf)['vd-ct','vd-hours','vd-site','vd-cn'].forEach(k=>{if(!(k in uf)&&rf[k])uf[k]=structuredClone(rf[k])});
-    const b=(db.ref.kbArticles||[]).find(x=>x.id==='a19_3'),bo='<li>«Органы» — ГНС, Соцфонд, Нацстатком, Таможня и др.</li>',bn=((((r.kbArticles||[]).find(x=>x.id==='a19_3')||{}).html||'').match(/<li>«Органы» — [^<]*<\/li>/)||[])[0];if(b&&b.html&&bn&&b.html.includes(bo))b.html=b.html.replace(bo,bn)}
+    const b=(db.ref.kbArticles||[]).find(x=>x.id==='a19_3'),bo='<li>«Органы» — ГНС, Соцфонд, Нацстатком, Таможня и др.</li>',bn=((((r.kbArticles||[]).find(x=>x.id==='a19_3')||{}).html||'').match(/<li>«Органы» — [^<]*<\/li>/)||[])[0];if(b&&b.html&&bn&&b.html.includes(bo))b.html=b.html.replace(bo,bn);
+    // Плата за обслуживание (решение заказчика 27.10.2026): с какого месяца начисления и когда месяц просрочен — в статье «Контрагенты»
+    const c7=(db.ref.kbArticles||[]).find(x=>x.id==='a7'),o7='по месяцам (только с правом). «Принять оплату',n7=((((r.kbArticles||[]).find(x=>x.id==='a7')||{}).html||'').match(/по месяцам \(только с правом\)\. Начисления идут[^<]*?«Принять оплату/)||[])[0];if(c7&&c7.html&&n7&&c7.html.includes(o7))c7.html=c7.html.replace(o7,n7)}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
