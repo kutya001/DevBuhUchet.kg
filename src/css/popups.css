@@ -170,3 +170,6 @@
 /* Кнопка действия в шапке карточки (например, «Принять оплату» у контрагента): на телефоне — только значок */
 .mh .hd-btn{flex:none;align-self:center;margin-right:4px}
 @media (max-width:767px){.mh .hd-btn .bl{display:none}.mh .hd-btn{padding-inline:8px}}
+/* Причина, почему переключатель области в форме роли неактивен — под переключателем (ТЗ «Сотрудники → Роли», 27.10.2026) */
+.pg-scw{flex-wrap:wrap}.pg-scw .pg-why{flex-basis:100%;color:var(--orange);font-size:12px}
+.pg-sc.seg button:disabled{cursor:not-allowed;opacity:.6}
