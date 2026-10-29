@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "updated": "2026-10-29",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main d5cfb1b",
-    "what": "Фактические миграции 0000–0048: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main c463e70",
+    "what": "Фактические миграции 0000–0050: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты и изменения сроков, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -385,7 +385,7 @@
   {
    "name": "report_status",
    "ru": "Статус сдачи отчёта",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение reports_status_check.",
    "values": [
     {
      "v": "todo",
@@ -399,6 +399,11 @@
      "v": "submitted",
      "ru": "Сдан",
      "desc": "Конец шкалы; дальше — подтверждение старшим."
+    },
+    {
+     "v": "needs_fix",
+     "ru": "Требует исправления",
+     "desc": "«На исправление» с причиной (2.14)."
     },
     {
      "v": "not_required",
@@ -3537,8 +3542,23 @@
    "name": "assignments",
    "ru": "Назначенные отчёты",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Какие виды отчётов назначены контрагенту, с какого по какой месяц, кто отвечает и по какой ставке. Из назначений программа создаёт отчёты.",
+   "status": "actual",
+   "desc": "Назначения отчётов контрагентам: вид отчёта из каталога, с какого периода сдаёт, до какого, ответственный, ставка, вариант срока, повторяющаяся сумма, примечание. Из назначений программа создаёт отчёты. Снятое назначение остаётся с датой окончания ended_on; действующее у контрагента по виду — одно.",
+   "rls": "Включена. Политика assignments_isolation: только своя организация.",
+   "uniques": [
+    "assignments_active_key (org_id, contractor_id, report_type_code) WHERE ended_on is null — одно действующее назначение вида у контрагента",
+    "assignments_id_org_unique (id, org_id)"
+   ],
+   "issue": "#62 (сделано); подбор отчётов — #63",
+   "source": "ТЗ «Отчеты для сдачи» → «Назначение отчётов контрагентам»; demoDB.contractors[].assign; modules/tax-pick.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports",
+   "logic": [
+    "Снятие назначения не удаляет созданные отчёты: несданные будущие помечаются «Не требуется».",
+    "Ставки ЕН для наличной и безналичной выручки назначаются вместе (en_rates)."
+   ],
+   "indexes": [
+    "assignments_type_idx (org_id, report_type_code)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3547,7 +3567,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3555,8 +3576,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3564,65 +3587,124 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ assignments_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.code"
+     "fk": "report_types.code",
+     "status": "actual"
     },
     {
-     "name": "from_date",
-     "ru": "С",
+     "name": "from_month",
+     "ru": "С какого периода",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Первое число месяца (assignments_from_check).",
+     "status": "actual"
     },
     {
-     "name": "to_date",
-     "ru": "По",
+     "name": "until_month",
+     "ru": "До какого периода",
      "type": "date",
      "null": true,
-     "desc": "Пусто — бессрочно."
+     "desc": "Необязательно; первое число месяца, не раньше «С какого» (assignments_until_check).",
+     "status": "actual"
     },
     {
-     "name": "responsible_id",
-     "ru": "Свой ответственный",
+     "name": "ended_on",
+     "ru": "Снято",
+     "type": "date",
+     "null": true,
+     "desc": "Дата, с которой контрагент вид не сдаёт; пусто — назначение действует.",
+     "status": "actual"
+    },
+    {
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
      "type": "uuid",
      "null": true,
      "fk": "employees.id",
-     "desc": "Пусто — ответственный контрагента."
+     "desc": "Пусто — ответственный контрагента. Составной внешний ключ assignments_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id).",
+     "status": "actual"
     },
     {
      "name": "rate",
      "ru": "Ставка",
      "type": "text",
      "null": true,
-     "desc": "Например «12 %» для НДС или код ЕНС для единого налога."
+     "desc": "Ставка из «Ставок» вида (не у единого налога), например «12 %».",
+     "status": "actual"
     },
     {
-     "name": "rate_mode",
-     "ru": "Способ оплаты",
+     "name": "en_rates",
+     "ru": "Ставки единого налога",
+     "type": "jsonb",
+     "null": false,
+     "default": "'[]'",
+     "desc": "Строки «Ставок единого налога» у ЕН: код ЕНС и вариант ставки (массив, assignments_en_rates_check).",
+     "status": "actual"
+    },
+    {
+     "name": "rate_additions",
+     "ru": "Добавляемые ставки",
+     "type": "text[]",
+     "null": false,
+     "default": "'{}'",
+     "desc": "Отмеченные добавляемые ставки (налог с продаж).",
+     "status": "actual"
+    },
+    {
+     "name": "due_day",
+     "ru": "Вариант срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "До 10, 15, 20, 25 числа или 31 — до последнего дня (assignments_due_day_check); пусто — как в каталоге.",
+     "status": "actual"
+    },
+    {
+     "name": "own_period",
+     "ru": "Своя периодичность",
      "type": "text",
      "null": true,
-     "desc": "Для ЕН: cash, cashless или оба."
+     "desc": "M, Q, H, Y — периодичность в назначении (внутренняя отчётность, патент); пусто вместе с днём и месяцем — как в каталоге (assignments_own_check).",
+     "status": "actual"
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "own_day",
+     "ru": "Свой день срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "От 1 до 31.",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
+     "name": "own_month",
+     "ru": "Свой месяц срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "Месяц после конца периода, у годовых — месяц срока.",
+     "status": "actual"
+    },
+    {
+     "name": "fixed_amount",
+     "ru": "Повторяющаяся сумма",
+     "type": "bigint",
+     "null": true,
+     "desc": "Сумма к уплате в тыйынах, подставляется в новые отчёты; не меньше 0.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Примечание",
+     "type": "text",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -3630,7 +3712,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — создан задачей по расписанию или наполнением.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -3638,7 +3721,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -3646,20 +3748,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Снятие назначения не удаляет созданные отчёты: несданные будущие помечаются «Не требуется».",
-    "Ставки ЕН для наличной и безналичной выручки назначаются вместе."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, contractor_id)",
-    "(org_id, report_type_code)"
-   ],
-   "issue": "этап 2 · #62",
-   "source": "demoDB.contractors[].assign; modules/tax-pick.js"
+   ]
   },
   {
    "name": "contractor_pages",
@@ -3954,8 +4046,30 @@
    "name": "reports",
    "ru": "Отчёты",
    "group": "reports",
-   "status": "planned",
-   "desc": "Конкретный отчёт контрагента за период: например «НДС за июль 2026». Создаётся программой из назначений по расписанию или вручную («Разовый отчёт»). Здесь сроки, статус, сумма к уплате и подтверждение.",
+   "status": "actual",
+   "desc": "Конкретный отчёт контрагента за период: например «НДС за июль 2026». Один контрагент + вид + период + версия = один отчёт; у разового вида период — месяц даты события, одна дата события — один отчёт. Уточнённые — версии 1, 2, … того же периода; прежняя помечается superseded.",
+   "rls": "Включена. Политика reports_isolation: только своя организация.",
+   "uniques": [
+    "reports_period_key (org_id, contractor_id, report_type_code, period_start, event_date, revision) NULLS NOT DISTINCT — повторный запуск расписания не создаёт дублей",
+    "reports_id_org_unique (id, org_id)"
+   ],
+   "issue": "#62 (сделано); экраны — #69, сдача — #70, деньги — #75",
+   "source": "demoDB.reports; ТЗ «Отчеты для сдачи» → «Отчёты к сдаче создаются автоматически»; modules/reports.js, report-card.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports",
+   "logic": [
+    "Отчёты создаются задачей по расписанию заранее на следующие периоды по назначениям; повторный запуск не создаёт дублей (уникальный ключ).",
+    "Шкала: «К сдаче → В работе → Сдан»; needs_fix — «Требует исправления»; «Не требуется» — отчёт не нужен. Подтверждение старшим — отметка на шаге «Сдан» (confirmed_at/by), окно сдачи и подтверждения — задача 2.14.",
+    "«Сдан» нельзя, пока не оплачено, если включено «Сдан только после оплаты» (кроме «Оплатил контрагент сам»).",
+    "Просрочено = срок прошёл, а статус ещё не «Сдан» (не хранится, считается при запросе).",
+    "Шаг назад по шкале — только с правом rollback и причиной (status_history).",
+    "Сумма: К уплате → Получено → Оплачено; статус оплаты пересчитывается при каждой операции.",
+    "Поля сдачи и подтверждения задача 2.06 заполняет только у прошлых периодов, отмеченных сданными при назначении; окно «Сдан» — 2.14, деньги — 2.19."
+   ],
+   "indexes": [
+    "reports_due_idx (org_id, due_date) — «На неделе», «Просрочено»",
+    "reports_contractor_idx (org_id, contractor_id, report_type_code)",
+    "reports_responsible_idx (org_id, responsible_employee_id) — область «Свои»"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3964,7 +4078,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3973,7 +4088,9 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3982,14 +4099,16 @@
      "null": false,
      "fk": "contractors.id",
      "onDelete": "restrict",
-     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
+     "desc": "Составной внешний ключ reports_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE RESTRICT: контрагента с отчётами удалить нельзя (п. А-1).",
+     "status": "actual"
     },
     {
      "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.code"
+     "fk": "report_types.code",
+     "status": "actual"
     },
     {
      "name": "assignment_id",
@@ -3997,64 +4116,91 @@
      "type": "uuid",
      "null": true,
      "fk": "assignments.id",
-     "desc": "Из какого назначения создан; пусто у разовых."
+     "desc": "По какому назначению создан; пусто — разовый отчёт, созданный вручную. Составной ключ reports_assignment_fk (assignment_id, org_id).",
+     "status": "actual"
+    },
+    {
+     "name": "period",
+     "ru": "Вид периода",
+     "type": "period_kind",
+     "null": false,
+     "desc": "M, Q, H, Y на момент создания (у видов с периодичностью в назначении — из назначения; reports_period_check).",
+     "status": "actual"
     },
     {
      "name": "period_start",
      "ru": "Начало периода",
      "type": "date",
      "null": false,
-     "desc": "Первый день периода: 2026-07-01 для июля, 2026-04-01 для II квартала."
-    },
-    {
-     "name": "period_kind",
-     "ru": "Период",
-     "type": "period_kind",
-     "null": false,
-     "desc": "M, Q, H или Y — как у вида отчёта."
+     "desc": "Первое число периода: 2026-07-01 для июля, 2026-04-01 для II квартала; у разового — первое число месяца даты события.",
+     "status": "actual"
     },
     {
      "name": "event_date",
      "ru": "Дата события",
      "type": "date",
      "null": true,
-     "desc": "Для разовых отчётов: например дата выдачи лицензии."
+     "desc": "У разового вида («Дата ввоза»); в месяце period_start (reports_event_check).",
+     "status": "actual"
     },
     {
-     "name": "correction_no",
-     "ru": "Номер уточнённого",
-     "type": "integer",
+     "name": "act",
+     "ru": "Что сделать",
+     "type": "text",
+     "null": false,
+     "desc": "sub — «Сдача», pay — «Уплата», both — «Сдача + уплата» (reports_act_check, REPORT_ACTS) на момент создания: отчёт сохраняет его, даже если вид потом поменяли.",
+     "status": "actual"
+    },
+    {
+     "name": "revision",
+     "ru": "Номер уточнения",
+     "type": "smallint",
      "null": false,
      "default": "0",
-     "desc": "0 — первичный; 1, 2… — уточнённые отчёты за тот же период."
+     "desc": "0 — первичный; 1, 2… — уточнённые за тот же период.",
+     "status": "actual"
     },
     {
      "name": "superseded",
-     "ru": "Заменён уточнённым",
+     "ru": "Есть новее",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Да — есть более новый уточнённый; в итоги не входит."
+     "desc": "Есть более новая версия: в списке по умолчанию не показывается, в итоги не входит.",
+     "status": "actual"
     },
     {
      "name": "due_base",
-     "ru": "Срок по календарю",
+     "ru": "Срок по закону",
      "type": "date",
      "null": false,
-     "desc": "Срок сдачи, рассчитанный по правилам вида и календарю."
+     "desc": "Срок по правилам вида и календарю — до переноса с нерабочего дня.",
+     "status": "actual"
     },
     {
-     "name": "due",
-     "ru": "Срок сдачи",
+     "name": "due_date",
+     "ru": "Срок",
      "type": "date",
      "null": false,
-     "desc": "Действующий срок; отличается от расчётного, если срок меняли (report_due_changes)."
+     "desc": "Действующий срок сдачи; отличается от расчётного, если срок меняли (report_due_changes).",
+     "status": "actual"
+    },
+    {
+     "name": "due_manual",
+     "ru": "Срок изменён вручную",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Не пересчитывается при изменении правил и календаря.",
+     "status": "actual"
     },
     {
      "name": "pay_due",
      "ru": "Срок оплаты",
      "type": "date",
-     "null": true
+     "null": true,
+     "desc": "У вида «Сдача» — пусто.",
+     "status": "actual"
     },
     {
      "name": "status",
@@ -4062,7 +4208,8 @@
      "type": "report_status",
      "null": false,
      "default": "'todo'",
-     "desc": "К сдаче → В работе → Сдан; «Не требуется» — отчёт не нужен."
+     "desc": "todo, in_progress, submitted, needs_fix, not_required (reports_status_check).",
+     "status": "actual"
     },
     {
      "name": "pay_status",
@@ -4070,81 +4217,39 @@
      "type": "pay_status",
      "null": false,
      "default": "'unpaid'",
-     "desc": "Рассчитывается из оплат: Не оплачено, Оплачено частично, Оплачено, Не требуется."
-    },
-    {
-     "name": "confirm_status",
-     "ru": "Подтверждение",
-     "type": "confirm_status",
-     "null": true,
-     "desc": "Ждёт подтверждения, Подтверждено, Требует исправления; пусто — подтверждение не нужно."
-    },
-    {
-     "name": "responsible_id",
-     "ru": "Ответственный",
-     "type": "uuid",
-     "null": false,
-     "fk": "employees.id",
-     "desc": "Кто сдаёт этот отчёт."
-    },
-    {
-     "name": "sum",
-     "ru": "К уплате",
-     "type": "bigint",
-     "null": true,
-     "desc": "Сумма налога по отчёту. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "sum_auto",
-     "ru": "Сумма подставлена автоматически",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — фиксированная сумма (например, патент) подставлена программой."
-    },
-    {
-     "name": "received",
-     "ru": "Получено",
-     "type": "bigint",
-     "null": false,
-     "default": "0",
-     "desc": "Сколько денег контрагента распределено на этот отчёт (из поступлений). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "paid",
-     "ru": "Оплачено",
-     "type": "bigint",
-     "null": false,
-     "default": "0",
-     "desc": "Сколько уплачено в бюджет. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "paid_by_client",
-     "ru": "Оплатил контрагент сам",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — контрагент заплатил налог сам, без наших счетов."
+     "desc": "Рассчитывается из оплат: Не оплачено, Оплачено частично, Оплачено, Не требуется. Поля пока нет: придёт с деньгами по отчётам (2.19, #75).",
+     "status": "planned"
     },
     {
      "name": "submitted_on",
      "ru": "Дата сдачи",
      "type": "date",
      "null": true,
-     "desc": "Дата из квитанции."
+     "desc": "Из квитанции; у прошлых периодов, отмеченных при назначении, — срок по закону.",
+     "status": "actual"
+    },
+    {
+     "name": "submitted_at",
+     "ru": "Когда отмечен «Сдан»",
+     "type": "timestamptz",
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "submitted_by",
      "ru": "Кто сдал",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "users.id",
+     "status": "actual"
     },
     {
-     "name": "submitted_at",
-     "ru": "Когда отметил «Сдан»",
+     "name": "confirmed_at",
+     "ru": "Когда подтверждён",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "Отметка «Подтверждено» на шаге «Сдан».",
+     "status": "actual"
     },
     {
      "name": "confirmed_by",
@@ -4152,55 +4257,94 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Старший бухгалтер с правом repConfirm."
-    },
-    {
-     "name": "confirmed_at",
-     "ru": "Когда подтвердил",
-     "type": "timestamptz",
-     "null": true
+     "desc": "Старший бухгалтер с правом подтверждать сдачу.",
+     "status": "actual"
     },
     {
      "name": "confirm_note",
      "ru": "Комментарий подтверждения",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "fix_reason",
      "ru": "Что исправить",
      "type": "text",
      "null": true,
-     "desc": "Причина «Требует исправления»."
+     "desc": "Причина «Требует исправления». Поля пока нет: «На исправление» с причиной — 2.14 (#70).",
+     "status": "planned"
     },
     {
      "name": "fix_by",
      "ru": "Кто вернул на исправление",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "users.id",
+     "status": "planned",
+     "desc": "Придёт с 2.14 (#70)."
     },
     {
      "name": "fix_at",
      "ru": "Когда вернул",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "status": "planned",
+     "desc": "Придёт с 2.14 (#70)."
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "amount",
+     "ru": "Сумма к уплате",
+     "type": "bigint",
+     "null": true,
+     "desc": "В тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»; пусто — ещё не указана (reports_amount_check ≥ 0).",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
+     "name": "amount_auto",
+     "ru": "Сумма подставлена",
+     "type": "boolean",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "false",
+     "desc": "Подставлена из повторяющейся суммы назначения (например, патент).",
+     "status": "actual"
+    },
+    {
+     "name": "received",
+     "ru": "Получено",
+     "type": "bigint",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько денег контрагента распределено на этот отчёт (из поступлений). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50». Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "paid",
+     "ru": "Оплачено",
+     "type": "bigint",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько уплачено в бюджет. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50». Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "paid_by_client",
+     "ru": "Оплатил контрагент сам",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Да — контрагент заплатил налог сам, без наших счетов. Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Пусто — ответственный контрагента. Составной внешний ключ reports_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id).",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -4208,7 +4352,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — создан задачей по расписанию или наполнением.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -4216,7 +4361,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -4224,29 +4388,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Отчёты создаются задачей по расписанию заранее на следующие периоды по назначениям; повторный запуск не создаёт дублей (уникальный ключ).",
-    "Шкала: «К сдаче → В работе → Сдан». После «Сдан» — подтверждение старшим, если включено «Подтверждать отчёты»; «Требует исправления» возвращает в работу.",
-    "«Сдан» нельзя, пока не оплачено, если включено «Сдан только после оплаты» (кроме «Оплатил контрагент сам»).",
-    "Просрочено = срок прошёл, а статус ещё не «Сдан» (не хранится, считается при запросе).",
-    "Шаг назад по шкале — только с правом rollback и причиной (status_history).",
-    "Сумма: К уплате → Получено → Оплачено; статус оплаты пересчитывается при каждой операции."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, due, status)",
-    "(org_id, responsible_id, due)",
-    "(org_id, contractor_id, period_start)"
-   ],
-   "uniques": [
-    "(org_id, contractor_id, report_type_code, period_start, correction_no) — у не-разовых",
-    "(org_id, contractor_id, report_type_code, event_date) — у разовых"
-   ],
-   "issue": "этап 2 · #62",
-   "source": "demoDB.reports; modules/reports.js, report-card.js; ТЗ «Модуль Отчёты»"
+   ]
   },
   {
    "name": "report_tax_lines",
@@ -4339,8 +4484,15 @@
    "name": "report_due_changes",
    "ru": "Изменения сроков",
    "group": "reports",
-   "status": "planned",
-   "desc": "Кто, когда и почему изменил срок отчёта (нужно право repDue и причина из справочника).",
+   "status": "actual",
+   "desc": "Изменения срока отчёта вручную («Изменить срок»: новый срок, причина из справочника платформы, комментарий) и причина ручного создания отчёта («Создан вручную (причина)»: прежнего срока нет). Журнал: записи не меняются и не удаляются.",
+   "rls": "Включена. Политика report_due_changes_isolation: только своя организация. UPDATE, DELETE и TRUNCATE отозваны (миграция 0050).",
+   "issue": "#62 (сделано)",
+   "source": "ТЗ «Изменить срок»; modules/report-card.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports, 0050_reports_guards",
+   "indexes": [
+    "report_due_changes_report_idx (org_id, report_id, created_at)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -4349,7 +4501,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -4357,8 +4510,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "report_id",
@@ -4366,51 +4521,60 @@
      "type": "uuid",
      "null": false,
      "fk": "reports.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ report_due_changes_report_fk (report_id, org_id) → reports (id, org_id); удаляется вместе с отчётом.",
+     "status": "actual"
     },
     {
-     "name": "old_due",
+     "name": "from_due",
      "ru": "Был срок",
      "type": "date",
-     "null": false
+     "null": true,
+     "desc": "Пусто — отчёт создан вручную.",
+     "status": "actual"
     },
     {
-     "name": "new_due",
+     "name": "to_due",
      "ru": "Стал срок",
      "type": "date",
-     "null": false
+     "null": false,
+     "status": "actual"
     },
     {
      "name": "reason_code",
      "ru": "Причина",
      "type": "text",
      "null": false,
-     "fk": "due_change_reasons.code"
+     "fk": "due_change_reasons.code",
+     "status": "actual"
     },
     {
      "name": "comment",
      "ru": "Комментарий",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "by",
+     "name": "created_by",
      "ru": "Кто",
      "type": "uuid",
-     "null": false,
-     "fk": "users.id"
+     "null": true,
+     "fk": "users.id",
+     "default": "app.current_user_id()",
+     "desc": "По умолчанию — пользователь текущего запроса.",
+     "status": "actual"
     },
     {
-     "name": "at",
+     "name": "created_at",
      "ru": "Когда",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #62",
-   "source": "modules/report-card.js; refDB.dictionaries.reasons"
+   ]
   },
   {
    "name": "report_files",
