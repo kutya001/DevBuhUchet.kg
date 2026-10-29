@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 25,
-  "updated": "2026-10-27",
+  "schemaVersion": 26,
+  "updated": "2026-10-29",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main 9145c74",
-    "what": "Фактические миграции 0000–0043: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main 3b90579",
+    "what": "Фактические миграции 0000–0046: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -494,7 +494,7 @@
   {
    "name": "task_status",
    "ru": "Статус задачи",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение tasks_status_check.",
    "values": [
     {
      "v": "todo",
@@ -557,7 +557,7 @@
   {
    "name": "indicator_type",
    "ru": "Тип значения показателя",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение indicators_type_check.",
    "values": [
     {
      "v": "som",
@@ -580,7 +580,7 @@
   {
    "name": "indicator_status",
    "ru": "Месяц показателей",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение indicator_months_status_check.",
    "values": [
     {
      "v": "empty",
@@ -5482,8 +5482,29 @@
    "name": "tasks",
    "ru": "Задачи",
    "group": "work",
-   "status": "planned",
-   "desc": "Поручения сотрудникам: на день или на месяц, по контрагенту или без него, с файлом результата и подтверждением постановщиком.",
+   "status": "actual",
+   "desc": "Ручные задачи сотрудникам: на день или на месяц, по контрагенту или общие, с файлом результата и подтверждением постановщиком. Регулярных задач по отчётам здесь нет: это сами отчёты (задача 2.24).",
+   "rls": "Включена. Политика tasks_isolation: только своя организация. Ограничительная tasks_insert_own: задачу ставит сотрудник от своего имени — created_by и постановщик — текущий пользователь и его сотрудник. Задачи не удаляются, а отменяются: DELETE и TRUNCATE отозваны; UPDATE — только изменяемых столбцов (организацию, постановщика и автора записи после вставки не меняет никто, миграция 0045).",
+   "uniques": [
+    "tasks_id_org_unique (id, org_id) — цель составных ссылок на задачу своей организации"
+   ],
+   "issue": "#79 (сделано); регулярные — #80, Telegram — #81",
+   "source": "demoDB.tasks; ТЗ «Задачи» → «Ручные задачи», «Выполнение», «Подтверждение выполнения»; прототип modules/tasks.js; packages/db/src/schema/tasks.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "logic": [
+    "Кто что может с задачей — правила @buhuchet/domain (tasks/rules.ts) в API: ставить задачи могут только старшие; без права «Все задачи» сотрудник видит свои (исполнитель или постановщик).",
+    "Смена статуса пишется в «Историю статусов» (status_history, шкала task); шаги Базы знаний tdone и tconf засчитываются по ней (правило status).",
+    "«Выполнена» у задачи с подтверждением идёт «На подтверждении»; постановщик подтверждает или возвращает «На доработку» с причиной.",
+    "Файл результата — в files с источником task (FILE_SOURCE_KINDS); отдельного поля файла у задачи нет.",
+    "Сообщения в Telegram о новой задаче и возврате на доработку — задача 2.25."
+   ],
+   "indexes": [
+    "tasks_executor_idx (org_id, executor_employee_id, status) — «Мои задачи»",
+    "tasks_author_idx (org_id, author_employee_id, status) — «Поставленные мной»",
+    "tasks_contractor_idx (org_id, contractor_id, created_at) — задачи в карточке контрагента",
+    "tasks_due_idx (org_id, due_date)",
+    "tasks_pending_idx (org_id) WHERE status = 'on_confirm' — счётчик «На подтверждении»"
+   ],
    "columns": [
     {
      "name": "id",
@@ -5492,7 +5513,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5501,27 +5523,32 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "title",
-     "ru": "Задача",
+     "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «Собрать первичку за сентябрь»."
+     "desc": "Например «Собрать первичку за сентябрь»; не пустое (tasks_title_check).",
+     "status": "actual"
     },
     {
      "name": "description",
      "ru": "Описание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "category_code",
      "ru": "Категория",
      "type": "text",
-     "null": true,
-     "fk": "task_categories.code"
+     "null": false,
+     "fk": "task_categories.code",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5529,7 +5556,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Пусто — внутренняя задача."
+     "onDelete": "cascade",
+     "desc": "Пусто — общая задача. Составной внешний ключ tasks_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "project_id",
@@ -5537,51 +5566,60 @@
      "type": "uuid",
      "null": true,
      "fk": "projects.id",
-     "desc": "Если задача из проекта."
+     "desc": "Если задача из проекта. Поля пока нет: придёт с проектами (2.26).",
+     "status": "planned"
     },
     {
-     "name": "executor_id",
+     "name": "executor_employee_id",
      "ru": "Исполнитель",
      "type": "uuid",
      "null": false,
-     "fk": "employees.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_executor_fk (executor_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации.",
+     "status": "actual"
     },
     {
-     "name": "author_id",
+     "name": "author_employee_id",
      "ru": "Постановщик",
      "type": "uuid",
      "null": false,
-     "fk": "employees.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_author_fk (author_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации. Только сотрудник текущего пользователя (tasks_insert_own).",
+     "status": "actual"
     },
     {
-     "name": "term_kind",
+     "name": "term",
      "ru": "Срок",
      "type": "text",
      "null": false,
      "default": "'day'",
-     "desc": "day — к дате, month — в течение месяца."
+     "desc": "day — «На день», month — «На месяц» (tasks_term_check).",
+     "status": "actual"
     },
     {
      "name": "due_date",
-     "ru": "Дата",
+     "ru": "Срок до",
      "type": "date",
      "null": false,
-     "desc": "Для «на месяц» — первое число месяца."
+     "desc": "У «На месяц» — всегда последний день месяца (tasks_month_due_check).",
+     "status": "actual"
     },
     {
      "name": "need_file",
-     "ru": "Нужен файл результата",
-     "type": "boolean",
-     "null": false,
-     "default": "false"
-    },
-    {
-     "name": "need_confirm",
-     "ru": "Нужно подтверждение",
+     "ru": "Требуется файл",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Из учётной политики «Подтверждать задачи»; постановщик подтверждает."
+     "desc": "«Требуется файл при выполнении».",
+     "status": "actual"
+    },
+    {
+     "name": "confirm",
+     "ru": "Требуется подтверждение",
+     "type": "boolean",
+     "null": false,
+     "desc": "«Требуется подтверждение»: только у такой задачи бывают «На подтверждении», «Подтверждена» и «На доработке» (tasks_confirm_status_check).",
+     "status": "actual"
     },
     {
      "name": "status",
@@ -5589,74 +5627,66 @@
      "type": "task_status",
      "null": false,
      "default": "'todo'",
-     "desc": "К выполнению, В работе, На подтверждении, На доработке, Подтверждена, Выполнена, Не выполнена, Отменена."
-    },
-    {
-     "name": "result_file_id",
-     "ru": "Файл результата",
-     "type": "uuid",
-     "null": true,
-     "fk": "files.id"
-    },
-    {
-     "name": "fail_reason",
-     "ru": "Причина «Не выполнена» / отмены",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "rework_reason",
-     "ru": "Что доработать",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "rework_by",
-     "ru": "Кто вернул",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id"
+     "desc": "todo, in_progress, rework, on_confirm, confirmed, done, failed, cancelled (tasks_status_check).",
+     "status": "actual"
     },
     {
      "name": "done_at",
-     "ru": "Выполнена",
+     "ru": "Когда выполнена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "Когда исполнитель отметил «Выполнена»; откат из «Выполнена» и «На подтверждении» снимает.",
+     "status": "actual"
     },
     {
-     "name": "confirmed_by",
+     "name": "fail_reason",
+     "ru": "Причина «Не выполнена»",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "rework_reason",
+     "ru": "Причина доработки",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Причина последнего «На доработку».",
+     "status": "actual"
+    },
+    {
+     "name": "rework_by_employee_id",
+     "ru": "Кто вернул на доработку",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_rework_by_fk (rework_by_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации.",
+     "status": "actual"
+    },
+    {
+     "name": "confirmed_by_employee_id",
      "ru": "Кто подтвердил",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_confirmed_by_fk (confirmed_by_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации. У «Подтверждена» обязателен вместе с «Когда подтверждена» (tasks_confirmed_check).",
+     "status": "actual"
     },
     {
      "name": "confirmed_at",
-     "ru": "Когда подтвердил",
+     "ru": "Когда подтверждена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "confirm_note",
      "ru": "Комментарий подтверждения",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5664,7 +5694,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5672,7 +5703,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5680,86 +5730,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Сотрудник без права tasksAll видит только свои задачи (исполнитель или постановщик).",
-    "Новая задача и возврат на доработку — сообщение исполнителю в Telegram.",
-    "«Выполнена» с нужным подтверждением сначала идёт «На подтверждении»; постановщик подтверждает или возвращает «На доработку» с причиной."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, executor_id, due_date)",
-    "(org_id, contractor_id)"
-   ],
-   "issue": "этап 2 · #79",
-   "source": "demoDB.tasks; modules/tasks.js; ТЗ «Модуль Задачи»"
+   ]
   },
   {
    "name": "task_comments",
    "ru": "Комментарии к задаче",
    "group": "work",
-   "status": "planned",
-   "desc": "Переписка по задаче.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "org_id",
-     "ru": "Организация",
-     "type": "uuid",
-     "null": false,
-     "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
-    },
-    {
-     "name": "task_id",
-     "ru": "Задача",
-     "type": "uuid",
-     "null": false,
-     "fk": "tasks.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "author_id",
-     "ru": "Автор",
-     "type": "uuid",
-     "null": false,
-     "fk": "users.id"
-    },
-    {
-     "name": "body",
-     "ru": "Текст",
-     "type": "text",
-     "null": false
-    },
-    {
-     "name": "at",
-     "ru": "Когда",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()"
-    }
+   "status": "actual",
+   "desc": "Комментарии задачи («Комментарии · N»): пишет любой, кто видит задачу; комментарий не меняется и не удаляется (кроме как вместе с задачей).",
+   "rls": "Включена. Политика task_comments_isolation: только своя организация. Ограничительная task_comments_insert_own: автор — текущий пользователь, время — now(). UPDATE, DELETE и TRUNCATE отозваны (миграция 0045).",
+   "issue": "#79 (сделано)",
+   "source": "demoDB.tasks[].comments; прототип modules/tasks.js openTask; packages/db/src/schema/tasks.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "indexes": [
+    "task_comments_task_idx (org_id, task_id, created_at)"
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #79",
-   "source": "demoDB.tasks[].comments"
-  },
-  {
-   "name": "indicators",
-   "ru": "Показатели",
-   "group": "work",
-   "status": "planned",
-   "desc": "Что организация собирает с контрагентов каждый месяц: выручка, численность, рентабельность и т. п.",
    "columns": [
     {
      "name": "id",
@@ -5768,7 +5756,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5777,109 +5766,192 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
+    },
+    {
+     "name": "task_id",
+     "ru": "Задача",
+     "type": "uuid",
+     "null": false,
+     "fk": "tasks.id",
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ task_comments_task_fk (task_id, org_id) → tasks (id, org_id); удаляется вместе с задачей.",
+     "status": "actual"
+    },
+    {
+     "name": "author_user_id",
+     "ru": "Автор",
+     "type": "uuid",
+     "null": false,
+     "fk": "users.id",
+     "default": "app.current_user_id()",
+     "desc": "По умолчанию — пользователь текущего запроса; другого записать нельзя.",
+     "status": "actual"
+    },
+    {
+     "name": "text",
+     "ru": "Текст",
+     "type": "text",
+     "null": false,
+     "desc": "Не пустой (task_comments_text_check).",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Когда",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "При вставке ровно now().",
+     "status": "actual"
+    }
+   ]
+  },
+  {
+   "name": "indicators",
+   "ru": "Показатели",
+   "group": "work",
+   "status": "actual",
+   "desc": "Показатели организации («Настройка показателей»): что организация собирает с контрагентов каждый месяц — выручка, численность, рентабельность и т. п.; «Кому вести», обязательность, срок заполнения и «Вести с».",
+   "rls": "Включена. Политика indicators_isolation: только своя организация.",
+   "uniques": [
+    "indicators_org_name_key (org_id, lower(name)) — название уникально в организации без учёта регистра, и среди архивных",
+    "indicators_id_org_unique (id, org_id) — цель составных ссылок"
+   ],
+   "issue": "#83 (сделано); ввод из Excel — #84",
+   "source": "demoDB.indicators; ТЗ «Показатели контрагентов»; прототип modules/kpi.js; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "logic": [
+    "Настраивает право «Настройка показателей»; значения вносит право ввода; «Проверено» ставит «Проверять показатели».",
+    "Удалить можно только показатель без значений (это держит и внешний ключ значений), иначе — только в архив.",
+    "У новой организации — два показателя-примера."
+   ],
+   "indexes": [
+    "indicators_org_order_idx (org_id, sort_order)"
+   ],
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер записи",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «Выручка»."
-    },
-    {
-     "name": "description",
-     "ru": "Как заполнять",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "value_type",
-     "ru": "Тип значения",
-     "type": "indicator_type",
-     "null": false,
-     "desc": "som — сумма в сомах, int — целое, dec — дробное, pct — процент."
+     "desc": "Например «Выручка»; не пустое, до 100 знаков (indicators_name_check).",
+     "status": "actual"
     },
     {
      "name": "unit",
      "ru": "Единица",
      "type": "text",
-     "null": true,
-     "desc": "Например «сом», «чел.»."
+     "null": false,
+     "desc": "Например «сом», «чел.»; не пустая, до 20 знаков (indicators_unit_check).",
+     "status": "actual"
     },
     {
-     "name": "summary",
-     "ru": "Итог за период",
+     "name": "type",
+     "ru": "Тип значения",
+     "type": "indicator_type",
+     "null": false,
+     "desc": "int — целое, dec — дробное, som — сумма в сомах, pct — процент (indicators_type_check).",
+     "status": "actual"
+    },
+    {
+     "name": "total",
+     "ru": "Основной итог",
      "type": "text",
      "null": false,
      "default": "'sum'",
-     "desc": "sum — сумма, avg — среднее, last — последнее значение."
+     "desc": "Какой итог показывать первым: sum, avg, max, min, last (indicators_total_check).",
+     "status": "actual"
     },
     {
-     "name": "scope",
-     "ru": "Для кого",
+     "name": "description",
+     "ru": "Описание",
      "type": "text",
      "null": false,
-     "default": "'all'",
-     "desc": "all — все контрагенты, sel — выбранные."
+     "default": "''",
+     "desc": "До 1000 знаков.",
+     "status": "actual"
     },
     {
      "name": "required",
-     "ru": "Обязательный",
-     "type": "boolean",
-     "null": false,
-     "default": "true"
-    },
-    {
-     "name": "due_day",
-     "ru": "Заполнить до, число",
-     "type": "integer",
-     "null": false,
-     "default": "10",
-     "desc": "До какого числа следующего месяца заполнить."
-    },
-    {
-     "name": "start_month",
-     "ru": "С месяца",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "auto_new",
-     "ru": "Новым контрагентам сразу",
+     "ru": "Обязательно заполнять",
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Да — показатель сам появляется у новых контрагентов."
+     "desc": "«Обязательно заполнять каждый месяц».",
+     "status": "actual"
+    },
+    {
+     "name": "due_day",
+     "ru": "Срок заполнения",
+     "type": "smallint",
+     "null": false,
+     "default": "10",
+     "desc": "Число следующего месяца, от 1 до 28 (indicators_due_day_check).",
+     "status": "actual"
+    },
+    {
+     "name": "start_month",
+     "ru": "Вести с",
+     "type": "text",
+     "null": false,
+     "desc": "Месяц, с которого показатель требуется. Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicators_start_check).",
+     "status": "actual"
+    },
+    {
+     "name": "scope",
+     "ru": "Кому вести",
+     "type": "text",
+     "null": false,
+     "default": "'all'",
+     "desc": "all — «Всем контрагентам», selected — «Выбранным» (indicators_scope_check).",
+     "status": "actual"
+    },
+    {
+     "name": "auto_new",
+     "ru": "Включать новых автоматически",
+     "type": "boolean",
+     "null": false,
+     "default": "true",
+     "desc": "При «Всем контрагентам» — всегда да (indicators_auto_new_check).",
+     "status": "actual"
     },
     {
      "name": "archived",
      "ru": "В архиве",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "sort_order",
      "ru": "Порядок",
      "type": "integer",
      "null": false,
-     "default": "0"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "desc": "Порядок в таблицах и в карточке контрагента.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5887,7 +5959,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5895,7 +5968,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5903,22 +5995,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Настраивает право indSetup; значения вносит kpiEdit; проверяет indCheck."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicators; modules/kpi.js; ТЗ «Модуль Показатели»"
+   ]
   },
   {
    "name": "indicator_targets",
    "ru": "Показатели у контрагентов",
    "group": "work",
-   "status": "planned",
-   "desc": "У каких контрагентов показатель собирается и с какого месяца (или отключён).",
+   "status": "actual",
+   "desc": "«Кому вести» у контрагента: ведётся ли показатель, свой месяц «с <месяц>» и месяц выключения («Не ведётся с <месяц>»). Строка есть только там, где она что-то меняет (правила applyWho, toggleTarget в @buhuchet/domain): нет строки — контрагент для показателя новый.",
+   "rls": "Включена. Политика indicator_targets_isolation: только своя организация.",
+   "issue": "#83 (сделано)",
+   "source": "demoDB.indicators[].cps, from, off; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "indexes": [
+    "indicator_targets_contractor_idx (org_id, contractor_id)"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -5926,8 +6020,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "indicator_id",
@@ -5936,7 +6031,9 @@
      "null": false,
      "pk": true,
      "fk": "indicators.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_targets_indicator_fk (indicator_id, org_id) → indicators (id, org_id); удаляется вместе с показателем.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5945,116 +6042,32 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_targets_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "enabled",
+     "ru": "Ведётся",
+     "type": "boolean",
+     "null": false,
+     "status": "actual"
     },
     {
      "name": "from_month",
      "ru": "С месяца",
-     "type": "date",
-     "null": true
-    },
-    {
-     "name": "off_from",
-     "ru": "Отключён с месяца",
-     "type": "date",
-     "null": true
-    }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicators[].cps, from, off"
-  },
-  {
-   "name": "indicator_values",
-   "ru": "Значения показателей",
-   "group": "work",
-   "status": "planned",
-   "desc": "Значение показателя у контрагента за месяц.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "org_id",
-     "ru": "Организация",
-     "type": "uuid",
-     "null": false,
-     "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
-    },
-    {
-     "name": "indicator_id",
-     "ru": "Показатель",
-     "type": "uuid",
-     "null": false,
-     "fk": "indicators.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "contractor_id",
-     "ru": "Контрагент",
-     "type": "uuid",
-     "null": false,
-     "fk": "contractors.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "month",
-     "ru": "Месяц",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "value",
-     "ru": "Значение",
-     "type": "numeric(20,4)",
-     "null": false,
-     "desc": "Для сумм — в сомах с тыйынами (суммы показателей не участвуют в денежных расчётах)."
-    },
-    {
-     "name": "note",
-     "ru": "Комментарий",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "file_id",
-     "ru": "Файл",
-     "type": "uuid",
      "null": true,
-     "fk": "files.id",
-     "desc": "Подтверждающий документ."
+     "desc": "Свой «с <месяц>»; пусто — с «Вести с» показателя. Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_targets_from_check).",
+     "status": "actual"
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
+     "name": "off_since",
+     "ru": "Не ведётся с",
+     "type": "text",
      "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_targets_off_check).",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -6062,30 +6075,40 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "status": "actual"
     },
     {
-     "name": "version",
-     "ru": "Версия записи",
-     "type": "integer",
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
      "null": false,
-     "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(indicator_id, contractor_id, month)"
-   ],
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicatorValues"
+   ]
   },
   {
-   "name": "indicator_months",
-   "ru": "Месяцы показателей",
+   "name": "indicator_values",
+   "ru": "Значения показателей",
    "group": "work",
-   "status": "planned",
-   "desc": "Статус заполнения показателей контрагента за месяц: Не заполнено → Заполнено → Проверено.",
+   "status": "actual",
+   "desc": "Значение показателя у контрагента за месяц. Строка остаётся, когда значение стирают: у неё история, комментарий и файлы (источник файлов indicator_value).",
+   "rls": "Включена. Политика indicator_values_isolation: только своя организация.",
+   "uniques": [
+    "indicator_values_key (contractor_id, indicator_id, month) — одно значение на контрагента, показатель и месяц",
+    "indicator_values_id_org_unique (id, org_id)"
+   ],
+   "issue": "#83 (сделано); ввод из Excel — #84",
+   "source": "demoDB.indicatorValues; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "logic": [
+    "Пустой месяц не считается нулём: null — «не заполнено», 0 — «внесено, равно нулю»; итоги «За период» — только по заполненным месяцам.",
+    "Подтверждающий документ — в files с источником indicator_value; отдельного поля файла нет."
+   ],
+   "indexes": [
+    "indicator_values_indicator_idx (org_id, indicator_id)",
+    "indicator_values_month_idx (org_id, month)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -6094,7 +6117,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -6102,8 +6126,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -6111,20 +6136,168 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_values_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "indicator_id",
+     "ru": "Показатель",
+     "type": "uuid",
+     "null": false,
+     "fk": "indicators.id",
+     "onDelete": "restrict",
+     "desc": "Составной внешний ключ indicator_values_indicator_fk (indicator_id, org_id) → indicators (id, org_id), ON DELETE RESTRICT: показатель со значениями не удаляется, даже если строка пустая.",
+     "status": "actual"
     },
     {
      "name": "month",
      "ru": "Месяц",
-     "type": "date",
-     "null": false
+     "type": "text",
+     "null": false,
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_values_month_check).",
+     "status": "actual"
+    },
+    {
+     "name": "value",
+     "ru": "Значение",
+     "type": "bigint",
+     "null": true,
+     "desc": "Целые сотые (1 250,50 → 125050); пусто — «не заполнено». Суммы показателей не участвуют в денежных расчётах.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Комментарий",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "До 500 знаков (indicator_values_note_check).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто создал",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто изменил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия записи",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
+    }
+   ]
+  },
+  {
+   "name": "indicator_months",
+   "ru": "Месяцы показателей",
+   "group": "work",
+   "status": "actual",
+   "desc": "Статус заполнения месяца по контрагенту (шкала indicator: Не заполнено → Заполнено → Проверено). Строки нет — «Не заполнено» без даты.",
+   "rls": "Включена. Политика indicator_months_isolation: только своя организация.",
+   "uniques": [
+    "indicator_months_key (contractor_id, month)",
+    "indicator_months_id_org_unique (id, org_id)"
+   ],
+   "issue": "#83 (сделано)",
+   "source": "demoDB.indicatorMonths; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "logic": [
+    "«Заполнено» ставится само, «Проверено» — правом «Проверять показатели». История статусов — status_history по id строки."
+   ],
+   "indexes": [
+    "indicator_months_month_idx (org_id, month)"
+   ],
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер записи",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Уникальный номер записи, создаётся базой; на него ссылается status_history.entity_id.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
+    },
+    {
+     "name": "contractor_id",
+     "ru": "Контрагент",
+     "type": "uuid",
+     "null": false,
+     "fk": "contractors.id",
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_months_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "month",
+     "ru": "Месяц",
+     "type": "text",
+     "null": false,
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_months_month_check).",
+     "status": "actual"
     },
     {
      "name": "status",
      "ru": "Статус",
      "type": "indicator_status",
      "null": false,
-     "default": "'empty'"
+     "default": "'empty'",
+     "desc": "empty, filled, checked (indicator_months_status_check).",
+     "status": "actual"
+    },
+    {
+     "name": "status_at",
+     "ru": "Когда установлен",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Показывается под шкалой.",
+     "status": "actual"
     },
     {
      "name": "created_at",
@@ -6132,7 +6305,7 @@
      "type": "timestamptz",
      "null": false,
      "default": "now()",
-     "desc": "Когда запись создана."
+     "status": "actual"
     },
     {
      "name": "updated_at",
@@ -6140,23 +6313,7 @@
      "type": "timestamptz",
      "null": false,
      "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "status": "actual"
     },
     {
      "name": "version",
@@ -6164,18 +6321,9 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Создаются по расписанию 1-го числа; «Проверено» ставит право indCheck."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, month)"
-   ],
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicatorMonths"
+   ]
   },
   {
    "name": "indicator_imports",
@@ -6212,14 +6360,16 @@
     {
      "name": "from_month",
      "ru": "С месяца",
-     "type": "date",
-     "null": false
+     "type": "text",
+     "null": false,
+     "desc": "Месяц «YYYY-MM», как у indicator_values.month."
     },
     {
      "name": "to_month",
      "ru": "По месяц",
-     "type": "date",
-     "null": false
+     "type": "text",
+     "null": false,
+     "desc": "Месяц «YYYY-MM», как у indicator_values.month."
     },
     {
      "name": "n_new",
@@ -6287,7 +6437,7 @@
     "Скачивание — по временной ссылке на 15 минут.",
     "Удаление — отметка deleted с автором и временем (на файл могут ссылаться «История статусов» и история записи); сам объект стирается из хранилища. Свой файл удаляется без права в течение суток, чужой — с правом «Удалять файлы» (filesDelete).",
     "Незаконченные загрузки старше суток удаляет задача по расписанию files.cleanup-pending; других удалений строк нет.",
-    "Источник: пока только manual — «Загружен вручную» (FILE_SOURCE_KINDS в @buhuchet/domain). Модуль, у записей которого есть блок «Файлы», добавляет свой вид и подключает его в API (FILE_SOURCES); ссылку на запись проверяет модуль записи.",
+    "Источники (FILE_SOURCE_KINDS в @buhuchet/domain): manual — «Загружен вручную», task — задача, indicator_value — значение показателя. Модуль, у записей которого есть блок «Файлы», добавляет свой вид и подключает его в API (FILE_SOURCES); ссылку на запись проверяет модуль записи.",
     "Права: filesView — смотреть, filesUpload — загружать, filesDelete — удалять чужие файлы.",
     "Файлы только через общий разъём S3: Supabase Storage сейчас, MinIO или другой S3 при переезде на VPS."
    ],
@@ -6322,7 +6472,7 @@
      "ru": "Источник",
      "type": "text",
      "null": false,
-     "desc": "Вид записи, к которой прикреплён файл (столбец «Источник» Файлового менеджера); строчные латинские буквы и «_», до 40 знаков (files_source_kind_check). manual — «Загружен вручную».",
+     "desc": "Вид записи, к которой прикреплён файл (столбец «Источник» Файлового менеджера); строчные латинские буквы и «_», до 40 знаков (files_source_kind_check). manual — «Загружен вручную», task — задача (2.23), indicator_value — значение показателя (2.27).",
      "status": "actual"
     },
     {
@@ -6830,7 +6980,7 @@
    "ru": "Справочники платформы (начальная загрузка)",
    "group": "dicts",
    "status": "actual",
-   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь); банки — задача #74 (banks).",
+   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь); банки — #74 (banks), категории задач — #79 (task_categories).",
    "columns": [
     {
      "name": "key",
@@ -6838,7 +6988,7 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles, dictionaries (в нём остались категории задач).",
+     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles. Раздела dictionaries здесь больше нет: все его справочники — в своих таблицах.",
      "status": "actual"
     },
     {
@@ -6885,8 +7035,8 @@
    ],
    "logic": [
     "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
-    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks: у них свои таблицы; db:seed --update удаляет их старые копии.",
-    "Остаются здесь: налоги, категории задач, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
+    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks, cats: у них свои таблицы; db:seed --update удаляет их старые копии.",
+    "Остаются здесь: налоги, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
    ],
    "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишет только команда загрузки pnpm db:seed.",
    "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
@@ -9234,8 +9384,16 @@
    "name": "task_categories",
    "ru": "Категории задач",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Сбор документов, Сверка, Запрос в госорган и др.",
+   "status": "actual",
+   "desc": "Справочник платформы «Категории задач»: категория ручной задачи в форме задачи (Сбор документов, Сверка, Запрос в госорган и др.). Раньше — раздел dictionaries.cats в platform_reference.",
+   "rls": "Включена. Политика task_categories_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0045); правит администратор платформы функциями app.admin_dict_* (справочник «cats» в перечне app.platform_dict_specs, миграция 0045).",
+   "issue": "#79 (сделано); правка в Админке — механизм #92 (часть 1)",
+   "source": "refDB.dictionaries.cats; ТЗ «Справочники платформы» → «Категории задач»; packages/db/src/schema/platform-dicts.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "logic": [
+    "«Используется» считает задачи по внешнему ключу tasks.category_code; значение не удаляется, а отключается (active).",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду; поправленное в Админке (updated_by не пусто) db:seed --update не затирает. История правок Админки — platform_audit_log."
+   ],
    "columns": [
     {
      "name": "code",
@@ -9243,14 +9401,26 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «КАТ-001»."
+     "desc": "Постоянный код, например «КАТ-001».",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "unique": true
+     "unique": true,
+     "desc": "Уникально (task_categories_name_key).",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Пояснение",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Видят все организации.",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -9258,34 +9428,61 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых задачах, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Когда администратор платформы добавил значение; у значений из наполнения — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "этап 2 · #79 (своя таблица); пока раздел platform_reference",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.cats"
+   ]
   },
   {
    "name": "due_change_reasons",
