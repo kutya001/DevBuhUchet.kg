@@ -46,7 +46,7 @@ function scNext(k,st,o){
   if(k==='rep')return st==='К сдаче'?['В работе','Сдан']:st==='В работе'||st==='Требует исправления'?['Сдан']:[];
   if(k==='pay')return st==='Не оплачено'?['Оплачено частично','Оплачено']:st==='Оплачено частично'?['Оплачено']:[];
   if(k==='task'){const c=o&&o.confirm;return st==='К выполнению'?['В работе']:st==='В работе'||st==='На доработке'?[c?'На подтверждении':'Выполнена']:st==='На подтверждении'?['Подтверждена']:[]}
-  if(k==='svc')return st==='Обслуживается'?['Приостановлен','В архиве']:st==='Приостановлен'?['В архиве']:st==='В архиве'?['Обслуживается']:[];
+  if(k==='svc')return st==='Обслуживается'?(o&&o.kind==='oneoff'?['В архиве']:['Приостановлен','В архиве']):st==='Приостановлен'?['В архиве']:st==='В архиве'?['Обслуживается']:[];
   if(k==='proj')return st==='Планируется'?['В работе']:st==='В работе'?['Завершён']:[];
   if(k==='ind')return st==='Заполнено'?['Проверено']:[];return []}
 function scBack(k,st,o){
@@ -66,6 +66,13 @@ function scaleFull(k,st,id){const D=SCALES[k];const o=objOf(k,id);const H=o?stat
 // Пауза в периодах: [{from,to:'последний месяц обслуживания'}, {from:'месяц возобновления',to:null}]. planPause — пауза ещё не началась.
 function planPause(c){const ps=c.periods||[];let l=ps[ps.length-1];if(!l||c.archived)return null;const fut=!l.to&&l.from>ym(TODAY)&&ps.length>1;const prev=fut?ps[ps.length-2]:l;
   return prev&&prev.to&&prev.to>=ym(TODAY)?{prev,fut,from:addMonths(prev.to,1),resume:fut?l.from:null}:null}
+// Действующая пауза: пропущенные месяцы — от начала паузы до прошлого месяца (идущий месяц после отката обслуживается всегда)
+function pauseMissed(c){const ps=c.periods||[];let pv=ps[ps.length-1];if(pv&&!pv.to&&pv.from>ym(TODAY))pv=ps[ps.length-2];const out=[];if(!pv||!pv.to)return out;for(let x=addMonths(pv.to,1);x<ym(TODAY);x=addMonths(x,1))out.push(x);return out}
+// Откат действующей паузы: запланированное возобновление убирается, обслуживание идёт с текущего месяца; отмеченные пропущенные месяцы становятся месяцами обслуживания,
+// неотмеченные остаются перерывом (ТЗ «Откат приостановки»; решение заказчика 30.10.2026, продукт п. В-10). Пауза с первого месяца: периодов нет — обслуживание с текущего месяца
+function unpauseActive(c,months){const ps=c.periods;if(ps.length&&!ps[ps.length-1].to&&ps[ps.length-1].from>ym(TODAY))ps.pop();
+  const segs=[];months.forEach(m=>{const s=segs[segs.length-1];if(s&&addMonths(s.to,1)===m)s.to=m;else segs.push({from:m,to:m})});segs.push({from:ym(TODAY),to:null});
+  segs.forEach(sg=>{const l=ps[ps.length-1];if(l&&l.to&&addMonths(l.to,1)>=sg.from)l.to=sg.to;else if(l&&!l.to){}else ps.push(sg)})}
 function svcPlanNote(c){const pp=planPause(c);const l=lastPeriod(c);const res=!pp&&c.status==='Приостановлен'&&l&&!l.to&&l.from>ym(TODAY)?l.from:null;if(!pp&&!res)return '';
   return `<div class="row" style="gap:8px">${pp?`<span class="pill yellow sm">${ic('pause')}Запланирована приостановка с ${ymG(pp.from)}${pp.resume?`, возобновление с ${ymG(pp.resume)}`:''}</span>${can('rollback')?`<button type="button" class="btn sm" data-unpause="${c.id}">Отменить приостановку</button>`:''}`:`<span class="pill blue sm">${ic('play')}Возобновление запланировано с ${ymG(res)}</span>`}</div>`}
 function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay'?o.payStatus:o.status;const bk=scBack(k,st,o);if(bk&&bk.no)return toast(bk.no,'alert',true);
@@ -77,8 +84,8 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
   if(k==='task')cons=to==='На подтверждении'?'Подтверждение будет снято: задача снова будет ждать подтверждения.':to==='В работе'?'Задача снова станет открытой у исполнителя. Приложенный файл останется.':'Задача вернётся в «К выполнению».';
   if(k==='ind')cons='Месяц снова будет ждать проверки. Внесённые значения не меняются.';
   if(k==='proj')cons=to==='В работе'?'Проект снова станет активным, по нему можно вести работы и принимать оплаты.':'Проект вернётся в план.';
-  if(k==='svc'){if(o.archived)cons='Контрагент вернётся из архива, обслуживание продолжится с текущего месяца.';else{const l=lastPeriod(o);const from=l&&l.to?addMonths(l.to,1):ym(TODAY);const ms=[];for(let x=from;x<=ym(TODAY);x=addMonths(x,1))ms.push(x);
-    cons='Приостановка будет отменена, обслуживание продолжится без перерыва.';if(ms.length)extra=`<div class="lbl" style="margin-top:10px">Пропущенные месяцы — что досоздать</div>${ms.map(x=>`<label class="check-row"><input type="checkbox" class="rb-m" value="${x}" checked><span class="grow">${esc(ymLabel(x))}: начисление за обслуживание и отчёты</span></label>`).join('')}`}}
+  if(k==='svc'){if(o.archived)cons='Контрагент вернётся из архива, обслуживание продолжится с текущего месяца.';else{const ms=pauseMissed(o);
+    cons=ms.length?'Приостановка будет отменена, обслуживание продолжится с текущего месяца. Отмеченные пропущенные месяцы станут месяцами обслуживания: за них досоздадутся начисления за обслуживание и отчёты. Неотмеченные останутся перерывом.':'Приостановка будет отменена, обслуживание продолжится с текущего месяца.';if(ms.length)extra=`<div class="lbl" style="margin-top:10px">Пропущенные месяцы — что досоздать</div>${ms.map(x=>`<label class="check-row"><input type="checkbox" class="rb-m" value="${x}" checked><span class="grow">${esc(ymLabel(x))}: начисление за обслуживание и отчёты</span></label>`).join('')}`}}
   openModal({form:true,render:()=>({title,sub:esc(k==='rep'||k==='pay'?`${T[o.t].short} · ${CPM[o.cp].name} · ${o.phuman}`:o.name||o.title||''),
     body:`<div class="note">${ic('history')}<span>${cons}</span></div>${extra}${fld('Причина отката',`<textarea class="inp" id="rb-why" style="min-height:64px" placeholder="Например: статус поставили по ошибке"></textarea>`,{req:true,full:true,id:'rb-why'})}<div class="hint">Откат делается на один шаг и попадает в историю статусов с пометкой «Откат».</div>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="rb-ok">${ic('history','sm')}Откатить</button>`,
@@ -90,9 +97,8 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
       if(k==='proj'){o.status=to;log('p',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='ind'){o.status=to;log('km',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='svc'){if(o.archived){o.archived=false;const l=lastPeriod(o);if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else o.periods.push({from:ym(TODAY),to:null});applyService(o);log('cp',o.id,`Возвращён из архива ${tag}`,o.id)}
-        else{const ps=o.periods;// a pause from the very first month leaves no period at all
-          if(!ps.length)ps.push({from:ym(TODAY),to:null});let l=ps[ps.length-1];if(l.from>ym(TODAY)&&ps.length>1){ps.pop();l=ps[ps.length-1]}if(l.from>ym(TODAY))l.from=ym(TODAY);l.to=null;applyService(o);
-          const fill=$$('.rb-m',el).filter(x=>x.checked).map(x=>ymLabel(x.value));log('cp',o.id,`Приостановка отменена ${tag}${fill.length?'; досоздано за: '+fill.join(', '):''}`,o.id)}}
+        else{const ms=$$('.rb-m',el).filter(x=>x.checked).map(x=>x.value).sort();unpauseActive(o,ms);applyService(o);const nf=fillServiceMonths(o,ms);
+          log('cp',o.id,`Приостановка отменена ${tag}${ms.length?'; досоздано за: '+ms.map(ymLabel).join(', ')+(nf?` (отчётов: ${nf})`:''):''}`,o.id)}}
       m.close();refreshAll();toast('Откат выполнен','history')}}})})}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.scf [data-back],[data-unpause]');if(!b)return;e.stopPropagation();
   if(b.dataset.unpause)return unpauseCp(CPM[+b.dataset.unpause]);const w=b.closest('.scf');if(!can('rollback'))return toast('Нет права «Откат статусов»','alert',true);rollbackDlg(w.dataset.sk,w.dataset.sid,b.dataset.back)},true);

@@ -83,7 +83,11 @@ const inService=(c,m)=>(c.periods||[]).some(p=>p.from<=m&&(!p.to||m<=p.to));
 const lastPeriod=c=>c.periods[c.periods.length-1];
 // Срок оплаты за месяц — «день оплаты» этого месяца; если он раньше начала обслуживания или дня, когда контрагента завели, — тот же день следующего месяца
 function feeDue(c,m){let d=mkDate(+m.slice(0,4),+m.slice(5,7),c.feeDay);const s=c.start||'',cr=(c._ca||'').slice(0,10);if(d<s||d<=cr){const n=addMonths(m,1);d=mkDate(+n.slice(0,4),+n.slice(5,7),c.feeDay)}return d}
-const cpStatus=c=>c.archived?'В архиве':inService(c,ym(TODAY))?'Обслуживается':'Приостановлен';
+// Разовый контрагент вне архива — «Обслуживается»: его отчёты, назначенные вручную, видны в «Просрочено» и «На неделе» (ТЗ; решение заказчика 30.10.2026, продукт п. В-14)
+const cpStatus=c=>c.archived?'В архиве':c.kind==='oneoff'||inService(c,ym(TODAY))?'Обслуживается':'Приостановлен';
+// Отчёт за период нужен, если контрагент обслуживался хотя бы один месяц периода: квартальный и годовой — тоже (ТЗ; решение заказчика 30.10.2026, продукт п. В-11)
+function pInService(c,t,p){const e=ym(pend(t,p));for(let m=ym(pstart(t,p));m<=e;m=addMonths(m,1))if(inService(c,m))return true;return false}
+const repInService=(c,r)=>c.kind==='oneoff'||pInService(c,tFor(r),r.p);
 const pTxt=m=>m.slice(5)+'.'+m.slice(0,4);
 const periodsText=c=>(c.periods||[]).map(p=>`${pTxt(p.from)}–${p.to?pTxt(p.to):'…'}`).join(', ');
 const fileName=(t,r)=>`квитанция_${t.short.replace(/[\s.\/]+/g,'')}_${r.plabel.replace(/[\s.]+/g,'-')}.pdf`;
