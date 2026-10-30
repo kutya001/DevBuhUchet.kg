@@ -161,6 +161,8 @@ function exportDlg(k){const d=DX[k];const txt=dxText(k);
       $('#ex-dl',el).onclick=()=>toast('В рабочей версии скачается файл Excel. В прототипе нажмите «Скопировать» и вставьте в Excel','download')}})});
 }
 /* Загрузка: вставка или файл → сравнение → «Применить» (со снимком для отката) */
+// Справочник на момент «Сравнить»: если до «Применить» его изменили, загрузка ничего не записывает (решение заказчика 30.10.2026)
+const dxFp=d=>JSON.stringify(d.items());
 function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
   const compare=()=>{const first=st.text.split(/\r?\n/).find(l=>l.trim())||'';const dl=first.includes('\t')?'\t':';';const lines=dxRows(st.text,dl);if(lines.length<2){st.diff={fatal:'Нужна строка заголовков и хотя бы одна строка данных'};return}
     const head=lines[0].map(h=>norm(h.trim()));const idx=d.cols.map(c=>head.indexOf(norm(c[1])));
@@ -202,9 +204,9 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       if(q('#id-ta'))q('#id-ta').oninput=e=>st.text=e.target.value;
       if(q('#id-cur'))q('#id-cur').onclick=()=>{st.text=dxText(k);st.diff=null;m.draw()};
       if(q('#id-f'))q('#id-f').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{st.text=String(rd.result).replace(/^﻿/,'');st.diff=null;m.draw();toast('Файл прочитан: нажмите «Сравнить»')};rd.readAsText(f,'utf-8')};
-      if(q('#id-cmp'))q('#id-cmp').onclick=()=>{if(!st.text.trim()){setErr(el,'id-ta','Вставьте данные или выберите файл');return}compare();m.draw()};
+      if(q('#id-cmp'))q('#id-cmp').onclick=()=>{if(!st.text.trim()){setErr(el,'id-ta','Вставьте данные или выберите файл');return}compare();st.fp=dxFp(d);m.draw()};
       if(q('#id-back'))q('#id-back').onclick=()=>{st.diff=null;m.draw()};
-      if(q('#id-ok'))q('#id-ok').onclick=()=>{const df=st.diff;const snap={};[...df.chg,...df.off].forEach(r=>snap[r.code]=JSON.parse(JSON.stringify(r.x)));const all=d.snapAll?d.snapAll():null;
+      if(q('#id-ok'))q('#id-ok').onclick=()=>{if(dxFp(d)!==st.fp){st.diff={fatal:'Справочник изменился после сравнения — ничего не записано. Нажмите «Сравнить» ещё раз'};m.draw();return}const df=st.diff;const snap={};[...df.chg,...df.off].forEach(r=>snap[r.code]=JSON.parse(JSON.stringify(r.x)));const all=d.snapAll?d.snapAll():null;
         [...df.chg,...df.off].forEach(r=>{const x=r.x;if(d.upd){d.upd(x,r.v);return}
           if(k!=='types'&&r.v.name&&r.v.name!==x.name)renameDictValue(k,x.name,r.v.name);
           if(k==='types'&&r.v.act&&r.v.act!==x.act)REPORTS.filter(rp=>rp.t===x.id&&!rp.act).forEach(rp=>rp.act=x.act);
