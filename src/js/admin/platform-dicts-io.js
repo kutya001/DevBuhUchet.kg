@@ -168,7 +168,11 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       const ch=[];d.cols.forEach((c,ci)=>{if(idx[ci]<0||ci===0)return;const nx=Object.assign({},x,v);if(c[0]==='after'||c[0]==='ym'){if((v.per||x.per)==='Y'?c[0]==='after':c[0]==='ym')return}const a=String(c[2](x)??''),b=String(c[2](nx)??'');if(a!==b)ch.push([c[1],a,b])});
       if(!ch.length){out.same++;return}
       const off=x.active&&v.active===false;(off?out.off:out.chg).push({code,x,v,ch})});
-    if(k==='types'){const ids=new Set([...out.chg,...out.off].filter(r=>['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==r.x[f])).map(r=>r.code));out.dues=REPORTS.filter(r=>ids.has(r.t)&&OPEN.has(r.status)).length;
+    // Сколько сроков пересчитается после загрузки — заранее, так же как при сохранении (продукт пп. Д-17, Д-18)
+    const DF={types:['per','day','after','ym','from','shift'],benefits:['dueOverride','active']}[k],pk=(v,fs)=>Object.fromEntries(fs.filter(f=>v[f]!=null).map(f=>[f,v[f]]));
+    if(DF)out.dues=duePreview(()=>tmpAll([...out.chg,...out.off].map(r=>tmpSet(r.x,pk(r.v,DF)))));
+    if(k==='calendar')out.dues=duePreview(()=>{const u=calTmp({});[...out.chg,...out.off].forEach(r=>d.upd(r.x,r.v));out.add.forEach(r=>d.add(r.v));return u},true);
+    if(k==='types'){
       const ac=new Set([...out.chg,...out.off].filter(r=>r.v.act&&r.v.act!==r.x.act).map(r=>r.code));out.actT=ac.size;out.actR=REPORTS.filter(r=>ac.has(r.t)).length}
     st.diff=out};
   openModal({size:'wide',live:true,render:m=>{const df=st.diff;const ok=df&&!df.fatal;const n=ok?df.add.length+df.chg.length+df.off.length:0;
@@ -177,7 +181,7 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       <div class="row"><label class="btn sm" style="cursor:pointer">${ic('upload','sm')}Файл Excel/CSV<input type="file" id="id-f" accept=".csv,.tsv,.txt" hidden></label><button class="linkbtn" id="id-cur">Подставить текущую выгрузку</button></div>`
       :`<div class="plates">${plate({id:'a',icon:'plus',color:'green',label:'Будет добавлено',value:df.add.length})}${plate({id:'c',icon:'edit',color:'blue',label:'Будет изменено',value:df.chg.length})}${plate({id:'o',icon:'ban',color:'orange',label:'Будет отключено',value:df.off.length})}${plate({id:'e',icon:'alert',color:df.err.length?'red':'green',label:'Строк с ошибками',value:df.err.length,sub:df.err.length?'не загрузятся':'ошибок нет'})}</div>
       ${df.actR?`<div class="note">${ic('info')}<span>«Что нужно сделать» меняется у ${df.actT} ${plural(df.actT,'вида','видов','видов')}: по ${df.actT>1?'ним':'нему'} уже создано ${df.actR} ${plural(df.actR,'отчёт','отчёта','отчётов')}, они не изменятся. Новое значение действует для новых периодов.</span></div>`:''}
-      ${df.dues?`<div class="note warn">${ic('alert')}<span>Изменятся сроки у ${spreadTxt(df.dues)}. Сданные отчёты не меняются.</span></div>`:''}
+      ${df.dues!=null?`<div class="note warn" id="id-due">${ic('alert')}<span>${dueNote(df.dues)}</span></div>`:''}
       <div class="tbl-wrap" style="max-height:340px;overflow:auto"><table class="mini"><thead><tr><th style="width:130px">Что будет</th><th style="width:110px">Код</th><th>Подробно</th></tr></thead><tbody>
       ${df.err.map(r=>`<tr><td><span class="pill sm red">${ic('alert')}ошибка</span></td><td class="mono">${esc(r.code)}</td><td style="white-space:normal">Строка ${r.n}: ${esc(r.e.join('; '))}</td></tr>`).join('')}
       ${df.add.map(r=>row('green','добавится',r,esc(r.v.name||''))).join('')}
@@ -193,24 +197,22 @@ function importDictDlg(k){const d=DX[k];const st={text:'',diff:null};
       if(q('#id-cmp'))q('#id-cmp').onclick=()=>{if(!st.text.trim()){setErr(el,'id-ta','Вставьте данные или выберите файл');return}compare();m.draw()};
       if(q('#id-back'))q('#id-back').onclick=()=>{st.diff=null;m.draw()};
       if(q('#id-ok'))q('#id-ok').onclick=()=>{const df=st.diff;const snap={};[...df.chg,...df.off].forEach(r=>snap[r.code]=JSON.parse(JSON.stringify(r.x)));const all=d.snapAll?d.snapAll():null;
-        [...df.chg,...df.off].forEach(r=>{const x=r.x;if(d.upd){d.upd(x,r.v);return}const rule=k==='types'&&['per','day','after','ym'].some(f=>r.v[f]!=null&&r.v[f]!==x[f]);
+        [...df.chg,...df.off].forEach(r=>{const x=r.x;if(d.upd){d.upd(x,r.v);return}
           if(k!=='types'&&r.v.name&&r.v.name!==x.name)renameDictValue(k,x.name,r.v.name);
           if(k==='types'&&r.v.act&&r.v.act!==x.act)REPORTS.filter(rp=>rp.t===x.id&&!rp.act).forEach(rp=>rp.act=x.act);
-          Object.keys(r.v).forEach(f=>{if(r.v[f]==null)return;if(DX_NEST[f]){DX_NEST[f](x,r.v[f]);return}x[f]=f==='gked'?gkRuleKeep(x.gked,r.v[f]):r.v[f]});if(k==='types'){typeNorm(x);x.rate=(x.rates||[])[0]||'';const pays=x.pays;setAct(x,x.act||'both');if(x.act!=='sub'&&pays&&pays.length)x.pays=pays}touch(x);
-          if(rule)REPORTS.filter(rp=>rp.t===x.id&&OPEN.has(rp.status)).forEach(rp=>{const dd=dueOf(tFor(rp),rp.p);rp.dueBase=dd.base;rp.due=dd.due})});
+          Object.keys(r.v).forEach(f=>{if(r.v[f]==null)return;if(DX_NEST[f]){DX_NEST[f](x,r.v[f]);return}x[f]=f==='gked'?gkRuleKeep(x.gked,r.v[f]):r.v[f]});if(k==='types'){typeNorm(x);x.rate=(x.rates||[])[0]||'';const pays=x.pays;setAct(x,x.act||'both');if(x.act!=='sub'&&pays&&pays.length)x.pays=pays}touch(x)});
         df.add.forEach(r=>{let o;if(d.add){d.add(r.v);return}if(k==='types'){o=Object.assign({id:r.code,name:'',short:'',code:'—',organ:'ГНС',per:'M',day:20,after:1,ym:4,sum:true,kind:'cross',regimes:[],who:'all',rates:[],shift:true,active:true},r.v);o.after=o.after??1;o.ym=o.ym??4;typeNorm(o);o.rate=(o.rates||[])[0]||'';born(o);RT.push(o);T[o.id]=o}else{o=born(Object.assign({active:true},r.v));Object.keys(DX_NEST).forEach(f=>{if(f in o){DX_NEST[f](o,o[f]);delete o[f]}});d.items().push(o);if(k==='phones')PH[o.cc]=o}});
         const L={id:'L'+(PD_LOADS.length+1),at:TODAY+' '+bishkekNow().hm,by:S.me,dict:k,rows:df.rows,add:df.add.length,chg:df.chg.length,off:df.off.length,err:df.err.length,snap,all,added:df.add.map(r=>r.code),rolled:false};PD_LOADS.push(L);
-        if(d.add)recalcDues();
-        if(k==='bases')typesFromBases();if(k==='types')basesFromTypes();pdLog(`${d.title}: загрузка из Excel — добавлено ${L.add}, изменено ${L.chg}, отключено ${L.off}`);m.close();refreshAll();toast(`Загружено: добавлено ${L.add}, изменено ${L.chg}, отключено ${L.off}`,'upload')}}}}});
+        const nd=df.dues!=null?dueApply(k==='calendar',`загрузка «${d.title}» из Excel`):0;
+        if(k==='bases')typesFromBases();if(k==='types')basesFromTypes();pdLog(`${d.title}: загрузка из Excel — добавлено ${L.add}, изменено ${L.chg}, отключено ${L.off}`);m.close();refreshAll();toast(`Загружено: добавлено ${L.add}, изменено ${L.chg}, отключено ${L.off}${dueDone(nd)}`,'upload')}}}}});
 }
 function renameDictValue(k,o,n){if(k==='benefits')CPS.forEach(c=>{if(c.ben)c.ben=c.ben.map(x=>x===o?n:x)});if(k==='regimes')CPS.forEach(c=>{if(c.regime2===o)c.regime2=n});if(k==='cats')TASKS.forEach(t=>{if(t.cat===o)t.cat=n});if(k==='regimes'){CPS.forEach(c=>{if(c.regime===o)c.regime=n});RT.forEach(t=>{t.regimes=t.regimes.map(r=>r===o?n:r)})}if(k==='forms')CPS.forEach(c=>{if(c.form===o)c.form=n});if(k==='organs')RT.forEach(t=>{if(t.organ===o)t.organ=n})}
 function rollbackLoad(L){const d=DX[L.dict];
   confirmDlg({title:'Откатить последнюю загрузку?',text:`${esc(d.title)}, ${fmtD(L.at.slice(0,10))} ${L.at.slice(11)}: добавленные значения (${L.add}) уберутся, изменённые и отключённые (${L.chg+L.off}) вернутся к прежнему виду.`,ok:'Откатить',danger:true,run:()=>{
     if(L.all&&d.restore){d.restore(L.all);L.rolled=true;pdLog(`${d.title}: загрузка от ${fmtD(L.at.slice(0,10))} откачена`,L.dict);refreshAll();toast('Загрузка откачена');return}
-    Object.entries(L.snap).forEach(([code,old])=>{const x=d.items().find(i=>i[d.key]===code);if(!x)return;if(L.dict!=='types'&&old.name!==x.name)renameDictValue(L.dict,x.name,old.name);Object.assign(x,old);touch(x);
-      if(L.dict==='types')REPORTS.filter(rp=>rp.t===x.id&&OPEN.has(rp.status)).forEach(rp=>{const dd=dueOf(tFor(rp),rp.p);rp.dueBase=dd.base;rp.due=dd.due})});
+    Object.entries(L.snap).forEach(([code,old])=>{const x=d.items().find(i=>i[d.key]===code);if(!x)return;if(L.dict!=='types'&&old.name!==x.name)renameDictValue(L.dict,x.name,old.name);Object.assign(x,old);touch(x)});
     L.added.forEach(code=>{const arr=d.items();const i=arr.findIndex(x=>x[d.key]===code);if(i<0)return;const used=L.dict==='types'?CPS.some(c=>c.assign.some(a=>a.t===code)):false;if(used){arr[i].active=false;return}arr.splice(i,1);if(L.dict==='types')delete T[code]});
-    L.rolled=true;pdLog(`${d.title}: загрузка от ${fmtD(L.at.slice(0,10))} откачена`);refreshAll();toast('Загрузка откачена')}})}
+    const nd=['types','benefits'].includes(L.dict)?dueApply(false,`откат загрузки «${d.title}»`):0;L.rolled=true;pdLog(`${d.title}: загрузка от ${fmtD(L.at.slice(0,10))} откачена`);refreshAll();toast('Загрузка откачена'+dueDone(nd))}})}
 function renderLoads(body,fresh){body.innerHTML=`<div class="note">${ic('info')}<span>Каждая загрузка справочника из Excel — отдельная запись. Последнюю загрузку можно откатить: справочник вернётся к виду до неё.</span></div><div id="pg"></div>`;
   const last=[...PD_LOADS].reverse().find(l=>!l.rolled);
   grid($('#pg',body),{id:'adm-loads',audit:false,cols:[{key:'at',label:'Когда',type:'date',w:150,val:l=>l.at.slice(0,10),html:l=>`${fmtD(l.at.slice(0,10))} ${l.at.slice(11)}`},{key:'dict',label:'Справочник',type:'enum',w:220,val:l=>DX[l.dict].title},{key:'by',label:'Кто',type:'enum',w:170,val:l=>whoName(l.by)},{key:'rows',label:'Строк',type:'int',w:80,num:true,val:l=>l.rows},{key:'add',label:'Добавлено',type:'int',w:100,num:true,val:l=>l.add},{key:'chg',label:'Изменено',type:'int',w:100,num:true,val:l=>l.chg},{key:'off',label:'Отключено',type:'int',w:100,num:true,val:l=>l.off},{key:'err',label:'Ошибок',type:'int',w:90,num:true,val:l=>l.err},

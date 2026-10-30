@@ -107,8 +107,8 @@ function stepTo(k,id,to){
     if(k==='pay'){if(!can('money'))return toast('Нет права на учёт денег','alert',true);return payDlg(r)}
     if(!can('changeStatus'))return toast('Нет права менять статус','alert',true);
     if(to==='В работе')return setStatus(r,to);if(to==='Сдан'){const w=subPayWhy(r);if(w)return toast(w,'lock',true);return submitDlg([r])}return}
-  if(k==='task'){const t=TASKS.find(x=>x.id===id);if(!t)return;const mine=t.exec===S.me,boss=t.by===S.me||me().role==='owner';
-    if(to==='В работе'){if(!mine&&!boss)return toast('Менять статус может исполнитель или постановщик','alert',true);t.status='В работе';log('t',t.id,'Статус: К выполнению → В работе');refreshAll();return toast('Задача в работе')}
+  if(k==='task'){const t=TASKS.find(x=>x.id===id);if(!t)return;const mine=t.exec===S.me,boss=taskBoss(t);
+    if(to==='В работе'){if(!mine&&!boss)return toast(taskBossWhy(t)||'Менять статус может исполнитель или постановщик','alert',true);t.status='В работе';log('t',t.id,'Статус: К выполнению → В работе');refreshAll();return toast('Задача в работе')}
     if(to==='Выполнена'||to==='На подтверждении'){if(!mine)return toast('Отметить может только исполнитель','alert',true);return taskDoneDlg(t)}
     if(to==='Подтверждена'){const why=taskConfWhy(t);if(why)return toast(why,'alert',true);return taskConfDlg(t)}return}
   if(k==='svc'){const c=CPM[+id];if(!c)return;const lab=to==='Приостановлен'?'Приостановить обслуживание':to==='В архиве'?'В архив':c.archived?'Вернуть из архива':'Возобновить обслуживание';
@@ -243,7 +243,7 @@ function fileDlg(r){openModal({form:true,render:()=>({title:'Прикрепит�
   foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="fl-ok">Прикрепить</button>',mount(el,m){$('#fl-ok',el).onclick=()=>{const f=[...$('#fl-f',el).files].map(x=>x.name);if(!setErr(el,'fl-f',f.length?'':'Выберите хотя бы один файл'))return;f.forEach(n=>FUP.add(n));r.files.push(...f);log('r',r.id,'Прикреплены файлы: '+f.join(', '),r.cp);m.close();refreshAll();toast('Файлы прикреплены','clip')}}})})}
 function createRevision(r){
   confirmDlg({title:`Создать уточнённый отчёт ${r.ver+1}?`,text:`Предыдущая версия ${esc(T[r.t].short)} за ${esc(r.phuman)} останется в истории без изменений. Новая версия получит свою сумму, срок, файлы и статусы и пройдёт путь до «Сдан»${repConfOn()?' с подтверждением старшего бухгалтера':''}. Ответственному придёт регулярная задача.`,ok:'Создать',run:()=>{
-    const n=Object.assign({},r,{id:RID++,ver:r.ver+1,status:'К сдаче',subDate:null,subAt:null,subBy:null,confAt:null,confBy:null,confNote:'',fixWhy:'',fixBy:null,fixAt:null,sum:null,files:[],superseded:false,due:maxIso(r.due,addDays(TODAY,10)),dueBase:maxIso(r.due,addDays(TODAY,10))});
+    const n=Object.assign({},r,{id:RID++,ver:r.ver+1,status:'К сдаче',subDate:null,subAt:null,subBy:null,confAt:null,confBy:null,confNote:'',fixWhy:'',fixBy:null,fixAt:null,sum:null,files:[],superseded:false,dueBase:maxIso(r.due,addDays(TODAY,10))});n.due=shiftWork(n.dueBase);// срок на нерабочий день — сразу на рабочий (продукт п. Д-18)
     born(n);r.superseded=true;REPORTS.push(n);log('r',r.id,`Создан уточнённый отчёт, версия ${n.ver}`,r.cp);log('r',n.id,`Уточнённый отчёт создан на основе версии ${r.ver||'первичной'}`,r.cp);refreshAll();openReport(n);toast(`Создан уточнённый отчёт ${n.ver}`,'repeat')}});
 }
 // page — ссылка на страницу контрагента с кодом доступа

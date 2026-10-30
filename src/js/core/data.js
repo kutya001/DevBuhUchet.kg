@@ -240,6 +240,14 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     // Приостановка, архив и разовые контрагенты как в ТЗ (решение заказчика 30.10.2026): разделы 7.6 и 7.7 статьи «Контрагенты» у данных, сохранённых раньше, если их не меняли
     {const a=(db.ref.kbArticles||[]).find(x=>x.id==='a7'),b=((r.kbArticles||[]).find(x=>x.id==='a7')||{}).html||'',cut=(h,s,e)=>{const i=h.indexOf(s),j=h.indexOf(e,i);return i<0||j<0?null:h.slice(i,j)};
       const o='<li>С этого месяца не создаются начисления за обслуживание и новые отчёты, открытые регулярные задачи отменяются.</li>';if(a&&a.html&&a.html.includes(o)){['<h4>7.6.','<h4>7.7.'].forEach((s,k)=>{const e=k?'</ul>':'<h4>7.7.',x=cut(a.html,s,e),y=cut(b,s,e);if(x&&y)a.html=a.html.replace(x,y)})}}}
+  // Сроки при правке каталога и права на задачи (решения заказчика 30.10.2026, продукт пп. Д-17, Д-18, Б-3, Б-4): подсказки «Срок сдачи» и «Исполнитель», строки статей «Справочники платформы», «Отчеты для сдачи» и «Задачи» у данных, сохранённых раньше, если их не меняли
+  if(!db.meta.v62){db.meta.v62=1;const fs=((db.ref.kbUi||{}).fields)||{},rf=((r.kbUi||{}).fields)||{};[['ah-d','До какого числа сдать.'],['tk-exec','Кому поручить; он получит сообщение в Telegram сразу.']].forEach(([k,o])=>{if(fs[k]&&rf[k]&&fs[k].x===o)fs[k].x=rf[k].x});
+    const sw=(id,o,st,en)=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),h=(((r.kbArticles||[]).find(x=>x.id===id))||{}).html||'',i=h.indexOf(st),j=h.indexOf(en,i);if(a&&a.html&&a.html.includes(o)&&i>=0&&j>=0)a.html=a.html.replace(o,h.slice(i,j+en.length))};
+    sw('a19_3','<li>Если изменить правило срока, система заранее покажет, сколько несданных отчётов в скольких организациях изменится, и пересчитает только несданные.</li>','<li>Если правка влияет на сроки','переносится на рабочий день сразу при создании.</li>');
+    sw('a8','<li><b>Разовый отчёт.</b> «+ Добавить» → «Разовый отчёт» — для пропущенного или нерегулярного отчёта, в том числе за прошлый период.</li>','<li><b>Разовый отчёт.</b>','срок такого отчёта не изменится.</li>');
+    sw('a8','статусами. Она проходит тот же путь до «Сдан» и подтверждения сдачи.</li>','статусами. Она проходит','его не меняет.</li>');
+    sw('a13','контрагент (необязательно), исполнитель, вид срока и дата.</li>','контрагент (необязательно), исполнитель,','система не меняет.</li>');
+    sw('a13','Изменить задачу тоже может только постановщик и владелец.</li>','Изменить задачу тоже','видны, но недоступны.</li>')}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;

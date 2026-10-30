@@ -99,7 +99,7 @@ function openCp(c,tab){
         if(q('#cp-feewa'))q('#cp-feewa').onclick=()=>waDlg({cp:c,fee:true});
         if(q('#cp-file'))q('#cp-file').onchange=e=>{const f=[...e.target.files].map(x=>x.name);f.forEach(n=>FUP.add(n));c.files.push(...f);log('cp',c.id,'Прикреплены файлы: '+f.join(', '),c.id);mm.draw();toast('Файлы прикреплены','clip')};
         $$('[data-rep]',el).forEach(x=>x.onclick=()=>openReport(REPORTS.find(r=>r.id===+x.dataset.rep)));
-        if($('#cc-task',el))$('#cc-task',el).onclick=()=>taskDlg(null,{cp:c.id,exec:c.resp});
+        if($('#cc-task',el))$('#cc-task',el).onclick=()=>taskDlg(null,{cp:c.id});
         $$('[data-task]',el).forEach(x=>x.onclick=()=>openTask(allTasks().find(t=>t.id===x.dataset.task)));
         if(q('#cp-ugns'))q('#cp-ugns').onchange=e=>{const old=c.ugns;c.ugns=e.target.value||null;log('cp',c.id,'УГНС: '+(ugnsLabel(c.ugns)||'не указан'),c.id);const u=ugApply(c,old);refreshAll();
           toast(u.add.length||u.drop.length?`${ugMsg(u.add,u.drop)}${u.n?`. Сроки по статусу изменены у ${u.n} ${plural(u.n,'отчёта','отчётов','отчётов')}`:''}`:'Сохранено')};
