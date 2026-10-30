@@ -265,6 +265,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     sw('a19_1','<li>«Сбросить пароль» — задать временный пароль (например, владельцу организации, который не привязал Telegram).</li>','<li>«Сбросить пароль» — задать временный','ram привязан, бот сообщит о сбросе.</li>');
     sw('a19_3','«ОК, применить». Удаление через загрузку не делается, только отключение.</li>','«ОК, применить». Удаление через загрузку','ажмите «Сравнить» ещё раз».</li>');
     sw('a7','контрагент открывал страницу. Включение','контрагент открывал страницу','новым открытием не считается. Включение')}
+  if(!db.meta.v64){db.meta.v64=1;
+    const sw=(id,o,st,en)=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),h=(((r.kbArticles||[]).find(x=>x.id===id))||{}).html||'',i=h.indexOf(st),j=h.indexOf(en,i);if(a&&a.html&&a.html.includes(o)&&i>=0&&j>=0)a.html=a.html.replace(o,h.slice(i,j+en.length))};
+    sw('a8','<li>Прежние версии не меняются. В списке видна последняя версия, остальные — в карточке.</li>','<li>Прежние версии не меняются: в их меню','остальные — в карточке.</li>')}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;

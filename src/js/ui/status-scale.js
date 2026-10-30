@@ -13,7 +13,8 @@ const SC_NAME={rep:'Сдача',pay:'Оплата',task:'Задача',svc:'Об
 // Отметка на шаге «Сдан»: «Ждёт подтверждения» или «Подтверждено»; при выключенной «Сдача отчётов требует подтверждения» отметки нет и «Сдан» окончательный
 const REP_MK={wait:'Ждёт подтверждения',ok:'Подтверждено'};
 const repConfOn=()=>ORG.repConfirm!==false;
-const repWait=r=>!!r&&r.status==='Сдан'&&repConfOn()&&!r.confAt&&!tR(r).payOnly;
+const REP_OLD='Прежняя версия отчёта не меняется: к ней можно только прикрепить файл';
+const repWait=r=>!!r&&r.status==='Сдан'&&repConfOn()&&!r.confAt&&!tR(r).payOnly&&!r.superseded;
 const repFin=r=>!!r&&r.status==='Сдан'&&!repWait(r);
 const repMark=r=>!r||r.status!=='Сдан'||tR(r).payOnly||!repConfOn()?'':r.confAt?REP_MK.ok:REP_MK.wait;
 const repWaitDays=r=>Math.max(0,diffDays(TODAY,(r.subAt||r.subDate||TODAY).slice(0,10)));
@@ -103,7 +104,7 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.scf [data-back],[data-unpause]');if(!b)return;e.stopPropagation();
   if(b.dataset.unpause)return unpauseCp(CPM[+b.dataset.unpause]);const w=b.closest('.scf');if(!can('rollback'))return toast('Нет права «Откат статусов»','alert',true);rollbackDlg(w.dataset.sk,w.dataset.sid,b.dataset.back)},true);
 function stepTo(k,id,to){
-  if(k==='rep'||k==='pay'){const r=REPORTS.find(x=>x.id===+id);if(!r)return;
+  if(k==='rep'||k==='pay'){const r=REPORTS.find(x=>x.id===+id);if(!r)return;if(r.superseded)return toast(REP_OLD,'lock',true);
     if(k==='pay'){if(!can('money'))return toast('Нет права на учёт денег','alert',true);return payDlg(r)}
     if(!can('changeStatus'))return toast('Нет права менять статус','alert',true);
     if(to==='В работе')return setStatus(r,to);if(to==='Сдан'){const w=subPayWhy(r);if(w)return toast(w,'lock',true);return submitDlg([r])}return}
