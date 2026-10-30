@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 32,
+  "schemaVersion": 33,
   "updated": "2026-10-30",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main d861bdd",
-    "what": "Фактические миграции 0000–0056: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты и изменения сроков, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main 81320d5",
+    "what": "Фактические миграции 0000–0061: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты и изменения сроков, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -1501,7 +1501,7 @@
    "ru": "Счётчики попыток",
    "group": "core",
    "status": "actual",
-   "desc": "Журнал действий с ограничением частоты: строка — одно действие. Выгрузка «В Excel»: одна одновременно и не больше 20 в час на пользователя. Ввод показателей из Excel (#84, вид kpi_import): один разбор одновременно и не больше 60 в час. Страница контрагента (#98) добавит сюда счёт кодов доступа. Неверные пароли считаются в login_attempts, коды «Забыли пароль?» — в password_reset_codes.",
+   "desc": "Журнал действий с ограничением частоты: строка — одно действие. Выгрузка «В Excel»: одна одновременно и не больше 20 в час на пользователя. Ввод показателей из Excel (#84, вид kpi_import): один разбор одновременно и не больше 60 в час. Страница контрагента (#98): виды cp_page_ip (неверный код с адреса, адрес — хешем) и cp_page_ip_lock (адрес закрыт до busy_until) — пишет app.contractor_page_try_code. Неверные пароли считаются в login_attempts, коды «Забыли пароль?» — в password_reset_codes.",
    "columns": [
     {
      "name": "id",
@@ -1548,9 +1548,9 @@
     }
    ],
    "rls": "Включена, политик нет, и у роли приложения отозваны права на таблицу и её последовательность: читать и менять её могут только функции app.rate_limit_* (SECURITY DEFINER). Организации у строки нет — служебная таблица, как login_attempts.",
-   "issue": "#56 (сделано: выгрузки «В Excel»), #84 (сделано: ввод показателей из Excel), #98 (коды страницы контрагента)",
+   "issue": "#56 (сделано: выгрузки «В Excel»), #84 (сделано: ввод показателей из Excel), #98 (сделано: коды страницы контрагента)",
    "source": "docs/decisions.md п. 38 продукта; План: «Этапы → Этап 2» («Защита тяжёлых запросов»), «Страница контрагента по ссылке»",
-   "migration": "0026_rate_limits",
+   "migration": "0026_rate_limits, 0059_contractor_page_guards",
    "logic": [
     "app.rate_limit_take занимает действие: не больше max за окно, а с арендой — ещё и одно одновременно; ответ ok (с номером строки), busy или limited. Запросы одного субъекта проверяются по очереди (pg_advisory_xact_lock).",
     "app.rate_limit_release отпускает занятое действие по номеру, сверяя вид и субъект: чужое не отпустить.",
@@ -2096,6 +2096,14 @@
      "status": "actual"
     },
     {
+     "name": "cause",
+     "ru": "Что сменило статус",
+     "type": "text",
+     "null": true,
+     "desc": "Метка системной смены статуса (STATUS_CAUSES): service — «Не требуется» от приостановки или архива контрагента; пусто — человек или другое правило. Ограничение status_history_cause_check.",
+     "status": "actual"
+    },
+    {
      "name": "file_id",
      "ru": "Файл",
      "type": "uuid",
@@ -2132,7 +2140,7 @@
    ],
    "issue": "#17 (сделано)",
    "source": "ui/status-scale.js; ТЗ «Шкала статусов»; docs/decisions.md п. 33 продукта",
-   "migration": "0020_status_history, 0021_status_history_append_only, 0036_files",
+   "migration": "0020_status_history, 0021_status_history_append_only, 0036_files, 0060_contractor_service",
    "logic": [
     "Коды статусов по шкалам проверяет база (status_history_status_check), список — STATUS_SCALE_DEFS в packages/domain/src/common/status.ts; названия — в словаре (status.<шкала>.<код>), цвет и значок — по справочнику «Статусы». Новый код на шкале — новая миграция ограничения.",
     "Шкала report: todo, in_progress, submitted, needs_fix, not_required и отметки подтверждения сдачи waiting, confirmed — на шаге «Сдан», шага «Принят» нет.",
@@ -2840,9 +2848,9 @@
     "contractors_org_inn_key (org_id, inn) — ИНН уникален в организации среди всех контрагентов, включая архив",
     "contractors_id_org_unique (id, org_id) — цель составных ссылок на контрагента своей организации"
    ],
-   "issue": "#61 (сделано); тариф Соцфонда — #64 (сделано); экраны — #65 (форма), #66 (список), #67 (карточка)",
+   "issue": "#61 (сделано); тариф Соцфонда — #64 (сделано); приостановка и архив — #68 (сделано); экраны — #65 (форма), #66 (список), #67 (карточка)",
    "source": "demoDB.contractors; ТЗ «Модуль Контрагенты» → «Регистрация контрагентов», «Сверка с ГКЭД», «Ответственный», «Плата за обслуживание»; прототип modules/contractors.js (addCpDlg, editCpDlg, transferDlg, cpActions), core/gked.js (gkCheck); packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
-   "migration": "0039_contractors, 0040_contractors_guards, 0054_contractors_socfund",
+   "migration": "0039_contractors, 0040_contractors_guards, 0054_contractors_socfund, 0061_contractor_service_init",
    "logic": [
     "Проверки сохранения одни для создания и «Изменить» (checkContractor): ИНН, телефон по «Кодам телефонов», поля, только действующие значения справочников, ГКЭД только подклассы, дубль ИНН (называет найденного, в том числе в архиве), сверка с ГКЭД. Создание — одна транзакция.",
     "Сверка с ГКЭД — порт прототипа gkCheck (packages/domain/src/contractors/gked.ts): запрет режима — 400 gked_blocked; вопрос о праве на режим — 400 gked_confirm_required, пока форма не подтвердит; подтверждение хранится в gked_confirmation и сбрасывается при смене ГКЭД, режима, формы.",
@@ -2850,7 +2858,7 @@
     "Ставку, «День оплаты» и «Первый неполный месяц» видит и задаёт только право на плату при включённой функции; без права — null в ответе и 403 на запись.",
     "Удаление — только не архивного и без отчётов, денег и проектов (contractorDeleteRefusal, 409 contractor_in_use). Таблицы отчётов, денег и проектов ссылаются на контрагента с ON DELETE RESTRICT, чтобы запрет держала и база; история и файлы удалённого остаются (ON DELETE SET NULL).",
     "Набор отчётов собирается из режима, второго режима, формы собственности, льгот, оснований и ГКЭД («Выбор налогов», задача 2.07).",
-    "Архив и приостановка — задача 2.12; создание «Из свидетельства и выписки» (PDF на сервере, распознавание rus+kir) — 2.17."
+    "Приостановка, возобновление, архив, разовые и перевод в постоянные — задача 2.12 (#68): статус service_status и периоды contractor_service_periods (первый период ставит триггер contractors_initial_service_period). Создание «Из свидетельства и выписки» (PDF на сервере, распознавание rus+kir) — 2.17."
    ],
    "indexes": [
     "contractors_responsible_idx (org_id, responsible_employee_id) — «Мои контрагенты» и область «Свои»",
@@ -3330,8 +3338,24 @@
    "name": "contractor_service_periods",
    "ru": "Периоды обслуживания",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Когда контрагент обслуживался: начало и конец каждого отрезка. Приостановка закрывает период, возобновление открывает новый.",
+   "status": "actual",
+   "desc": "Периоды обслуживания контрагента: с месяца по месяц включительно (первые числа), у последнего конец пуст, пока обслуживание не приостановлено; пауза — промежуток между периодами. Периоды не пересекаются (правила @buhuchet/domain, contractors/service.ts); пишет setServicePeriods целым набором вместе со статусом и версией контрагента. У разового контрагента периодов может не быть.",
+   "rls": "Включена. Политика contractor_service_periods_isolation: только своя организация.",
+   "uniques": [
+    "contractor_service_periods_from_key (contractor_id, from_month)",
+    "contractor_service_periods_open_key (contractor_id) WHERE to_month is null — один открытый период"
+   ],
+   "issue": "#68 (сделано); кнопки и «Периоды обслуживания» на карточке подключает #67; начисления по периодам — #77",
+   "source": "demoDB.contractors[].periods; modules/services.js; ТЗ «Контрагенты» → «Остановка и возобновление обслуживания»; packages/db/src/schema/contractors.ts; docs/decisions.md п. В-5 продукта",
+   "migration": "0060_contractor_service, 0061_contractor_service_init",
+   "logic": [
+    "В месяцы вне периодов отчёты не создаются; несданные отчёты после окончания обслуживания получают «Не требуется» (status_history.cause = service). Плата за обслуживание по периодам — задача 2.21.",
+    "Первый период ставит база: триггер contractors_initial_service_period при создании постоянного контрагента (app.contractor_initial_service_period, с месяца начала). Миграция 0061 завела периоды контрагентам, созданным раньше (у архивного — закрыт месяцем отправки в архив).",
+    "Запланированную приостановку или возобновление в наступивший месяц применяет задача по расписанию contractors.sync-service-status: статус и «Историю статусов» с причиной из pause_reason."
+   ],
+   "indexes": [
+    "contractor_service_periods_org_idx (org_id, contractor_id)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3340,7 +3364,7 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3348,8 +3372,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3357,28 +3382,42 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_service_periods_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "from_month",
      "ru": "С месяца",
      "type": "date",
      "null": false,
-     "desc": "Первое число месяца."
+     "desc": "Первое число месяца (contractor_service_periods_month_check).",
+     "status": "actual"
     },
     {
      "name": "to_month",
      "ru": "По месяц",
      "type": "date",
      "null": true,
-     "desc": "Пусто — обслуживается сейчас."
+     "desc": "Первое число месяца, не раньше from_month; пусто — обслуживается сейчас.",
+     "status": "actual"
     },
     {
-     "name": "reason",
-     "ru": "Причина",
+     "name": "pause_reason",
+     "ru": "Причина приостановки",
      "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Причина приостановки, которая начинается после этого периода, до 500 знаков; её пишет в «Историю статусов» задача по расписанию.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
      "null": true,
-     "desc": "Причина приостановки."
+     "fk": "users.id",
+     "status": "actual"
     },
     {
      "name": "created_at",
@@ -3386,39 +3425,9 @@
      "type": "timestamptz",
      "null": false,
      "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "В месяцы вне периодов отчёты не создаются и плата за обслуживание не начисляется."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #68",
-   "source": "demoDB.contractors[].periods"
+   ]
   },
   {
    "name": "contractor_tariffs",
@@ -3741,8 +3750,18 @@
    "name": "contractor_pages",
    "ru": "Страница контрагента по ссылке",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Страница только для просмотра: buhuchet.kg/<адрес организации>/inn/<ИНН>, вход по 6-значному коду. Контрагент видит, что сдано и оплачено и как оплатить.",
+   "status": "actual",
+   "desc": "Страница контрагента только для просмотра: buhuchet.kg/<адрес организации>/inn/<ИНН>, вход по 6-значному коду. Строка — у контрагента, которому страницу хоть раз включали; выключение строку не удаляет, повторное включение — с новым кодом. Страницу без входа находит и сверяет код только база (app.contractor_page_*): код наружу не отдаётся.",
+   "rls": "Включена. Политика contractor_pages_isolation: только своя организация; ограничительная contractor_pages_insert_own — строку вставляет сотрудник от своего имени (created_by = текущий пользователь). UPDATE, DELETE и TRUNCATE отозваны (0059); UPDATE возвращён только на столбцы включения, кода, разделов, счёта неверных кодов и служебные. Удаляется только каскадом с контрагентом.",
+   "issue": "#98 (сделано); разделы страницы — #99",
+   "source": "demoDB.contractors[].page; modules/cp-page.js; ТЗ «Контрагенты» → «Страница контрагента по ссылке»; packages/db/src/schema/contractor-page.ts; docs/decisions.md п. Е-1 продукта",
+   "migration": "0058_contractor_page, 0059_contractor_page_guards",
+   "logic": [
+    "Для всех случаев (нет страницы, выключена, неизвестные адрес или ИНН, архивный контрагент, функция выключена в учётной политике, организация заблокирована) ответ одинаковый: «Страница недоступна».",
+    "Неверные коды: 5 подряд по ссылке — перерыв 15 минут и «ввод закрыт» в истории контрагента (audit_log, page_lock); 30 неверных за час с одного IP по всем ссылкам — закрыто на час (rate_limits cp_page_ip, cp_page_ip_lock; IP — хешем).",
+    "Верный код запоминается в браузере на 30 дней (contractor_page_grants); «Сменить код», выключение и новое включение повышают code_version и сразу закрывают запомненные браузеры.",
+    "Код хранится как есть и виден сотруднику в карточке, как в ТЗ (docs/deviations.md п. Е-1 продукта, вопрос заказчику)."
+   ],
    "columns": [
     {
      "name": "contractor_id",
@@ -3751,7 +3770,9 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Одна страница на контрагента. Составной внешний ключ contractor_pages_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3759,43 +3780,34 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "enabled",
      "ru": "Включена",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "true",
+     "status": "actual"
     },
     {
-     "name": "code_hash",
-     "ru": "Хеш кода",
+     "name": "code",
+     "ru": "Код доступа",
      "type": "text",
-     "null": true,
-     "desc": "Код из 6 цифр хранится только хешем; показывается один раз при выдаче."
+     "null": false,
+     "desc": "6 цифр (contractor_pages_code_check); виден сотруднику в карточке, на страницу без входа не отдаётся.",
+     "status": "actual"
     },
     {
      "name": "code_version",
-     "ru": "Версия кода",
+     "ru": "Номер кода",
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при новом коде; старые cookie перестают действовать."
-    },
-    {
-     "name": "code_issued_at",
-     "ru": "Код выдан",
-     "type": "timestamptz",
-     "null": true
-    },
-    {
-     "name": "code_issued_by",
-     "ru": "Кто выдал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id"
+     "desc": "«Сменить код» и повторное включение повышают его: запомненные браузеры со старым номером теряют доступ.",
+     "status": "actual"
     },
     {
      "name": "hidden_sections",
@@ -3803,58 +3815,33 @@
      "type": "text[]",
      "null": false,
      "default": "'{}'",
-     "desc": "Разделы, скрытые именно у этого контрагента."
+     "desc": "Из pay, reports, money, fee, kpi, contacts (contractor_pages_hidden_check); скрытое сервер не отправляет.",
+     "status": "actual"
     },
     {
-     "name": "failed_tries",
+     "name": "failures",
      "ru": "Неверных кодов подряд",
      "type": "integer",
      "null": false,
      "default": "0",
-     "desc": "5 подряд — вход закрыт на 15 минут."
+     "desc": "Счёт ведёт app.contractor_page_try_code; ≥ 0.",
+     "status": "actual"
     },
     {
      "name": "locked_until",
-     "ru": "Закрыто до",
+     "ru": "Ввод закрыт до",
      "type": "timestamptz",
-     "null": true
-    },
-    {
-     "name": "last_view_at",
-     "ru": "Последний просмотр",
-     "type": "timestamptz",
-     "null": true
-    },
-    {
-     "name": "last_device",
-     "ru": "Устройство",
-     "type": "text",
      "null": true,
-     "desc": "Например «Телефон · Safari»."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "desc": "5 неверных подряд — на 15 минут.",
+     "status": "actual"
     },
     {
      "name": "created_by",
-     "ru": "Кто создал",
+     "ru": "Кто включил",
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -3862,7 +3849,23 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -3870,25 +3873,90 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
+   ]
+  },
+  {
+   "name": "contractor_page_grants",
+   "ru": "Запомненные браузеры страницы контрагента",
+   "group": "contractors",
+   "status": "actual",
+   "desc": "Браузеры, где верный код запомнен на 30 дней: в cookie страницы — случайный токен, здесь — его SHA-256 и номер кода, при котором он выдан. У страницы не больше 20 запомненных браузеров, старшие забываются (docs/deviations.md п. Е-3 продукта).",
+   "rls": "Включена. Политика contractor_page_grants_isolation: только своя организация. У роли приложения отозваны все права (0059): читают и пишут только функции app.contractor_page_* (SECURITY DEFINER).",
+   "issue": "#98 (сделано)",
+   "source": "demoDB.contractors[].page; modules/cp-page.js; ТЗ «Контрагенты» → «Страница контрагента по ссылке»; packages/db/src/schema/contractor-page.ts; docs/decisions.md п. Е-1 продукта",
+   "migration": "0058_contractor_page, 0059_contractor_page_guards",
    "logic": [
-    "Для всех ошибок (нет такой страницы, выключена, неверный код, закрыто) ответ одинаковый: «Страница недоступна».",
-    "Cookie на 30 дней привязана к версии кода; новый код закрывает старые входы.",
-    "С одного IP не больше 30 неверных кодов в час, затем закрыто на час (rate_limits).",
-    "Скрытые разделы не отправляются сервером вовсе; страница не индексируется (noindex)."
+    "Устаревшие выдачи (истёк срок, старый номер кода, выключенная страница) удаляет задача по расписанию contractor-page.cleanup-grants раз в сутки (app.contractor_page_grants_cleanup)."
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #98",
-   "source": "demoDB.contractors[].page; modules/cp-page.js; ТЗ «Страница контрагента по ссылке»"
+   "indexes": [
+    "contractor_page_grants_expires_idx (expires_at)",
+    "contractor_page_grants_contractor_idx (contractor_id)"
+   ],
+   "columns": [
+    {
+     "name": "token_hash",
+     "ru": "Хеш токена",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "desc": "SHA-256 токена из cookie bh_page; сам токен не хранится.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "contractor_id",
+     "ru": "Страница",
+     "type": "uuid",
+     "null": false,
+     "fk": "contractor_pages.contractor_id",
+     "onDelete": "cascade",
+     "desc": "Удаляется вместе со страницей.",
+     "status": "actual"
+    },
+    {
+     "name": "code_version",
+     "ru": "Номер кода",
+     "type": "integer",
+     "null": false,
+     "desc": "Номер кода страницы, при котором выдан доступ.",
+     "status": "actual"
+    },
+    {
+     "name": "expires_at",
+     "ru": "Действует до",
+     "type": "timestamptz",
+     "null": false,
+     "desc": "30 дней с ввода кода.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    }
+   ]
   },
   {
    "name": "contractor_page_views",
    "ru": "Просмотры страницы контрагента",
    "group": "contractors",
    "status": "planned",
-   "desc": "Журнал входов на страницу по ссылке: когда, с какого устройства, удачно или нет.",
+   "desc": "Журнал входов на страницу по ссылке: когда, с какого устройства, удачно или нет. В 2.42 (#98) такой таблицы нет: неверные коды считаются в contractor_pages и rate_limits, закрытие ввода пишется в audit_log (page_lock). Нужен ли журнал просмотров — решит 2.43 (#99) по ТЗ и прототипу.",
    "columns": [
     {
      "name": "id",
@@ -3945,7 +4013,7 @@
    "indexes": [
     "(contractor_id, at)"
    ],
-   "issue": "этап 2 · #98"
+   "issue": "этап 2 · #99 (если понадобится)"
   },
   {
    "name": "contractor_imports",
@@ -8253,15 +8321,16 @@
     }
    ],
    "rls": "Включена. Политика tax_benefits_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — #92 (часть 2)",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2б, сделано); ГКЭД — #94, сверка с ГНС — #93",
    "source": "refDB.dictionaries.benefits; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts, 0057_admin_platform_dicts_benefits",
    "logic": [
     "За 60 дней до конца срока льготы ответственный получает предупреждение.",
     "Отчёты, которые статус добавляет или убирает, — tax_benefit_report_types; свои сроки — tax_benefit_due_rules; «Ставится по УГНС» — tax_benefit_offices.",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся.",
+    "В Админке правятся поля перечня (название, вид, что даёт, статья, кто, условия, подтверждение, совмещение, срок, действует до, проверка); «Делает ненужными», «Добавляет» и «Ставится по УГНС» — таблицами связей (app.admin_dict_set_links), «Меняет сроки» — app.admin_benefit_set_due_rules; ГКЭД, подсказки и налог тарифа окно статуса не правит."
    ]
   },
   {
@@ -8303,7 +8372,7 @@
    "rls": "Включена. Политика tax_benefit_report_types_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
    "issue": "#20 (сделано); правка в Админке — поток Д",
    "source": "refDB.dictionaries.benefits[].adds, removes",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0057_admin_platform_dicts_benefits",
    "indexes": [
     "tax_benefit_report_types_type_idx (report_type_code)"
    ]
@@ -8339,7 +8408,7 @@
    "rls": "Включена. Политика tax_benefit_offices_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
    "issue": "#20 (сделано); правка в Админке — поток Д",
    "source": "refDB.dictionaries.benefits[].suggest.ugns",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0057_admin_platform_dicts_benefits",
    "indexes": [
     "tax_benefit_offices_office_idx (tax_office_code)"
    ]
@@ -8413,9 +8482,9 @@
     }
    ],
    "rls": "Включена. Политика tax_benefit_due_rules_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2б, сделано): «Меняет сроки» статуса, app.admin_benefit_set_due_rules",
    "source": "refDB.dictionaries.benefits[].dueOverride",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0057_admin_platform_dicts_benefits",
    "logic": [
     "Например, «Крупные налогоплательщики» сдают НДС до последнего дня месяца. Пределы проверяет tax_benefit_due_rules_rule_check."
    ]
@@ -8565,7 +8634,7 @@
    "rls": "Включена. Политика report_type_bases_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
    "issue": "#20 (сделано); правка в Админке — поток Д",
    "source": "refDB.reportTypes[].bases; dictionaries.bases[].types",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0057_admin_platform_dicts_benefits",
    "indexes": [
     "report_type_bases_base_idx (base_code)"
    ]
@@ -9002,9 +9071,9 @@
     }
    ],
    "rls": "Включена. Политика report_types_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — #92 (часть 2)",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2б, сделано); ГКЭД — #94, сверка с ГНС — #93",
    "source": "refDB.reportTypes; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts, 0057_admin_platform_dicts_benefits",
    "logic": [
     "По виду отчёта, периоду и правилам срока программа сама создаёт отчёты контрагента на каждый период (задача по расписанию, поток А).",
     "Срок проверяет report_types_rule_check: due_day ≥ 1, месяцы 1–12, «через месяцев» 0–12, кварталы 1–4.",
@@ -9012,7 +9081,8 @@
     "Новые виды отчётов организации запрашивают через «Запросить добавление» (dict_change_requests).",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся.",
+    "В Админке окно вида (как typeEditDlg прототипа) правит поля перечня: сроки сдачи и оплаты, график оплаты, «Что уплачивается», правила подбора и др.; «Применимые режимы», «Не для режимов» — report_type_regimes с меткой relation, «Основания» — report_type_bases. ГКЭД — задача 2.38, сверка с ГНС — 2.37; пересчёт сроков созданных отчётов после правки — 2.37."
    ],
    "indexes": [
     "report_types_authority_idx (authority_code)"
@@ -9057,7 +9127,7 @@
    "rls": "Включена. Политика report_type_regimes_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
    "issue": "#20 (сделано); правка в Админке — поток Д",
    "source": "refDB.reportTypes[].regimes, regimesNot",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0057_admin_platform_dicts_benefits",
    "indexes": [
     "report_type_regimes_regime_idx (regime_code)"
    ]
@@ -11031,9 +11101,9 @@
   {
    "name": "app.platform_dict_specs (служебная таблица)",
    "ru": "Перечень справочников, которые правит Админка",
-   "migration": "0043_admin_platform_dicts, 0045_tasks_guards, 0051_admin_platform_dicts_more",
+   "migration": "0043_admin_platform_dicts, 0045_tasks_guards, 0051_admin_platform_dicts_more, 0057_admin_platform_dicts_benefits",
    "definer": false,
-   "desc": "Справочник (dict, ключ), его таблица (table_name, уникальна), поля, которые правит администратор (columns), и есть ли «№» и «Выше» / «Ниже» (ordered — только короткие справочники, docs/deviations.md п. Д-2 продукта). Сейчас: forms, organs, ugns, banks, reasons (0043), cats (0045), bases, regimes, phones (0051). Следующий справочник подключается строкой перечня, без новых функций. У роли приложения прав нет: читают только функции владельца схемы."
+   "desc": "Справочник (dict, ключ), его таблица (table_name, уникальна), поля, которые правит администратор (columns), и есть ли «№» и «Выше» / «Ниже» (ordered — только короткие справочники, docs/deviations.md п. Д-2 продукта). Сейчас: forms, organs, ugns, banks, reasons (0043), cats (0045), bases, regimes, phones (0051), benefits, types (0057). Следующий справочник подключается строкой перечня, без новых функций. У роли приложения прав нет: читают только функции владельца схемы."
   },
   {
    "name": "app.platform_dict_array_refs (служебная таблица)",
@@ -11045,9 +11115,9 @@
   {
    "name": "app.admin_dict_usage(dict)",
    "ru": "Сколько раз используется значение",
-   "migration": "0043_admin_platform_dicts",
+   "migration": "0043_admin_platform_dicts, 0057_admin_platform_dicts_benefits",
    "definer": true,
-   "desc": "Для каждого значения справочника — число ссылок внешними ключами на его код из любых таблиц, в том числе таблиц организаций (ссылки следующих задач считаются сами), и массивами из app.platform_dict_array_refs; ref — таблица ссылки. Не администратору платформы — пусто."
+   "desc": "Для каждого значения справочника — число ссылок внешними ключами на его код из любых таблиц, в том числе таблиц организаций (ссылки следующих задач считаются сами), и массивами из app.platform_dict_array_refs; ref — таблица ссылки. Не администратору платформы — пусто. С 0057 внешний ключ с ON DELETE CASCADE из таблицы платформы (связи и сроки статуса, связи вида отчёта) использованием не считается — уходит вместе со значением; ссылка из таблицы организации (есть org_id) считается всегда."
   },
   {
    "name": "app.admin_dict_insert(dict, code, row)",
@@ -11101,9 +11171,9 @@
   {
    "name": "app.platform_dict_links (служебная таблица)",
    "ru": "Поля-связи справочников",
-   "migration": "0051_admin_platform_dicts_more",
+   "migration": "0051_admin_platform_dicts_more, 0057_admin_platform_dicts_benefits",
    "definer": false,
-   "desc": "Поле значения, которое хранится не столбцом, а строками таблицы связей: справочник и поле (ключ), таблица связей, столбец кода значения, столбец связанного кода; tag_column и tag — когда одна таблица держит несколько полей (строки поля — с этой меткой). Сейчас: bases.types → report_type_bases (base_code, report_type_code). У роли приложения прав нет: читает только функция владельца схемы."
+   "desc": "Поле значения, которое хранится не столбцом, а строками таблицы связей: справочник и поле (ключ), таблица связей, столбец кода значения, столбец связанного кода; tag_column и tag — когда одна таблица держит несколько полей (строки поля — с этой меткой). Сейчас: bases.types → report_type_bases; benefits.removes и benefits.adds → tax_benefit_report_types (метка effect), benefits.offices → tax_benefit_offices; types.regimes и types.notForRegimes → report_type_regimes (метка relation), types.bases → report_type_bases. У роли приложения прав нет: читает только функция владельца схемы."
   },
   {
    "name": "app.admin_dict_set_links(dict, code, links)",
@@ -11111,6 +11181,13 @@
    "migration": "0051_admin_platform_dicts_more",
    "definer": true,
    "desc": "links — {поле: [коды]}; поля, которых нет в links, не меняются. Сначала убирает связи, которых нет в новых списках, потом добавляет новые, поэтому код, перенесённый из одного поля в другое той же таблицы, не теряется; есть ли связанные значения, проверяют внешние ключи. Строка значения на время записи закрыта для других правок. Отвечает true; false — нет значения; пусто — справочника нет в перечне, не администратор или поле не массив."
+  },
+  {
+   "name": "app.admin_benefit_set_due_rules(code, rules)",
+   "ru": "«Меняет сроки» статуса",
+   "migration": "0057_admin_platform_dicts_benefits",
+   "definer": true,
+   "desc": "rules — [{reportType, dueDay, dueAfter, dueMonth, payDay, payAfter}]: прежние строки tax_benefit_due_rules статуса заменяются новыми; вид отчёта проверяет внешний ключ, дни и месяцы — ограничение таблицы. Строка статуса на время записи закрыта для других правок. Отвечает true; false — нет статуса; пусто — не администратор платформы или rules не массив."
   },
   {
    "name": "app.admin_calendar_insert(day, kind, name)",
@@ -11160,6 +11237,34 @@
    "migration": "0032_dict_change_requests_admin",
    "definer": true,
    "desc": "Число запросов «Попросить добавить» всех организаций для плашки Админки; работает, только если вошёл администратор платформы (app.is_platform_admin()), иначе 0."
+  },
+  {
+   "name": "app.contractor_page_state(slug, inn, token_hash)",
+   "ru": "Страница по ссылке: открыта ли",
+   "migration": "0059_contractor_page_guards",
+   "definer": true,
+   "desc": "Без входа: unavailable (одинаково для выключенной страницы, неизвестных адреса и ИНН, архивного контрагента, выключенной функции и заблокированной организации), open — браузер с запомненным кодом текущего номера (тогда организация и контрагент), locked — ввод закрыт до locked_until, code — показать ввод кода. Код наружу не отдаётся."
+  },
+  {
+   "name": "app.contractor_page_try_code(slug, inn, code, ip_hash, token_hash, …)",
+   "ru": "Страница по ссылке: проверить код",
+   "migration": "0059_contractor_page_guards",
+   "definer": true,
+   "desc": "Попытки по одной ссылке и с одного адреса идут по очереди (блокировка строки страницы и pg_advisory_xact_lock по адресу). Ответы: unavailable, ip_locked (предел с адреса), locked, ok (счёт снят, браузер запомнен в contractor_page_grants, не больше p_max_grants), wrong (сколько попыток осталось); на p_tries-м неверном подряд — перерыв и запись page_lock в audit_log в той же транзакции."
+  },
+  {
+   "name": "app.contractor_page_grants_cleanup()",
+   "ru": "Очистка запомненных браузеров",
+   "migration": "0059_contractor_page_guards",
+   "definer": true,
+   "desc": "Удаляет выдачи с истёкшим сроком, со старым номером кода и у выключенных страниц; отвечает числом удалённых. Вызывает задача по расписанию contractor-page.cleanup-grants."
+  },
+  {
+   "name": "app.contractor_initial_service_period() (триггер)",
+   "ru": "Первый период обслуживания",
+   "migration": "0061_contractor_service_init",
+   "definer": false,
+   "desc": "Триггер contractors_initial_service_period AFTER INSERT ON contractors (только kind = regular): период с месяца начала обслуживания. Работает с правами того, кто создаёт контрагента, — строка проходит ту же изоляцию организаций."
   }
  ]
 }
