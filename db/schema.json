@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 22,
-  "updated": "2026-10-27",
+  "schemaVersion": 30,
+  "updated": "2026-10-30",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main ed85eda",
-    "what": "Фактические миграции 0000–0038: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи» и «Локализация», функции базы и правило сортировки app.ru_natural."
+    "ref": "main 2fdcd97",
+    "what": "Фактические миграции 0000–0053: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты и изменения сроков, шаблоны ролей, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, словарь текстов интерфейса, журнал расписания, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -385,7 +385,7 @@
   {
    "name": "report_status",
    "ru": "Статус сдачи отчёта",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение reports_status_check.",
    "values": [
     {
      "v": "todo",
@@ -399,6 +399,11 @@
      "v": "submitted",
      "ru": "Сдан",
      "desc": "Конец шкалы; дальше — подтверждение старшим."
+    },
+    {
+     "v": "needs_fix",
+     "ru": "Требует исправления",
+     "desc": "«На исправление» с причиной (2.14)."
     },
     {
      "v": "not_required",
@@ -494,7 +499,7 @@
   {
    "name": "task_status",
    "ru": "Статус задачи",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение tasks_status_check.",
    "values": [
     {
      "v": "todo",
@@ -557,7 +562,7 @@
   {
    "name": "indicator_type",
    "ru": "Тип значения показателя",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение indicators_type_check.",
    "values": [
     {
      "v": "som",
@@ -580,7 +585,7 @@
   {
    "name": "indicator_status",
    "ru": "Месяц показателей",
-   "desc": "",
+   "desc": "Фактически в базе: text, список проверяет ограничение indicator_months_status_check.",
    "values": [
     {
      "v": "empty",
@@ -1496,7 +1501,7 @@
    "ru": "Счётчики попыток",
    "group": "core",
    "status": "actual",
-   "desc": "Журнал действий с ограничением частоты: строка — одно действие. Выгрузка «В Excel»: одна одновременно и не больше 20 в час на пользователя. Страница контрагента (#98) добавит сюда счёт кодов доступа. Неверные пароли считаются в login_attempts, коды «Забыли пароль?» — в password_reset_codes.",
+   "desc": "Журнал действий с ограничением частоты: строка — одно действие. Выгрузка «В Excel»: одна одновременно и не больше 20 в час на пользователя. Ввод показателей из Excel (#84, вид kpi_import): один разбор одновременно и не больше 60 в час. Страница контрагента (#98) добавит сюда счёт кодов доступа. Неверные пароли считаются в login_attempts, коды «Забыли пароль?» — в password_reset_codes.",
    "columns": [
     {
      "name": "id",
@@ -1543,7 +1548,7 @@
     }
    ],
    "rls": "Включена, политик нет, и у роли приложения отозваны права на таблицу и её последовательность: читать и менять её могут только функции app.rate_limit_* (SECURITY DEFINER). Организации у строки нет — служебная таблица, как login_attempts.",
-   "issue": "#56 (сделано: выгрузки «В Excel»), #98 (коды страницы контрагента)",
+   "issue": "#56 (сделано: выгрузки «В Excel»), #84 (сделано: ввод показателей из Excel), #98 (коды страницы контрагента)",
    "source": "docs/decisions.md п. 38 продукта; План: «Этапы → Этап 2» («Защита тяжёлых запросов»), «Страница контрагента по ссылке»",
    "migration": "0026_rate_limits",
    "logic": [
@@ -1856,8 +1861,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами.",
-     "status": "actual"
+     "desc": "Если изменение относится к контрагенту — для «Истории» в его карточке. Составной внешний ключ audit_log_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE SET NULL (contractor_id): у удалённого контрагента записи истории остаются, пропадает только ссылка (миграция 0040).",
+     "status": "actual",
+     "onDelete": "set null"
     },
     {
      "name": "action",
@@ -1914,11 +1920,12 @@
    "rls": "Включена. Политика audit_log_isolation: роль приложения видит и добавляет только записи своей организации. Ограничивающая политика audit_log_insert_guard на вставку: автор — текущий пользователь, время — now(), автор — пользователь этой организации или администратор платформы (проверяет функция app.history_actor_allowed, SECURITY DEFINER). У роли приложения отозваны UPDATE, DELETE и TRUNCATE.",
    "indexes": [
     "audit_log_entity_idx (org_id, entity, entity_id, at) — история одной записи",
-    "audit_log_contractor_idx (org_id, contractor_id, at), только где contractor_id заполнен — история контрагента"
+    "audit_log_contractor_idx (org_id, contractor_id, at), только где contractor_id заполнен — история контрагента",
+    "audit_log_actor_idx (org_id, actor_user_id, entity, at) — действия пользователя для шагов «Базы знаний» (миграция 0041)"
    ],
    "issue": "#4 (сделано)",
    "source": "demoDB.history; ТЗ «Общие правила для всей платформы»",
-   "migration": "0005_history_actor_check, 0006_audit_log, 0007_audit_log_append_only"
+   "migration": "0005_history_actor_check, 0006_audit_log, 0007_audit_log_append_only, 0040_contractors_guards, 0041_kb (индекс)"
   },
   {
    "name": "platform_audit_log",
@@ -2826,8 +2833,29 @@
    "name": "contractors",
    "ru": "Контрагенты",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Клиенты бухгалтерской фирмы (компании и ИП), которых она обслуживает. Центр всей базы: к контрагенту привязаны отчёты, деньги, задачи, проекты, показатели и файлы.",
+   "status": "actual",
+   "desc": "Клиенты бухгалтерской фирмы (компании и ИП), которых она обслуживает. Центр всей базы: к контрагенту привязаны отчёты, деньги, задачи, проекты, показатели и файлы. Справочные значения — постоянными кодами справочников платформы.",
+   "rls": "Включена. Политика contractors_isolation: только своя организация. Область «Свои контрагенты» — условие responsible_employee_id = сотрудник во всех запросах API (contractorScope); контрагент вне области — 404, как чужой организации.",
+   "uniques": [
+    "contractors_org_inn_key (org_id, inn) — ИНН уникален в организации среди всех контрагентов, включая архив",
+    "contractors_id_org_unique (id, org_id) — цель составных ссылок на контрагента своей организации"
+   ],
+   "issue": "#61 (сделано); экраны — #65 (форма), #66 (список), #67 (карточка)",
+   "source": "demoDB.contractors; ТЗ «Модуль Контрагенты» → «Регистрация контрагентов», «Сверка с ГКЭД», «Ответственный», «Плата за обслуживание»; прототип modules/contractors.js (addCpDlg, editCpDlg, transferDlg, cpActions), core/gked.js (gkCheck); packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors, 0040_contractors_guards",
+   "logic": [
+    "Проверки сохранения одни для создания и «Изменить» (checkContractor): ИНН, телефон по «Кодам телефонов», поля, только действующие значения справочников, ГКЭД только подклассы, дубль ИНН (называет найденного, в том числе в архиве), сверка с ГКЭД. Создание — одна транзакция.",
+    "Сверка с ГКЭД — порт прототипа gkCheck (packages/domain/src/contractors/gked.ts): запрет режима — 400 gked_blocked; вопрос о праве на режим — 400 gked_confirm_required, пока форма не подтвердит; подтверждение хранится в gked_confirmation и сбрасывается при смене ГКЭД, режима, формы.",
+    "История — общая audit_log (entity contractor): создание, «было → стало», смена ответственного, удаление; своей таблицы истории закреплений нет.",
+    "Ставку, «День оплаты» и «Первый неполный месяц» видит и задаёт только право на плату при включённой функции; без права — null в ответе и 403 на запись.",
+    "Удаление — только не архивного и без отчётов, денег и проектов (contractorDeleteRefusal, 409 contractor_in_use). Таблицы отчётов, денег и проектов ссылаются на контрагента с ON DELETE RESTRICT, чтобы запрет держала и база; история и файлы удалённого остаются (ON DELETE SET NULL).",
+    "Набор отчётов собирается из режима, второго режима, формы собственности, льгот, оснований и ГКЭД («Выбор налогов», задача 2.07).",
+    "Архив и приостановка — задача 2.12; создание «Из свидетельства и выписки» (PDF на сервере, распознавание rus+kir) — 2.17."
+   ],
+   "indexes": [
+    "contractors_responsible_idx (org_id, responsible_employee_id) — «Мои контрагенты» и область «Свои»",
+    "contractors_service_idx (org_id, service_status) — вкладки и архив"
+   ],
    "columns": [
     {
      "name": "id",
@@ -2836,7 +2864,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -2845,52 +2874,32 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «ОсОО «Ала-Тоо Трейд»»."
-    },
-    {
-     "name": "form_code",
-     "ru": "Форма собственности",
-     "type": "text",
-     "null": false,
-     "fk": "ownership_forms.code",
-     "desc": "Обязательна."
+     "desc": "Например «ОсОО «Ала-Тоо Трейд»».",
+     "status": "actual"
     },
     {
      "name": "inn",
      "ru": "ИНН",
      "type": "text",
      "null": false,
-     "desc": "14 цифр; уникален в организации. Входит в адрес страницы контрагента."
+     "desc": "Ровно 14 цифр (contractors_inn_check); уникален в организации вместе с архивом. Входит в адрес страницы контрагента.",
+     "status": "actual"
     },
     {
-     "name": "regime_code",
-     "ru": "Режим налогообложения",
+     "name": "phone",
+     "ru": "Телефон",
      "type": "text",
      "null": false,
-     "fk": "tax_regimes.code"
-    },
-    {
-     "name": "regime2_code",
-     "ru": "Второй режим",
-     "type": "text",
-     "null": true,
-     "fk": "tax_regimes.code",
-     "desc": "Если совмещает режимы (например, ОНР + патент)."
-    },
-    {
-     "name": "responsible_id",
-     "ru": "Ответственный",
-     "type": "uuid",
-     "null": false,
-     "fk": "employees.id",
-     "desc": "Бухгалтер, который ведёт контрагента. Обязателен."
+     "desc": "В формате +996…: код страны и цифры; код проверяет API по «Кодам телефонов».",
+     "status": "actual"
     },
     {
      "name": "kind",
@@ -2898,82 +2907,145 @@
      "type": "cp_kind",
      "null": false,
      "default": "'regular'",
-     "desc": "regular — постоянное, oneoff — разовое."
+     "desc": "regular — постоянное, oneoff — разовое (contractors_kind_check).",
+     "status": "actual"
     },
     {
-     "name": "status",
-     "ru": "Обслуживание",
-     "type": "service_status",
+     "name": "form_code",
+     "ru": "Форма собственности",
+     "type": "text",
      "null": false,
-     "default": "'active'",
-     "desc": "Обслуживается, Приостановлен или В архиве."
+     "fk": "ownership_forms.code",
+     "desc": "Обязательна.",
+     "status": "actual"
+    },
+    {
+     "name": "regime_code",
+     "ru": "Режим налогообложения",
+     "type": "text",
+     "null": true,
+     "fk": "tax_regimes.code",
+     "desc": "Пусто только у заведённых без режима; форма требует.",
+     "status": "actual"
+    },
+    {
+     "name": "regime2_code",
+     "ru": "Второй режим",
+     "type": "text",
+     "null": true,
+     "fk": "tax_regimes.code",
+     "desc": "Если совмещает режимы (например, ОНР + патент); только при основном и не равен ему (contractors_regime2_check).",
+     "status": "actual"
+    },
+    {
+     "name": "gked",
+     "ru": "Основной ГКЭД",
+     "type": "text",
+     "null": true,
+     "fk": "gked_items.code",
+     "desc": "Только подкласс. Пуст только у заведённых раньше или загруженных без него: при сохранении карточки его требует API.",
+     "status": "actual"
     },
     {
      "name": "tax_office_code",
      "ru": "УГНС",
      "type": "text",
      "null": true,
-     "fk": "tax_offices.code"
-    },
-    {
-     "name": "gked_code",
-     "ru": "Основной ГКЭД",
-     "type": "text",
-     "null": true,
-     "fk": "gked_items.code",
-     "desc": "Только подкласс."
+     "fk": "tax_offices.code",
+     "status": "actual"
     },
     {
      "name": "biz_size",
      "ru": "Размер бизнеса",
      "type": "text",
-     "null": true,
-     "desc": "small, medium, large — по выручке за 12 месяцев."
+     "null": false,
+     "default": "'small'",
+     "desc": "small, medium, large (contractors_biz_size_check, BIZ_SIZES).",
+     "status": "actual"
     },
     {
-     "name": "phone",
-     "ru": "Телефон",
-     "type": "text",
-     "null": true
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Бухгалтер, который ведёт контрагента. Пусто — после блокировки сотрудника (контрагент подсвечивается). Составной внешний ключ contractors_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id): сотрудник чужой организации не станет ответственным и в обход API.",
+     "status": "actual"
     },
     {
      "name": "head",
      "ru": "Руководитель",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "contact",
      "ru": "Контактное лицо",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "service_start",
-     "ru": "Начало обслуживания",
-     "type": "date",
      "null": false,
-     "desc": "С этой даты создаются отчёты."
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "contract",
-     "ru": "Договор",
+     "name": "contract_no",
+     "ru": "Номер договора",
      "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "«№ 160/24 от 16.07.2024» прототипа разбит на номер и дату.",
+     "status": "actual"
+    },
+    {
+     "name": "contract_date",
+     "ru": "Дата договора",
+     "type": "date",
      "null": true,
-     "desc": "Например «№ 160/24 от 16.07.2024»."
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Примечание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "client_note",
-     "ru": "Заметка для контрагента",
+     "name": "registration",
+     "ru": "Данные из свидетельства",
+     "type": "jsonb",
+     "null": false,
+     "default": "'{}'",
+     "desc": "ContractorRegistration: полное наименование, рег. номер, ОКПО, юридический адрес, почта, даты регистрации и перерегистрации, число учредителей, иностранное участие.",
+     "status": "actual"
+    },
+    {
+     "name": "start_date",
+     "ru": "Начало обслуживания",
+     "type": "date",
+     "null": false,
+     "desc": "С этой даты создаются отчёты; у разового — дата первого обращения. В «Изменить» не меняется.",
+     "status": "actual"
+    },
+    {
+     "name": "first_month_mode",
+     "ru": "Первый неполный месяц",
      "type": "text",
-     "null": true,
-     "desc": "Показывается на странице контрагента."
+     "null": false,
+     "default": "'full'",
+     "desc": "prorate — пропорционально дням, full — полный месяц, next — со следующего (contractors_first_month_check). Без поля в форме — full (docs/deviations.md п. А-1 продукта).",
+     "status": "actual"
+    },
+    {
+     "name": "fee_day",
+     "ru": "День оплаты обслуживания",
+     "type": "smallint",
+     "null": false,
+     "default": "10",
+     "desc": "Число месяца от 1 до 28 (contractors_fee_day_check).",
+     "status": "actual"
     },
     {
      "name": "pays_to",
@@ -2981,7 +3053,33 @@
      "type": "text",
      "null": false,
      "default": "'emp'",
-     "desc": "emp — на счёт ответственного сотрудника, org — на счёт организации."
+     "desc": "emp — на счёт ответственного сотрудника, org — на счёт организации (contractors_pays_to_check, PAYS_TO); использует поток В.",
+     "status": "actual"
+    },
+    {
+     "name": "service_status",
+     "ru": "Обслуживание",
+     "type": "service_status",
+     "null": false,
+     "default": "'active'",
+     "desc": "active — обслуживается, paused — приостановлен, archived — в архиве (contractors_service_check). Архивные в списке — только с фильтром «Статус обслуживания».",
+     "status": "actual"
+    },
+    {
+     "name": "gked_confirmation",
+     "ru": "Подтверждение права на режим",
+     "type": "jsonb",
+     "null": true,
+     "desc": "ContractorGkedConfirmation: подпись набора данных (sig), кто подтвердил (сотрудник), дата по Бишкеку и вопрос. Действует, пока набор данных не изменился.",
+     "status": "actual"
+    },
+    {
+     "name": "client_note",
+     "ru": "Заметка для контрагента",
+     "type": "text",
+     "null": true,
+     "desc": "Показывается на странице контрагента. Поля пока нет: придёт со страницей контрагента (2.42–2.43, поток Е).",
+     "status": "planned"
     },
     {
      "name": "one_sum",
@@ -2989,7 +3087,8 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Одна сумма сразу на налоги и обслуживание; программа сама раскладывает."
+     "desc": "Одна сумма сразу на налоги и обслуживание; программа сама раскладывает. Поля пока нет: придёт с деньгами по отчётам (2.19, #75, поток В).",
+     "status": "planned"
     },
     {
      "name": "need_in_file",
@@ -2997,79 +3096,41 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Поступление без платёжки или чека не сохраняется."
-    },
-    {
-     "name": "fee_day",
-     "ru": "День оплаты обслуживания",
-     "type": "integer",
-     "null": true,
-     "desc": "Число месяца."
-    },
-    {
-     "name": "first_month",
-     "ru": "Первый месяц обслуживания",
-     "type": "text",
-     "null": false,
-     "default": "'full'",
-     "desc": "prorate — по дням, full — полностью, next — со следующего месяца."
+     "desc": "Поступление без платёжки или чека не сохраняется. Поля пока нет: придёт с деньгами по отчётам (2.19, #75, поток В).",
+     "status": "planned"
     },
     {
      "name": "sf_tariff",
      "ru": "Тариф Соцфонда",
      "type": "text",
      "null": true,
-     "desc": "spino, general или pvtpki."
+     "desc": "spino, general или pvtpki. Полей Соцфонда пока нет: придут с тарифом Соцфонда (2.08, #64).",
+     "status": "planned"
     },
     {
      "name": "sf_flags",
      "ru": "Признаки для тарифа Соцфонда",
      "type": "jsonb",
      "null": true,
-     "desc": "{cashless, registry, confirmed, gov}: зарплата безналично, реестр загружен, тариф подтверждён ГНС, госфинансирование."
+     "desc": "{cashless, registry, confirmed, gov}: зарплата безналично, реестр загружен, тариф подтверждён ГНС, госфинансирование. Придёт с 2.08 (#64).",
+     "status": "planned"
     },
     {
      "name": "sf_manual",
      "ru": "Тариф выбран вручную",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "planned",
+     "desc": "Придёт с 2.08 (#64)."
     },
     {
      "name": "sf_manual_why",
      "ru": "Причина ручного выбора",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "gked_ok",
-     "ru": "Подтверждение ГКЭД",
-     "type": "jsonb",
      "null": true,
-     "desc": "Кто и когда подтвердил, что ГКЭД подходит к режиму, несмотря на предупреждение."
-    },
-    {
-     "name": "reg_data",
-     "ru": "Данные из свидетельства",
-     "type": "jsonb",
-     "null": true,
-     "desc": "Полное наименование, рег. номер, ОКПО, адрес, почта, даты регистрации, учредители, иностранное участие."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "status": "planned",
+     "desc": "Придёт с 2.08 (#64)."
     },
     {
      "name": "created_by",
@@ -3077,7 +3138,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных и загрузок — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -3085,7 +3147,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -3093,34 +3174,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — 409 record_changed («Запись изменена другим пользователем»).",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Набор отчётов собирается из режима, второго режима, формы собственности, льгот, оснований и ГКЭД («Выбор налогов»).",
-    "Сотрудник с областью «Свои контрагенты» видит только тех, где он ответственный (или ответственный назначения).",
-    "Смена ответственного или массовая передача пишется в историю; старые отчёты остаются за тем, кто их сдал.",
-    "Архив: новые отчёты не создаются, данные остаются; восстановить может право archiveRest.",
-    "Создание «Из свидетельства и выписки»: PDF разбирается на сервере (текст + распознавание rus+kir), поля заполняются автоматически."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, responsible_id)",
-    "(org_id, status)",
-    "name (поиск, pg_trgm)"
-   ],
-   "uniques": [
-    "(org_id, inn)"
-   ],
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors; modules/contractor-form.js, contractor-card.js; ТЗ «Модуль Контрагенты»"
+   ]
   },
   {
    "name": "contractor_gked_extra",
    "ru": "Дополнительные ГКЭД",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Дополнительные виды деятельности контрагента.",
+   "status": "actual",
+   "desc": "Дополнительные виды деятельности контрагента (ГКЭД): сколько угодно, в порядке указания; основной не повторяется (проверяет API).",
+   "rls": "Включена. Политика contractor_gked_extra_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].gked2; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_gked_extra_code_idx (org_id, gked) — фильтр списка по ГКЭД с дополнительными кодами"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -3128,8 +3199,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3138,120 +3210,105 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_gked_extra_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
-     "name": "gked_code",
+     "name": "gked",
      "ru": "ГКЭД",
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "gked_items.code"
+     "fk": "gked_items.code",
+     "desc": "Только подкласс.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок, в котором коды указаны.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].gked2"
+   ]
   },
   {
    "name": "contractor_benefits",
    "ru": "Льготы контрагента",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Какие льготы и особые статусы есть у контрагента и с какой даты по какую.",
+   "status": "actual",
+   "desc": "Льготы и особые статусы контрагента со сроком действия; за 60 дней до окончания — предупреждение.",
+   "rls": "Включена. Политика contractor_benefits_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].ben; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_benefits_code_idx (benefit_code)"
+   ],
    "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
     {
      "name": "org_id",
      "ru": "Организация",
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
+     "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_benefits_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "benefit_code",
      "ru": "Льгота",
      "type": "text",
      "null": false,
-     "fk": "tax_benefits.code"
+     "pk": true,
+     "fk": "tax_benefits.code",
+     "desc": "Одна льгота у контрагента — одной строкой (первичный ключ contractor_id, benefit_code).",
+     "status": "actual"
     },
     {
      "name": "valid_from",
      "ru": "С",
      "type": "date",
-     "null": true
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "valid_to",
      "ru": "По",
      "type": "date",
      "null": true,
-     "desc": "За 60 дней до конца — предупреждение."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Не раньше «С» (contractor_benefits_dates_check). За 60 дней до конца — предупреждение.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, benefit_code, valid_from)"
-   ],
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].ben"
+   ]
   },
   {
    "name": "contractor_bases",
    "ru": "Основания контрагента",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Отмеченные основания: «Есть наёмные сотрудники», «Есть имущество» и т. д.",
+   "status": "actual",
+   "desc": "Отмеченные основания для сквозных отчётов: «Есть наёмные сотрудники», «Есть имущество» и т. д.",
+   "rls": "Включена. Политика contractor_bases_isolation: только своя организация.",
+   "issue": "#61 (сделано)",
+   "source": "demoDB.contractors[].bases; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors",
+   "indexes": [
+    "contractor_bases_code_idx (base_code)"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -3259,8 +3316,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3269,7 +3327,9 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_bases_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "base_code",
@@ -3277,12 +3337,10 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "fk": "report_bases.code"
+     "fk": "report_bases.code",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #61",
-   "source": "demoDB.contractors[].bases"
+   ]
   },
   {
    "name": "contractor_service_periods",
@@ -3382,8 +3440,20 @@
    "name": "contractor_tariffs",
    "ru": "Тарифы обслуживания",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Сколько контрагент платит фирме за обслуживание и с какого месяца. История тарифов сохраняется.",
+   "status": "actual",
+   "desc": "Журнал ставок обслуживания: сколько контрагент платит фирме и с какого месяца. Запись не меняется и не удаляется: новая ставка — новая запись.",
+   "rls": "Включена. Политика contractor_tariffs_isolation: только своя организация. У роли приложения отозваны UPDATE, DELETE и TRUNCATE (миграция 0040): журнал только дополняется; вместе с контрагентом записи удаляет каскад внешнего ключа.",
+   "issue": "#61 (сделано: первая запись); журнал полностью — #77 (поток В)",
+   "source": "demoDB.contractors[].tariffs; ТЗ «Плата за обслуживание»; packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0039_contractors, 0040_contractors_guards",
+   "logic": [
+    "Сейчас пишется только первая запись — «Первая ставка» при создании контрагента, с месяца начала обслуживания (как прототип start.slice(0, 7)).",
+    "Начисление за месяц берёт последнюю ставку, начавшуюся не позже этого месяца (задача 2.21).",
+    "Ограничительная политика вставки «автор — текущий пользователь» — на усмотрение потока В (совет ревью безопасности #61)."
+   ],
+   "indexes": [
+    "contractor_tariffs_contractor_idx (org_id, contractor_id, valid_from) — действующая ставка на месяц"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3392,7 +3462,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3400,8 +3471,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3409,51 +3481,43 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ contractor_tariffs_contractor_fk (contractor_id, org_id) → contractors (id, org_id): только контрагент своей организации; удаляется вместе с ним.",
+     "status": "actual"
     },
     {
      "name": "amount",
      "ru": "Сумма",
      "type": "bigint",
      "null": false,
-     "desc": "Плата за период. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
+     "desc": "Плата за период, не меньше 0 (contractor_tariffs_amount_check). В тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
-     "name": "from_month",
-     "ru": "С месяца",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "per",
-     "ru": "Период",
-     "type": "period_kind",
+     "name": "period",
+     "ru": "Периодичность",
+     "type": "text",
      "null": false,
      "default": "'M'",
-     "desc": "M — в месяц, Q — в квартал, Y — в год."
+     "desc": "M — в месяц, Y — в год (contractor_tariffs_period_check, TARIFF_PERIODS).",
+     "status": "actual"
+    },
+    {
+     "name": "valid_from",
+     "ru": "С месяца",
+     "type": "date",
+     "null": false,
+     "desc": "Первое число месяца (contractor_tariffs_month_check).",
+     "status": "actual"
     },
     {
      "name": "note",
      "ru": "Примечание",
      "type": "text",
-     "null": true,
-     "desc": "Например «Ставка на 2026 год»."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "desc": "Например «Первая ставка» или «Ставка на 2026 год».",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -3461,33 +3525,40 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — демо-данные или загрузка.",
+     "status": "actual"
     },
     {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Начисление за месяц берёт последний тариф, начавшийся не позже этого месяца; нужен право tariff."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, from_month)"
-   ],
-   "issue": "этап 2 · #61 (первая запись), #77 (журнал полностью)",
-   "source": "demoDB.contractors[].tariffs"
+   ]
   },
   {
    "name": "assignments",
    "ru": "Назначенные отчёты",
    "group": "contractors",
-   "status": "planned",
-   "desc": "Какие виды отчётов назначены контрагенту, с какого по какой месяц, кто отвечает и по какой ставке. Из назначений программа создаёт отчёты.",
+   "status": "actual",
+   "desc": "Назначения отчётов контрагентам: вид отчёта из каталога, с какого периода сдаёт, до какого, ответственный, ставка, вариант срока, повторяющаяся сумма, примечание. Из назначений программа создаёт отчёты. Снятое назначение остаётся с датой окончания ended_on; действующее у контрагента по виду — одно.",
+   "rls": "Включена. Политика assignments_isolation: только своя организация.",
+   "uniques": [
+    "assignments_active_key (org_id, contractor_id, report_type_code) WHERE ended_on is null — одно действующее назначение вида у контрагента",
+    "assignments_id_org_unique (id, org_id)"
+   ],
+   "issue": "#62 (сделано); подбор отчётов — #63",
+   "source": "ТЗ «Отчеты для сдачи» → «Назначение отчётов контрагентам»; demoDB.contractors[].assign; modules/tax-pick.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports",
+   "logic": [
+    "Снятие назначения не удаляет созданные отчёты: несданные будущие помечаются «Не требуется».",
+    "Ставки ЕН для наличной и безналичной выручки назначаются вместе (en_rates)."
+   ],
+   "indexes": [
+    "assignments_type_idx (org_id, report_type_code)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3496,7 +3567,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3504,8 +3576,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -3513,65 +3587,124 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ assignments_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.code"
+     "fk": "report_types.code",
+     "status": "actual"
     },
     {
-     "name": "from_date",
-     "ru": "С",
+     "name": "from_month",
+     "ru": "С какого периода",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Первое число месяца (assignments_from_check).",
+     "status": "actual"
     },
     {
-     "name": "to_date",
-     "ru": "По",
+     "name": "until_month",
+     "ru": "До какого периода",
      "type": "date",
      "null": true,
-     "desc": "Пусто — бессрочно."
+     "desc": "Необязательно; первое число месяца, не раньше «С какого» (assignments_until_check).",
+     "status": "actual"
     },
     {
-     "name": "responsible_id",
-     "ru": "Свой ответственный",
+     "name": "ended_on",
+     "ru": "Снято",
+     "type": "date",
+     "null": true,
+     "desc": "Дата, с которой контрагент вид не сдаёт; пусто — назначение действует.",
+     "status": "actual"
+    },
+    {
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
      "type": "uuid",
      "null": true,
      "fk": "employees.id",
-     "desc": "Пусто — ответственный контрагента."
+     "desc": "Пусто — ответственный контрагента. Составной внешний ключ assignments_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id).",
+     "status": "actual"
     },
     {
      "name": "rate",
      "ru": "Ставка",
      "type": "text",
      "null": true,
-     "desc": "Например «12 %» для НДС или код ЕНС для единого налога."
+     "desc": "Ставка из «Ставок» вида (не у единого налога), например «12 %».",
+     "status": "actual"
     },
     {
-     "name": "rate_mode",
-     "ru": "Способ оплаты",
+     "name": "en_rates",
+     "ru": "Ставки единого налога",
+     "type": "jsonb",
+     "null": false,
+     "default": "'[]'",
+     "desc": "Строки «Ставок единого налога» у ЕН: код ЕНС и вариант ставки (массив, assignments_en_rates_check).",
+     "status": "actual"
+    },
+    {
+     "name": "rate_additions",
+     "ru": "Добавляемые ставки",
+     "type": "text[]",
+     "null": false,
+     "default": "'{}'",
+     "desc": "Отмеченные добавляемые ставки (налог с продаж).",
+     "status": "actual"
+    },
+    {
+     "name": "due_day",
+     "ru": "Вариант срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "До 10, 15, 20, 25 числа или 31 — до последнего дня (assignments_due_day_check); пусто — как в каталоге.",
+     "status": "actual"
+    },
+    {
+     "name": "own_period",
+     "ru": "Своя периодичность",
      "type": "text",
      "null": true,
-     "desc": "Для ЕН: cash, cashless или оба."
+     "desc": "M, Q, H, Y — периодичность в назначении (внутренняя отчётность, патент); пусто вместе с днём и месяцем — как в каталоге (assignments_own_check).",
+     "status": "actual"
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "own_day",
+     "ru": "Свой день срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "От 1 до 31.",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
+     "name": "own_month",
+     "ru": "Свой месяц срока",
+     "type": "smallint",
+     "null": true,
+     "desc": "Месяц после конца периода, у годовых — месяц срока.",
+     "status": "actual"
+    },
+    {
+     "name": "fixed_amount",
+     "ru": "Повторяющаяся сумма",
+     "type": "bigint",
+     "null": true,
+     "desc": "Сумма к уплате в тыйынах, подставляется в новые отчёты; не меньше 0.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Примечание",
+     "type": "text",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -3579,7 +3712,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — создан задачей по расписанию или наполнением.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -3587,7 +3721,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -3595,20 +3748,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Снятие назначения не удаляет созданные отчёты: несданные будущие помечаются «Не требуется».",
-    "Ставки ЕН для наличной и безналичной выручки назначаются вместе."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, contractor_id)",
-    "(org_id, report_type_code)"
-   ],
-   "issue": "этап 2 · #62",
-   "source": "demoDB.contractors[].assign; modules/tax-pick.js"
+   ]
   },
   {
    "name": "contractor_pages",
@@ -3903,8 +4046,30 @@
    "name": "reports",
    "ru": "Отчёты",
    "group": "reports",
-   "status": "planned",
-   "desc": "Конкретный отчёт контрагента за период: например «НДС за июль 2026». Создаётся программой из назначений по расписанию или вручную («Разовый отчёт»). Здесь сроки, статус, сумма к уплате и подтверждение.",
+   "status": "actual",
+   "desc": "Конкретный отчёт контрагента за период: например «НДС за июль 2026». Один контрагент + вид + период + версия = один отчёт; у разового вида период — месяц даты события, одна дата события — один отчёт. Уточнённые — версии 1, 2, … того же периода; прежняя помечается superseded.",
+   "rls": "Включена. Политика reports_isolation: только своя организация.",
+   "uniques": [
+    "reports_period_key (org_id, contractor_id, report_type_code, period_start, event_date, revision) NULLS NOT DISTINCT — повторный запуск расписания не создаёт дублей",
+    "reports_id_org_unique (id, org_id)"
+   ],
+   "issue": "#62 (сделано); экраны — #69, сдача — #70, деньги — #75",
+   "source": "demoDB.reports; ТЗ «Отчеты для сдачи» → «Отчёты к сдаче создаются автоматически»; modules/reports.js, report-card.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports",
+   "logic": [
+    "Отчёты создаются задачей по расписанию заранее на следующие периоды по назначениям; повторный запуск не создаёт дублей (уникальный ключ).",
+    "Шкала: «К сдаче → В работе → Сдан»; needs_fix — «Требует исправления»; «Не требуется» — отчёт не нужен. Подтверждение старшим — отметка на шаге «Сдан» (confirmed_at/by), окно сдачи и подтверждения — задача 2.14.",
+    "«Сдан» нельзя, пока не оплачено, если включено «Сдан только после оплаты» (кроме «Оплатил контрагент сам»).",
+    "Просрочено = срок прошёл, а статус ещё не «Сдан» (не хранится, считается при запросе).",
+    "Шаг назад по шкале — только с правом rollback и причиной (status_history).",
+    "Сумма: К уплате → Получено → Оплачено; статус оплаты пересчитывается при каждой операции.",
+    "Поля сдачи и подтверждения задача 2.06 заполняет только у прошлых периодов, отмеченных сданными при назначении; окно «Сдан» — 2.14, деньги — 2.19."
+   ],
+   "indexes": [
+    "reports_due_idx (org_id, due_date) — «На неделе», «Просрочено»",
+    "reports_contractor_idx (org_id, contractor_id, report_type_code)",
+    "reports_responsible_idx (org_id, responsible_employee_id) — область «Свои»"
+   ],
    "columns": [
     {
      "name": "id",
@@ -3913,7 +4078,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -3922,21 +4088,27 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "Составной внешний ключ reports_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE RESTRICT: контрагента с отчётами удалить нельзя (п. А-1).",
+     "status": "actual"
     },
     {
      "name": "report_type_code",
      "ru": "Вид отчёта",
      "type": "text",
      "null": false,
-     "fk": "report_types.code"
+     "fk": "report_types.code",
+     "status": "actual"
     },
     {
      "name": "assignment_id",
@@ -3944,64 +4116,91 @@
      "type": "uuid",
      "null": true,
      "fk": "assignments.id",
-     "desc": "Из какого назначения создан; пусто у разовых."
+     "desc": "По какому назначению создан; пусто — разовый отчёт, созданный вручную. Составной ключ reports_assignment_fk (assignment_id, org_id).",
+     "status": "actual"
+    },
+    {
+     "name": "period",
+     "ru": "Вид периода",
+     "type": "period_kind",
+     "null": false,
+     "desc": "M, Q, H, Y на момент создания (у видов с периодичностью в назначении — из назначения; reports_period_check).",
+     "status": "actual"
     },
     {
      "name": "period_start",
      "ru": "Начало периода",
      "type": "date",
      "null": false,
-     "desc": "Первый день периода: 2026-07-01 для июля, 2026-04-01 для II квартала."
-    },
-    {
-     "name": "period_kind",
-     "ru": "Период",
-     "type": "period_kind",
-     "null": false,
-     "desc": "M, Q, H или Y — как у вида отчёта."
+     "desc": "Первое число периода: 2026-07-01 для июля, 2026-04-01 для II квартала; у разового — первое число месяца даты события.",
+     "status": "actual"
     },
     {
      "name": "event_date",
      "ru": "Дата события",
      "type": "date",
      "null": true,
-     "desc": "Для разовых отчётов: например дата выдачи лицензии."
+     "desc": "У разового вида («Дата ввоза»); в месяце period_start (reports_event_check).",
+     "status": "actual"
     },
     {
-     "name": "correction_no",
-     "ru": "Номер уточнённого",
-     "type": "integer",
+     "name": "act",
+     "ru": "Что сделать",
+     "type": "text",
+     "null": false,
+     "desc": "sub — «Сдача», pay — «Уплата», both — «Сдача + уплата» (reports_act_check, REPORT_ACTS) на момент создания: отчёт сохраняет его, даже если вид потом поменяли.",
+     "status": "actual"
+    },
+    {
+     "name": "revision",
+     "ru": "Номер уточнения",
+     "type": "smallint",
      "null": false,
      "default": "0",
-     "desc": "0 — первичный; 1, 2… — уточнённые отчёты за тот же период."
+     "desc": "0 — первичный; 1, 2… — уточнённые за тот же период.",
+     "status": "actual"
     },
     {
      "name": "superseded",
-     "ru": "Заменён уточнённым",
+     "ru": "Есть новее",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Да — есть более новый уточнённый; в итоги не входит."
+     "desc": "Есть более новая версия: в списке по умолчанию не показывается, в итоги не входит.",
+     "status": "actual"
     },
     {
      "name": "due_base",
-     "ru": "Срок по календарю",
+     "ru": "Срок по закону",
      "type": "date",
      "null": false,
-     "desc": "Срок сдачи, рассчитанный по правилам вида и календарю."
+     "desc": "Срок по правилам вида и календарю — до переноса с нерабочего дня.",
+     "status": "actual"
     },
     {
-     "name": "due",
-     "ru": "Срок сдачи",
+     "name": "due_date",
+     "ru": "Срок",
      "type": "date",
      "null": false,
-     "desc": "Действующий срок; отличается от расчётного, если срок меняли (report_due_changes)."
+     "desc": "Действующий срок сдачи; отличается от расчётного, если срок меняли (report_due_changes).",
+     "status": "actual"
+    },
+    {
+     "name": "due_manual",
+     "ru": "Срок изменён вручную",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Не пересчитывается при изменении правил и календаря.",
+     "status": "actual"
     },
     {
      "name": "pay_due",
      "ru": "Срок оплаты",
      "type": "date",
-     "null": true
+     "null": true,
+     "desc": "У вида «Сдача» — пусто.",
+     "status": "actual"
     },
     {
      "name": "status",
@@ -4009,7 +4208,8 @@
      "type": "report_status",
      "null": false,
      "default": "'todo'",
-     "desc": "К сдаче → В работе → Сдан; «Не требуется» — отчёт не нужен."
+     "desc": "todo, in_progress, submitted, needs_fix, not_required (reports_status_check).",
+     "status": "actual"
     },
     {
      "name": "pay_status",
@@ -4017,81 +4217,39 @@
      "type": "pay_status",
      "null": false,
      "default": "'unpaid'",
-     "desc": "Рассчитывается из оплат: Не оплачено, Оплачено частично, Оплачено, Не требуется."
-    },
-    {
-     "name": "confirm_status",
-     "ru": "Подтверждение",
-     "type": "confirm_status",
-     "null": true,
-     "desc": "Ждёт подтверждения, Подтверждено, Требует исправления; пусто — подтверждение не нужно."
-    },
-    {
-     "name": "responsible_id",
-     "ru": "Ответственный",
-     "type": "uuid",
-     "null": false,
-     "fk": "employees.id",
-     "desc": "Кто сдаёт этот отчёт."
-    },
-    {
-     "name": "sum",
-     "ru": "К уплате",
-     "type": "bigint",
-     "null": true,
-     "desc": "Сумма налога по отчёту. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "sum_auto",
-     "ru": "Сумма подставлена автоматически",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — фиксированная сумма (например, патент) подставлена программой."
-    },
-    {
-     "name": "received",
-     "ru": "Получено",
-     "type": "bigint",
-     "null": false,
-     "default": "0",
-     "desc": "Сколько денег контрагента распределено на этот отчёт (из поступлений). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "paid",
-     "ru": "Оплачено",
-     "type": "bigint",
-     "null": false,
-     "default": "0",
-     "desc": "Сколько уплачено в бюджет. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "paid_by_client",
-     "ru": "Оплатил контрагент сам",
-     "type": "boolean",
-     "null": false,
-     "default": "false",
-     "desc": "Да — контрагент заплатил налог сам, без наших счетов."
+     "desc": "Рассчитывается из оплат: Не оплачено, Оплачено частично, Оплачено, Не требуется. Поля пока нет: придёт с деньгами по отчётам (2.19, #75).",
+     "status": "planned"
     },
     {
      "name": "submitted_on",
      "ru": "Дата сдачи",
      "type": "date",
      "null": true,
-     "desc": "Дата из квитанции."
+     "desc": "Из квитанции; у прошлых периодов, отмеченных при назначении, — срок по закону.",
+     "status": "actual"
+    },
+    {
+     "name": "submitted_at",
+     "ru": "Когда отмечен «Сдан»",
+     "type": "timestamptz",
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "submitted_by",
      "ru": "Кто сдал",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "users.id",
+     "status": "actual"
     },
     {
-     "name": "submitted_at",
-     "ru": "Когда отметил «Сдан»",
+     "name": "confirmed_at",
+     "ru": "Когда подтверждён",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "Отметка «Подтверждено» на шаге «Сдан».",
+     "status": "actual"
     },
     {
      "name": "confirmed_by",
@@ -4099,55 +4257,94 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Старший бухгалтер с правом repConfirm."
-    },
-    {
-     "name": "confirmed_at",
-     "ru": "Когда подтвердил",
-     "type": "timestamptz",
-     "null": true
+     "desc": "Старший бухгалтер с правом подтверждать сдачу.",
+     "status": "actual"
     },
     {
      "name": "confirm_note",
      "ru": "Комментарий подтверждения",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "fix_reason",
      "ru": "Что исправить",
      "type": "text",
      "null": true,
-     "desc": "Причина «Требует исправления»."
+     "desc": "Причина «Требует исправления». Поля пока нет: «На исправление» с причиной — 2.14 (#70).",
+     "status": "planned"
     },
     {
      "name": "fix_by",
      "ru": "Кто вернул на исправление",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "users.id",
+     "status": "planned",
+     "desc": "Придёт с 2.14 (#70)."
     },
     {
      "name": "fix_at",
      "ru": "Когда вернул",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "status": "planned",
+     "desc": "Придёт с 2.14 (#70)."
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "amount",
+     "ru": "Сумма к уплате",
+     "type": "bigint",
+     "null": true,
+     "desc": "В тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»; пусто — ещё не указана (reports_amount_check ≥ 0).",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
+     "name": "amount_auto",
+     "ru": "Сумма подставлена",
+     "type": "boolean",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "false",
+     "desc": "Подставлена из повторяющейся суммы назначения (например, патент).",
+     "status": "actual"
+    },
+    {
+     "name": "received",
+     "ru": "Получено",
+     "type": "bigint",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько денег контрагента распределено на этот отчёт (из поступлений). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50». Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "paid",
+     "ru": "Оплачено",
+     "type": "bigint",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько уплачено в бюджет. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50». Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "paid_by_client",
+     "ru": "Оплатил контрагент сам",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Да — контрагент заплатил налог сам, без наших счетов. Придёт с 2.19 (#75).",
+     "status": "planned"
+    },
+    {
+     "name": "responsible_employee_id",
+     "ru": "Ответственный",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Пусто — ответственный контрагента. Составной внешний ключ reports_responsible_fk (responsible_employee_id, org_id) → employees (id, org_id).",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -4155,7 +4352,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пусто — создан задачей по расписанию или наполнением.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -4163,7 +4361,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -4171,29 +4388,10 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Отчёты создаются задачей по расписанию заранее на следующие периоды по назначениям; повторный запуск не создаёт дублей (уникальный ключ).",
-    "Шкала: «К сдаче → В работе → Сдан». После «Сдан» — подтверждение старшим, если включено «Подтверждать отчёты»; «Требует исправления» возвращает в работу.",
-    "«Сдан» нельзя, пока не оплачено, если включено «Сдан только после оплаты» (кроме «Оплатил контрагент сам»).",
-    "Просрочено = срок прошёл, а статус ещё не «Сдан» (не хранится, считается при запросе).",
-    "Шаг назад по шкале — только с правом rollback и причиной (status_history).",
-    "Сумма: К уплате → Получено → Оплачено; статус оплаты пересчитывается при каждой операции."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, due, status)",
-    "(org_id, responsible_id, due)",
-    "(org_id, contractor_id, period_start)"
-   ],
-   "uniques": [
-    "(org_id, contractor_id, report_type_code, period_start, correction_no) — у не-разовых",
-    "(org_id, contractor_id, report_type_code, event_date) — у разовых"
-   ],
-   "issue": "этап 2 · #62",
-   "source": "demoDB.reports; modules/reports.js, report-card.js; ТЗ «Модуль Отчёты»"
+   ]
   },
   {
    "name": "report_tax_lines",
@@ -4286,8 +4484,15 @@
    "name": "report_due_changes",
    "ru": "Изменения сроков",
    "group": "reports",
-   "status": "planned",
-   "desc": "Кто, когда и почему изменил срок отчёта (нужно право repDue и причина из справочника).",
+   "status": "actual",
+   "desc": "Изменения срока отчёта вручную («Изменить срок»: новый срок, причина из справочника платформы, комментарий) и причина ручного создания отчёта («Создан вручную (причина)»: прежнего срока нет). Журнал: записи не меняются и не удаляются.",
+   "rls": "Включена. Политика report_due_changes_isolation: только своя организация. UPDATE, DELETE и TRUNCATE отозваны (миграция 0050).",
+   "issue": "#62 (сделано)",
+   "source": "ТЗ «Изменить срок»; modules/report-card.js; packages/db/src/schema/reports.ts; docs/decisions.md п. А-1 продукта",
+   "migration": "0049_reports, 0050_reports_guards",
+   "indexes": [
+    "report_due_changes_report_idx (org_id, report_id, created_at)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -4296,7 +4501,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -4304,8 +4510,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись; по умолчанию — организация текущего запроса. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "report_id",
@@ -4313,51 +4521,60 @@
      "type": "uuid",
      "null": false,
      "fk": "reports.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ report_due_changes_report_fk (report_id, org_id) → reports (id, org_id); удаляется вместе с отчётом.",
+     "status": "actual"
     },
     {
-     "name": "old_due",
+     "name": "from_due",
      "ru": "Был срок",
      "type": "date",
-     "null": false
+     "null": true,
+     "desc": "Пусто — отчёт создан вручную.",
+     "status": "actual"
     },
     {
-     "name": "new_due",
+     "name": "to_due",
      "ru": "Стал срок",
      "type": "date",
-     "null": false
+     "null": false,
+     "status": "actual"
     },
     {
      "name": "reason_code",
      "ru": "Причина",
      "type": "text",
      "null": false,
-     "fk": "due_change_reasons.code"
+     "fk": "due_change_reasons.code",
+     "status": "actual"
     },
     {
      "name": "comment",
      "ru": "Комментарий",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
-     "name": "by",
+     "name": "created_by",
      "ru": "Кто",
      "type": "uuid",
-     "null": false,
-     "fk": "users.id"
+     "null": true,
+     "fk": "users.id",
+     "default": "app.current_user_id()",
+     "desc": "По умолчанию — пользователь текущего запроса.",
+     "status": "actual"
     },
     {
-     "name": "at",
+     "name": "created_at",
      "ru": "Когда",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #62",
-   "source": "modules/report-card.js; refDB.dictionaries.reasons"
+   ]
   },
   {
    "name": "report_files",
@@ -4440,7 +4657,8 @@
      "type": "uuid",
      "null": false,
      "fk": "contractors.id",
-     "desc": "Чьи деньги."
+     "desc": "Чьи деньги. ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта).",
+     "onDelete": "restrict"
     },
     {
      "name": "kind",
@@ -4677,7 +4895,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "month",
@@ -4821,7 +5041,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "name",
@@ -5033,7 +5255,9 @@
      "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "contractors.id"
+     "fk": "contractors.id",
+     "onDelete": "restrict",
+     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
     },
     {
      "name": "name",
@@ -5422,8 +5646,29 @@
    "name": "tasks",
    "ru": "Задачи",
    "group": "work",
-   "status": "planned",
-   "desc": "Поручения сотрудникам: на день или на месяц, по контрагенту или без него, с файлом результата и подтверждением постановщиком.",
+   "status": "actual",
+   "desc": "Ручные задачи сотрудникам: на день или на месяц, по контрагенту или общие, с файлом результата и подтверждением постановщиком. Регулярных задач по отчётам здесь нет: это сами отчёты (задача 2.24).",
+   "rls": "Включена. Политика tasks_isolation: только своя организация. Ограничительная tasks_insert_own: задачу ставит сотрудник от своего имени — created_by и постановщик — текущий пользователь и его сотрудник. Задачи не удаляются, а отменяются: DELETE и TRUNCATE отозваны; UPDATE — только изменяемых столбцов (организацию, постановщика и автора записи после вставки не меняет никто, миграция 0045).",
+   "uniques": [
+    "tasks_id_org_unique (id, org_id) — цель составных ссылок на задачу своей организации"
+   ],
+   "issue": "#79 (сделано); регулярные — #80, Telegram — #81",
+   "source": "demoDB.tasks; ТЗ «Задачи» → «Ручные задачи», «Выполнение», «Подтверждение выполнения»; прототип modules/tasks.js; packages/db/src/schema/tasks.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "logic": [
+    "Кто что может с задачей — правила @buhuchet/domain (tasks/rules.ts) в API: ставить задачи могут только старшие; без права «Все задачи» сотрудник видит свои (исполнитель или постановщик).",
+    "Смена статуса пишется в «Историю статусов» (status_history, шкала task); шаги Базы знаний tdone и tconf засчитываются по ней (правило status).",
+    "«Выполнена» у задачи с подтверждением идёт «На подтверждении»; постановщик подтверждает или возвращает «На доработку» с причиной.",
+    "Файл результата — в files с источником task (FILE_SOURCE_KINDS); отдельного поля файла у задачи нет.",
+    "Сообщения в Telegram о новой задаче и возврате на доработку — задача 2.25."
+   ],
+   "indexes": [
+    "tasks_executor_idx (org_id, executor_employee_id, status) — «Мои задачи»",
+    "tasks_author_idx (org_id, author_employee_id, status) — «Поставленные мной»",
+    "tasks_contractor_idx (org_id, contractor_id, created_at) — задачи в карточке контрагента",
+    "tasks_due_idx (org_id, due_date)",
+    "tasks_pending_idx (org_id) WHERE status = 'on_confirm' — счётчик «На подтверждении»"
+   ],
    "columns": [
     {
      "name": "id",
@@ -5432,7 +5677,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5441,27 +5687,32 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "title",
-     "ru": "Задача",
+     "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «Собрать первичку за сентябрь»."
+     "desc": "Например «Собрать первичку за сентябрь»; не пустое (tasks_title_check).",
+     "status": "actual"
     },
     {
      "name": "description",
      "ru": "Описание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "category_code",
      "ru": "Категория",
      "type": "text",
-     "null": true,
-     "fk": "task_categories.code"
+     "null": false,
+     "fk": "task_categories.code",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5469,7 +5720,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Пусто — внутренняя задача."
+     "onDelete": "cascade",
+     "desc": "Пусто — общая задача. Составной внешний ключ tasks_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
     },
     {
      "name": "project_id",
@@ -5477,51 +5730,60 @@
      "type": "uuid",
      "null": true,
      "fk": "projects.id",
-     "desc": "Если задача из проекта."
+     "desc": "Если задача из проекта. Поля пока нет: придёт с проектами (2.26).",
+     "status": "planned"
     },
     {
-     "name": "executor_id",
+     "name": "executor_employee_id",
      "ru": "Исполнитель",
      "type": "uuid",
      "null": false,
-     "fk": "employees.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_executor_fk (executor_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации.",
+     "status": "actual"
     },
     {
-     "name": "author_id",
+     "name": "author_employee_id",
      "ru": "Постановщик",
      "type": "uuid",
      "null": false,
-     "fk": "employees.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_author_fk (author_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации. Только сотрудник текущего пользователя (tasks_insert_own).",
+     "status": "actual"
     },
     {
-     "name": "term_kind",
+     "name": "term",
      "ru": "Срок",
      "type": "text",
      "null": false,
      "default": "'day'",
-     "desc": "day — к дате, month — в течение месяца."
+     "desc": "day — «На день», month — «На месяц» (tasks_term_check).",
+     "status": "actual"
     },
     {
      "name": "due_date",
-     "ru": "Дата",
+     "ru": "Срок до",
      "type": "date",
      "null": false,
-     "desc": "Для «на месяц» — первое число месяца."
+     "desc": "У «На месяц» — всегда последний день месяца (tasks_month_due_check).",
+     "status": "actual"
     },
     {
      "name": "need_file",
-     "ru": "Нужен файл результата",
-     "type": "boolean",
-     "null": false,
-     "default": "false"
-    },
-    {
-     "name": "need_confirm",
-     "ru": "Нужно подтверждение",
+     "ru": "Требуется файл",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Из учётной политики «Подтверждать задачи»; постановщик подтверждает."
+     "desc": "«Требуется файл при выполнении».",
+     "status": "actual"
+    },
+    {
+     "name": "confirm",
+     "ru": "Требуется подтверждение",
+     "type": "boolean",
+     "null": false,
+     "desc": "«Требуется подтверждение»: только у такой задачи бывают «На подтверждении», «Подтверждена» и «На доработке» (tasks_confirm_status_check).",
+     "status": "actual"
     },
     {
      "name": "status",
@@ -5529,74 +5791,66 @@
      "type": "task_status",
      "null": false,
      "default": "'todo'",
-     "desc": "К выполнению, В работе, На подтверждении, На доработке, Подтверждена, Выполнена, Не выполнена, Отменена."
-    },
-    {
-     "name": "result_file_id",
-     "ru": "Файл результата",
-     "type": "uuid",
-     "null": true,
-     "fk": "files.id"
-    },
-    {
-     "name": "fail_reason",
-     "ru": "Причина «Не выполнена» / отмены",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "rework_reason",
-     "ru": "Что доработать",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "rework_by",
-     "ru": "Кто вернул",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id"
+     "desc": "todo, in_progress, rework, on_confirm, confirmed, done, failed, cancelled (tasks_status_check).",
+     "status": "actual"
     },
     {
      "name": "done_at",
-     "ru": "Выполнена",
+     "ru": "Когда выполнена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "Когда исполнитель отметил «Выполнена»; откат из «Выполнена» и «На подтверждении» снимает.",
+     "status": "actual"
     },
     {
-     "name": "confirmed_by",
+     "name": "fail_reason",
+     "ru": "Причина «Не выполнена»",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "rework_reason",
+     "ru": "Причина доработки",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Причина последнего «На доработку».",
+     "status": "actual"
+    },
+    {
+     "name": "rework_by_employee_id",
+     "ru": "Кто вернул на доработку",
+     "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_rework_by_fk (rework_by_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации.",
+     "status": "actual"
+    },
+    {
+     "name": "confirmed_by_employee_id",
      "ru": "Кто подтвердил",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "employees.id",
+     "desc": "Составной внешний ключ tasks_confirmed_by_fk (confirmed_by_employee_id, org_id) → employees (id, org_id): только сотрудник своей организации. У «Подтверждена» обязателен вместе с «Когда подтверждена» (tasks_confirmed_check).",
+     "status": "actual"
     },
     {
      "name": "confirmed_at",
-     "ru": "Когда подтвердил",
+     "ru": "Когда подтверждена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "status": "actual"
     },
     {
      "name": "confirm_note",
      "ru": "Комментарий подтверждения",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
      "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "''",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5604,7 +5858,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5612,7 +5867,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5620,28 +5894,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Сотрудник без права tasksAll видит только свои задачи (исполнитель или постановщик).",
-    "Новая задача и возврат на доработку — сообщение исполнителю в Telegram.",
-    "«Выполнена» с нужным подтверждением сначала идёт «На подтверждении»; постановщик подтверждает или возвращает «На доработку» с причиной."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "indexes": [
-    "(org_id, executor_id, due_date)",
-    "(org_id, contractor_id)"
-   ],
-   "issue": "этап 2 · #79",
-   "source": "demoDB.tasks; modules/tasks.js; ТЗ «Модуль Задачи»"
+   ]
   },
   {
    "name": "task_comments",
    "ru": "Комментарии к задаче",
    "group": "work",
-   "status": "planned",
-   "desc": "Переписка по задаче.",
+   "status": "actual",
+   "desc": "Комментарии задачи («Комментарии · N»): пишет любой, кто видит задачу; комментарий не меняется и не удаляется (кроме как вместе с задачей).",
+   "rls": "Включена. Политика task_comments_isolation: только своя организация. Ограничительная task_comments_insert_own: автор — текущий пользователь, время — now(). UPDATE, DELETE и TRUNCATE отозваны (миграция 0045).",
+   "issue": "#79 (сделано)",
+   "source": "demoDB.tasks[].comments; прототип modules/tasks.js openTask; packages/db/src/schema/tasks.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "indexes": [
+    "task_comments_task_idx (org_id, task_id, created_at)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -5650,7 +5920,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5658,8 +5929,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "task_id",
@@ -5667,39 +5939,61 @@
      "type": "uuid",
      "null": false,
      "fk": "tasks.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ task_comments_task_fk (task_id, org_id) → tasks (id, org_id); удаляется вместе с задачей.",
+     "status": "actual"
     },
     {
-     "name": "author_id",
+     "name": "author_user_id",
      "ru": "Автор",
      "type": "uuid",
      "null": false,
-     "fk": "users.id"
+     "fk": "users.id",
+     "default": "app.current_user_id()",
+     "desc": "По умолчанию — пользователь текущего запроса; другого записать нельзя.",
+     "status": "actual"
     },
     {
-     "name": "body",
+     "name": "text",
      "ru": "Текст",
      "type": "text",
-     "null": false
+     "null": false,
+     "desc": "Не пустой (task_comments_text_check).",
+     "status": "actual"
     },
     {
-     "name": "at",
+     "name": "created_at",
      "ru": "Когда",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "desc": "При вставке ровно now().",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #79",
-   "source": "demoDB.tasks[].comments"
+   ]
   },
   {
    "name": "indicators",
    "ru": "Показатели",
    "group": "work",
-   "status": "planned",
-   "desc": "Что организация собирает с контрагентов каждый месяц: выручка, численность, рентабельность и т. п.",
+   "status": "actual",
+   "desc": "Показатели организации («Настройка показателей»): что организация собирает с контрагентов каждый месяц — выручка, численность, рентабельность и т. п.; «Кому вести», обязательность, срок заполнения и «Вести с».",
+   "rls": "Включена. Политика indicators_isolation: только своя организация.",
+   "uniques": [
+    "indicators_org_name_key (org_id, lower(name)) — название уникально в организации без учёта регистра, и среди архивных",
+    "indicators_id_org_unique (id, org_id) — цель составных ссылок"
+   ],
+   "issue": "#83 (сделано); ввод из Excel — #84",
+   "source": "demoDB.indicators; ТЗ «Показатели контрагентов»; прототип modules/kpi.js; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "logic": [
+    "Настраивает право «Настройка показателей»; значения вносит право ввода; «Проверено» ставит «Проверять показатели».",
+    "Удалить можно только показатель без значений (это держит и внешний ключ значений), иначе — только в архив.",
+    "У новой организации — два показателя-примера."
+   ],
+   "indexes": [
+    "indicators_org_order_idx (org_id, sort_order)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -5708,7 +6002,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5717,109 +6012,110 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "desc": "Например «Выручка»."
-    },
-    {
-     "name": "description",
-     "ru": "Как заполнять",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "value_type",
-     "ru": "Тип значения",
-     "type": "indicator_type",
-     "null": false,
-     "desc": "som — сумма в сомах, int — целое, dec — дробное, pct — процент."
+     "desc": "Например «Выручка»; не пустое, до 100 знаков (indicators_name_check).",
+     "status": "actual"
     },
     {
      "name": "unit",
      "ru": "Единица",
      "type": "text",
-     "null": true,
-     "desc": "Например «сом», «чел.»."
+     "null": false,
+     "desc": "Например «сом», «чел.»; не пустая, до 20 знаков (indicators_unit_check).",
+     "status": "actual"
     },
     {
-     "name": "summary",
-     "ru": "Итог за период",
+     "name": "type",
+     "ru": "Тип значения",
+     "type": "indicator_type",
+     "null": false,
+     "desc": "int — целое, dec — дробное, som — сумма в сомах, pct — процент (indicators_type_check).",
+     "status": "actual"
+    },
+    {
+     "name": "total",
+     "ru": "Основной итог",
      "type": "text",
      "null": false,
      "default": "'sum'",
-     "desc": "sum — сумма, avg — среднее, last — последнее значение."
+     "desc": "Какой итог показывать первым: sum, avg, max, min, last (indicators_total_check).",
+     "status": "actual"
     },
     {
-     "name": "scope",
-     "ru": "Для кого",
+     "name": "description",
+     "ru": "Описание",
      "type": "text",
      "null": false,
-     "default": "'all'",
-     "desc": "all — все контрагенты, sel — выбранные."
+     "default": "''",
+     "desc": "До 1000 знаков.",
+     "status": "actual"
     },
     {
      "name": "required",
-     "ru": "Обязательный",
-     "type": "boolean",
-     "null": false,
-     "default": "true"
-    },
-    {
-     "name": "due_day",
-     "ru": "Заполнить до, число",
-     "type": "integer",
-     "null": false,
-     "default": "10",
-     "desc": "До какого числа следующего месяца заполнить."
-    },
-    {
-     "name": "start_month",
-     "ru": "С месяца",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "auto_new",
-     "ru": "Новым контрагентам сразу",
+     "ru": "Обязательно заполнять",
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Да — показатель сам появляется у новых контрагентов."
+     "desc": "«Обязательно заполнять каждый месяц».",
+     "status": "actual"
+    },
+    {
+     "name": "due_day",
+     "ru": "Срок заполнения",
+     "type": "smallint",
+     "null": false,
+     "default": "10",
+     "desc": "Число следующего месяца, от 1 до 28 (indicators_due_day_check).",
+     "status": "actual"
+    },
+    {
+     "name": "start_month",
+     "ru": "Вести с",
+     "type": "text",
+     "null": false,
+     "desc": "Месяц, с которого показатель требуется. Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicators_start_check).",
+     "status": "actual"
+    },
+    {
+     "name": "scope",
+     "ru": "Кому вести",
+     "type": "text",
+     "null": false,
+     "default": "'all'",
+     "desc": "all — «Всем контрагентам», selected — «Выбранным» (indicators_scope_check).",
+     "status": "actual"
+    },
+    {
+     "name": "auto_new",
+     "ru": "Включать новых автоматически",
+     "type": "boolean",
+     "null": false,
+     "default": "true",
+     "desc": "При «Всем контрагентам» — всегда да (indicators_auto_new_check).",
+     "status": "actual"
     },
     {
      "name": "archived",
      "ru": "В архиве",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "sort_order",
      "ru": "Порядок",
      "type": "integer",
      "null": false,
-     "default": "0"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "desc": "Порядок в таблицах и в карточке контрагента.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5827,7 +6123,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5835,7 +6132,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5843,22 +6159,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "logic": [
-    "Настраивает право indSetup; значения вносит kpiEdit; проверяет indCheck."
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicators; modules/kpi.js; ТЗ «Модуль Показатели»"
+   ]
   },
   {
    "name": "indicator_targets",
    "ru": "Показатели у контрагентов",
    "group": "work",
-   "status": "planned",
-   "desc": "У каких контрагентов показатель собирается и с какого месяца (или отключён).",
+   "status": "actual",
+   "desc": "«Кому вести» у контрагента: ведётся ли показатель, свой месяц «с <месяц>» и месяц выключения («Не ведётся с <месяц>»). Строка есть только там, где она что-то меняет (правила applyWho, toggleTarget в @buhuchet/domain): нет строки — контрагент для показателя новый.",
+   "rls": "Включена. Политика indicator_targets_isolation: только своя организация.",
+   "issue": "#83 (сделано)",
+   "source": "demoDB.indicators[].cps, from, off; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "indexes": [
+    "indicator_targets_contractor_idx (org_id, contractor_id)"
+   ],
    "columns": [
     {
      "name": "org_id",
@@ -5866,8 +6184,9 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "indicator_id",
@@ -5876,7 +6195,9 @@
      "null": false,
      "pk": true,
      "fk": "indicators.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_targets_indicator_fk (indicator_id, org_id) → indicators (id, org_id); удаляется вместе с показателем.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5885,244 +6206,73 @@
      "null": false,
      "pk": true,
      "fk": "contractors.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_targets_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "enabled",
+     "ru": "Ведётся",
+     "type": "boolean",
+     "null": false,
+     "status": "actual"
     },
     {
      "name": "from_month",
      "ru": "С месяца",
-     "type": "date",
-     "null": true
+     "type": "text",
+     "null": true,
+     "desc": "Свой «с <месяц>»; пусто — с «Вести с» показателя. Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_targets_from_check).",
+     "status": "actual"
     },
     {
-     "name": "off_from",
-     "ru": "Отключён с месяца",
-     "type": "date",
-     "null": true
+     "name": "off_since",
+     "ru": "Не ведётся с",
+     "type": "text",
+     "null": true,
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_targets_off_check).",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто изменил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicators[].cps, from, off"
+   ]
   },
   {
    "name": "indicator_values",
    "ru": "Значения показателей",
    "group": "work",
-   "status": "planned",
-   "desc": "Значение показателя у контрагента за месяц.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "org_id",
-     "ru": "Организация",
-     "type": "uuid",
-     "null": false,
-     "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
-    },
-    {
-     "name": "indicator_id",
-     "ru": "Показатель",
-     "type": "uuid",
-     "null": false,
-     "fk": "indicators.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "contractor_id",
-     "ru": "Контрагент",
-     "type": "uuid",
-     "null": false,
-     "fk": "contractors.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "month",
-     "ru": "Месяц",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "value",
-     "ru": "Значение",
-     "type": "numeric(20,4)",
-     "null": false,
-     "desc": "Для сумм — в сомах с тыйынами (суммы показателей не участвуют в денежных расчётах)."
-    },
-    {
-     "name": "note",
-     "ru": "Комментарий",
-     "type": "text",
-     "null": true
-    },
-    {
-     "name": "file_id",
-     "ru": "Файл",
-     "type": "uuid",
-     "null": true,
-     "fk": "files.id",
-     "desc": "Подтверждающий документ."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
-    },
-    {
-     "name": "version",
-     "ru": "Версия записи",
-     "type": "integer",
-     "null": false,
-     "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
-    }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
+   "status": "actual",
+   "desc": "Значение показателя у контрагента за месяц. Строка остаётся, когда значение стирают: у неё история, комментарий и файлы (источник файлов indicator_value).",
+   "rls": "Включена. Политика indicator_values_isolation: только своя организация.",
    "uniques": [
-    "(indicator_id, contractor_id, month)"
+    "indicator_values_key (contractor_id, indicator_id, month) — одно значение на контрагента, показатель и месяц",
+    "indicator_values_id_org_unique (id, org_id)"
    ],
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicatorValues"
-  },
-  {
-   "name": "indicator_months",
-   "ru": "Месяцы показателей",
-   "group": "work",
-   "status": "planned",
-   "desc": "Статус заполнения показателей контрагента за месяц: Не заполнено → Заполнено → Проверено.",
-   "columns": [
-    {
-     "name": "id",
-     "ru": "Номер записи",
-     "type": "uuid",
-     "null": false,
-     "pk": true,
-     "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
-    },
-    {
-     "name": "org_id",
-     "ru": "Организация",
-     "type": "uuid",
-     "null": false,
-     "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
-    },
-    {
-     "name": "contractor_id",
-     "ru": "Контрагент",
-     "type": "uuid",
-     "null": false,
-     "fk": "contractors.id",
-     "onDelete": "cascade"
-    },
-    {
-     "name": "month",
-     "ru": "Месяц",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "status",
-     "ru": "Статус",
-     "type": "indicator_status",
-     "null": false,
-     "default": "'empty'"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
-    },
-    {
-     "name": "created_by",
-     "ru": "Кто создал",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
-    },
-    {
-     "name": "version",
-     "ru": "Версия записи",
-     "type": "integer",
-     "null": false,
-     "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
-    }
-   ],
+   "issue": "#83 (сделано); ввод из Excel — #84",
+   "source": "demoDB.indicatorValues; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
    "logic": [
-    "Создаются по расписанию 1-го числа; «Проверено» ставит право indCheck."
+    "Пустой месяц не считается нулём: null — «не заполнено», 0 — «внесено, равно нулю»; итоги «За период» — только по заполненным месяцам.",
+    "Подтверждающий документ — в files с источником indicator_value; отдельного поля файла нет."
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "uniques": [
-    "(contractor_id, month)"
+   "indexes": [
+    "indicator_values_indicator_idx (org_id, indicator_id)",
+    "indicator_values_month_idx (org_id, month)"
    ],
-   "issue": "этап 2 · #83",
-   "source": "demoDB.indicatorMonths"
-  },
-  {
-   "name": "indicator_imports",
-   "ru": "Загрузки показателей из Excel",
-   "group": "work",
-   "status": "planned",
-   "desc": "История загрузки значений показателей из Excel.",
    "columns": [
     {
      "name": "id",
@@ -6131,7 +6281,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -6140,73 +6291,316 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
-     "name": "file_id",
-     "ru": "Файл",
+     "name": "contractor_id",
+     "ru": "Контрагент",
      "type": "uuid",
      "null": false,
-     "fk": "files.id"
+     "fk": "contractors.id",
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_values_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "indicator_id",
+     "ru": "Показатель",
+     "type": "uuid",
+     "null": false,
+     "fk": "indicators.id",
+     "onDelete": "restrict",
+     "desc": "Составной внешний ключ indicator_values_indicator_fk (indicator_id, org_id) → indicators (id, org_id), ON DELETE RESTRICT: показатель со значениями не удаляется, даже если строка пустая.",
+     "status": "actual"
+    },
+    {
+     "name": "month",
+     "ru": "Месяц",
+     "type": "text",
+     "null": false,
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_values_month_check).",
+     "status": "actual"
+    },
+    {
+     "name": "value",
+     "ru": "Значение",
+     "type": "bigint",
+     "null": true,
+     "desc": "Целые сотые (1 250,50 → 125050); пусто — «не заполнено». Суммы показателей не участвуют в денежных расчётах.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Комментарий",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "До 500 знаков (indicator_values_note_check).",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто создал",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, создавший запись; у демо-данных — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто изменил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия записи",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
+    }
+   ]
+  },
+  {
+   "name": "indicator_months",
+   "ru": "Месяцы показателей",
+   "group": "work",
+   "status": "actual",
+   "desc": "Статус заполнения месяца по контрагенту (шкала indicator: Не заполнено → Заполнено → Проверено). Строки нет — «Не заполнено» без даты.",
+   "rls": "Включена. Политика indicator_months_isolation: только своя организация.",
+   "uniques": [
+    "indicator_months_key (contractor_id, month)",
+    "indicator_months_id_org_unique (id, org_id)"
+   ],
+   "issue": "#83 (сделано)",
+   "source": "demoDB.indicatorMonths; packages/db/src/schema/kpi.ts",
+   "migration": "0046_kpi",
+   "logic": [
+    "«Заполнено» ставится само, «Проверено» — правом «Проверять показатели». История статусов — status_history по id строки."
+   ],
+   "indexes": [
+    "indicator_months_month_idx (org_id, month)"
+   ],
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер записи",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Уникальный номер записи, создаётся базой; на него ссылается status_history.entity_id.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
+    },
+    {
+     "name": "contractor_id",
+     "ru": "Контрагент",
+     "type": "uuid",
+     "null": false,
+     "fk": "contractors.id",
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ indicator_months_contractor_fk (contractor_id, org_id) → contractors (id, org_id); удаляется вместе с контрагентом.",
+     "status": "actual"
+    },
+    {
+     "name": "month",
+     "ru": "Месяц",
+     "type": "text",
+     "null": false,
+     "desc": "Месяц строкой «YYYY-MM» (YearMonth в @buhuchet/domain; проверка indicator_months_month_check).",
+     "status": "actual"
+    },
+    {
+     "name": "status",
+     "ru": "Статус",
+     "type": "indicator_status",
+     "null": false,
+     "default": "'empty'",
+     "desc": "empty, filled, checked (indicator_months_status_check).",
+     "status": "actual"
+    },
+    {
+     "name": "status_at",
+     "ru": "Когда установлен",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Показывается под шкалой.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия записи",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "status": "actual"
+    }
+   ]
+  },
+  {
+   "name": "indicator_imports",
+   "ru": "История загрузок показателей из Excel",
+   "group": "work",
+   "status": "actual",
+   "desc": "«История загрузок» ввода показателей из Excel: кто, когда, какой файл, период прочитанных значений и сколько записано новых, изменённых, сколько ошибок и пропущенных проверенных. Сами значения пишутся в indicator_values, в их истории — пометка «Из Excel». Файл не хранится: в строке только его имя.",
+   "rls": "Включена. Политика indicator_imports_isolation: только своя организация. Таблица только пополняется (0053): у роли приложения отозваны UPDATE, DELETE и TRUNCATE; ограничительная политика indicator_imports_insert_own пускает запись только с created_by = текущий пользователь — «Кто» не подменить.",
+   "issue": "#84 (сделано)",
+   "source": "demoDB.indicatorImports; modules/kpi-excel.js (kxApply); packages/db/src/schema/kpi.ts",
+   "migration": "0052_kpi_import, 0053_kpi_import_guards",
+   "logic": [
+    "Предпросмотр и «Применить» — по очереди через rate_limits (вид kpi_import): один разбор пользователя одновременно и не больше 60 в час.",
+    "«Применить без них» не записывает изменения проверенных значений и считает их в skipped_checked."
+   ],
+   "indexes": [
+    "indicator_imports_org_idx (org_id, created_at)"
+   ],
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер записи",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Создаётся базой.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "file_name",
+     "ru": "Файл",
+     "type": "text",
+     "null": false,
+     "desc": "Имя загруженного файла, 1–255 знаков (indicator_imports_file_check).",
+     "status": "actual"
     },
     {
      "name": "from_month",
      "ru": "С месяца",
-     "type": "date",
-     "null": false
+     "type": "text",
+     "null": true,
+     "desc": "Месяц «YYYY-MM», как у indicator_values.month (indicator_imports_from_check); нет прочитанных значений — пусто.",
+     "status": "actual"
     },
     {
      "name": "to_month",
      "ru": "По месяц",
-     "type": "date",
-     "null": false
+     "type": "text",
+     "null": true,
+     "desc": "Месяц «YYYY-MM», как у indicator_values.month (indicator_imports_to_check); нет прочитанных значений — пусто.",
+     "status": "actual"
     },
     {
-     "name": "n_new",
+     "name": "added",
      "ru": "Новых",
      "type": "integer",
      "null": false,
-     "default": "0"
+     "desc": "Новых значений. Все счётчики ≥ 0 (indicator_imports_counts_check).",
+     "status": "actual"
     },
     {
-     "name": "n_changed",
+     "name": "changed",
      "ru": "Изменено",
      "type": "integer",
      "null": false,
-     "default": "0"
+     "desc": "Изменённых значений.",
+     "status": "actual"
     },
     {
-     "name": "n_errors",
+     "name": "errors",
      "ru": "Ошибок",
      "type": "integer",
      "null": false,
-     "default": "0"
+     "desc": "Строк и ячеек с ошибкой.",
+     "status": "actual"
     },
     {
-     "name": "n_skipped",
-     "ru": "Пропущено",
+     "name": "skipped_checked",
+     "ru": "Пропущено проверенных",
      "type": "integer",
      "null": false,
-     "default": "0"
+     "desc": "Изменения проверенных значений, которые не применили («Применить без них»).",
+     "status": "actual"
     },
     {
-     "name": "by",
+     "name": "created_by",
      "ru": "Кто загрузил",
      "type": "uuid",
-     "null": false,
-     "fk": "users.id"
+     "null": true,
+     "fk": "users.id",
+     "desc": "Текущий пользователь (политика indicator_imports_insert_own).",
+     "status": "actual"
     },
     {
-     "name": "at",
+     "name": "created_at",
      "ru": "Когда",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #84",
-   "source": "demoDB.indicatorImports; modules/kpi-excel.js"
+   ]
   },
   {
    "name": "files",
@@ -6221,13 +6615,13 @@
    ],
    "issue": "#60 (сделано)",
    "source": "ТЗ «Файловый менеджер»; прототип modules/files.js, modules/services.js filesBox; demoDB.files; packages/db/src/schema/files.ts",
-   "migration": "0036_files, 0037_files_column_grants",
+   "migration": "0036_files, 0037_files_column_grants, 0040_contractors_guards",
    "logic": [
     "Загрузка идёт мимо API: запись создаётся pending, браузер кладёт файл в хранилище по подписанной ссылке (2 минуты), затем API проверяет размер и делает файл ready. Не больше 300 начатых загрузок в час от пользователя.",
     "Скачивание — по временной ссылке на 15 минут.",
     "Удаление — отметка deleted с автором и временем (на файл могут ссылаться «История статусов» и история записи); сам объект стирается из хранилища. Свой файл удаляется без права в течение суток, чужой — с правом «Удалять файлы» (filesDelete).",
     "Незаконченные загрузки старше суток удаляет задача по расписанию files.cleanup-pending; других удалений строк нет.",
-    "Источник: пока только manual — «Загружен вручную» (FILE_SOURCE_KINDS в @buhuchet/domain). Модуль, у записей которого есть блок «Файлы», добавляет свой вид и подключает его в API (FILE_SOURCES); ссылку на запись проверяет модуль записи.",
+    "Источники (FILE_SOURCE_KINDS в @buhuchet/domain): manual — «Загружен вручную», task — задача, indicator_value — значение показателя. Модуль, у записей которого есть блок «Файлы», добавляет свой вид и подключает его в API (FILE_SOURCES); ссылку на запись проверяет модуль записи.",
     "Права: filesView — смотреть, filesUpload — загружать, filesDelete — удалять чужие файлы.",
     "Файлы только через общий разъём S3: Supabase Storage сейчас, MinIO или другой S3 при переезде на VPS."
    ],
@@ -6262,7 +6656,7 @@
      "ru": "Источник",
      "type": "text",
      "null": false,
-     "desc": "Вид записи, к которой прикреплён файл (столбец «Источник» Файлового менеджера); строчные латинские буквы и «_», до 40 знаков (files_source_kind_check). manual — «Загружен вручную».",
+     "desc": "Вид записи, к которой прикреплён файл (столбец «Источник» Файлового менеджера); строчные латинские буквы и «_», до 40 знаков (files_source_kind_check). manual — «Загружен вручную», task — задача (2.23), indicator_value — значение показателя (2.27).",
      "status": "actual"
     },
     {
@@ -6279,8 +6673,9 @@
      "type": "uuid",
      "null": true,
      "fk": "contractors.id",
-     "desc": "Контрагент записи; пусто — общий файл организации. Внешнего ключа пока нет: составная ссылка (contractor_id, org_id) → contractors появится вместе с контрагентами (2.05).",
-     "status": "actual"
+     "desc": "Контрагент записи; пусто — общий файл организации. Составной внешний ключ files_contractor_fk (contractor_id, org_id) → contractors (id, org_id), ON DELETE SET NULL (contractor_id): у удалённого контрагента файлы остаются, пропадает только ссылка (миграция 0040).",
+     "status": "actual",
+     "onDelete": "set null"
     },
     {
      "name": "name",
@@ -6400,10 +6795,22 @@
   },
   {
    "name": "kb_progress",
-   "ru": "Обучение пользователя",
+   "ru": "Шаги обучения пользователя",
    "group": "kb",
-   "status": "planned",
-   "desc": "Какие шаги «Умного обучения» пользователь прошёл или пропустил и какие уровни получил.",
+   "status": "actual",
+   "desc": "Отметки шагов «Базы знаний» у каждого пользователя: выполнен (один раз и навсегда — способом и моментом) или пропущен. Содержимое шагов, статей и уровней — в platform_reference (refDB.json), здесь только отметки.",
+   "rls": "Включена. Политика kb_progress_isolation: строки своей организации видят все её пользователи (уровни сотрудников у владельца и в «Сотрудниках»). kb_progress_own_insert и kb_progress_own_update: добавляет и меняет пользователь только свои строки — шаг засчитывается тому, кто сам сделал действие. kb_progress_platform_admin: строки без организации видит и пишет только сам незаблокированный администратор платформы (app.is_platform_admin(), миграция 0047). Удалять строки роль приложения не может (REVOKE DELETE, TRUNCATE, миграция 0042); UPDATE — только столбцов done_how, done_at и skipped_at.",
+   "issue": "#86 (сделано)",
+   "source": "demoDB.kbProgress; ТЗ «База знаний» → «Прогресс хранится на сервере», «Точные правила подсчёта»; прототип modules/kb-lessons.js; packages/db/src/schema/kb.ts; docs/decisions.md п. Г-2 продукта",
+   "migration": "0041_kb, 0042_kb_grants, 0047_news (политика администратора)",
+   "logic": [
+    "Программа строится из прав роли и функций учётной политики при каждом запросе; шаги, которых нет в программе пользователя, просто не считаются.",
+    "Шаг «Сделать» засчитывается по истории изменений (audit_log, только действие самого пользователя) или по привязанному Telegram; «Посмотреть» — «Перейти» и 3 секунды на экране, чтение статьи до конца или первое использование функции.",
+    "Шаг виден, только когда его модуль сделан: модуль, слитый позже, добавляет шаг в KB_STEP_RULES, «Перейти» — в KB_GO, модуль — в KB_READY_MODULES (п. Г-2)."
+   ],
+   "indexes": [
+    "kb_progress_org_idx (org_id)"
+   ],
    "columns": [
     {
      "name": "user_id",
@@ -6412,49 +6819,183 @@
      "null": false,
      "pk": true,
      "fk": "users.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Чья отметка. Составной внешний ключ kb_progress_user_org_fk (user_id, org_id) → users (id, org_id): только пользователь своей организации; удаляется вместе с пользователем.",
+     "status": "actual"
     },
     {
-     "name": "done_steps",
-     "ru": "Пройдено",
-     "type": "jsonb",
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": true,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "По умолчанию — организация текущего запроса; пусто — администратор платформы (у него организации нет). По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "step_id",
+     "ru": "Шаг",
+     "type": "text",
      "null": false,
-     "default": "'{}'",
-     "desc": "Шаг → как пройден (visit, data, show)."
+     "pk": true,
+     "desc": "Код шага из kbSteps (refDB.json): строчные латинские буквы, цифры, «_» и «-», до 64 знаков (kb_progress_step_check).",
+     "status": "actual"
     },
     {
-     "name": "skipped_steps",
-     "ru": "Пропущено",
-     "type": "jsonb",
+     "name": "done_how",
+     "ru": "Как засчитан",
+     "type": "text",
+     "null": true,
+     "desc": "action — действием, data — действием, сделанным раньше, show — показом «Показать как», art — чтением статьи, use — первым использованием, visit — открытием экрана (kb_progress_how_check, KB_HOWS). Пусто — не выполнен (только пропущен).",
+     "status": "actual"
+    },
+    {
+     "name": "done_at",
+     "ru": "Когда засчитан",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Заполнен ровно тогда, когда заполнен «Как засчитан» (kb_progress_done_check).",
+     "status": "actual"
+    },
+    {
+     "name": "skipped_at",
+     "ru": "Пропущен",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Пропустить»: шаг серый, в уровень не засчитывается; «Вернуть» — снова пусто.",
+     "status": "actual"
+    }
+   ]
+  },
+  {
+   "name": "kb_article_reads",
+   "ru": "Прочитанные статьи",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Статьи «Базы знаний», которые пользователь открыл и прокрутил до конца. Только добавляются.",
+   "rls": "Включена. Политика kb_article_reads_isolation: строки своей организации видят все её пользователи (уровни сотрудников у владельца и в «Сотрудниках»). kb_article_reads_own_insert и kb_article_reads_own_update: добавляет и меняет пользователь только свои строки — шаг засчитывается тому, кто сам сделал действие. kb_article_reads_platform_admin: строки без организации видит и пишет только сам незаблокированный администратор платформы (app.is_platform_admin(), миграция 0047). Удалять строки роль приложения не может (REVOKE DELETE, TRUNCATE, миграция 0042); UPDATE отозван (миграция 0042).",
+   "issue": "#86 (сделано)",
+   "source": "ТЗ «База знаний» → «Прогресс хранится на сервере», «Точные правила подсчёта»; прототип modules/kb-lessons.js; packages/db/src/schema/kb.ts; docs/decisions.md п. Г-2 продукта",
+   "migration": "0041_kb, 0042_kb_grants, 0047_news (политика администратора)",
+   "indexes": [
+    "kb_article_reads_org_idx (org_id)"
+   ],
+   "columns": [
+    {
+     "name": "user_id",
+     "ru": "Пользователь",
+     "type": "uuid",
      "null": false,
-     "default": "'{}'"
+     "pk": true,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Чья отметка. Составной внешний ключ kb_article_reads_user_org_fk (user_id, org_id) → users (id, org_id): только пользователь своей организации; удаляется вместе с пользователем.",
+     "status": "actual"
     },
     {
-     "name": "levels",
-     "ru": "Полученные уровни",
-     "type": "jsonb",
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": true,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "По умолчанию — организация текущего запроса; пусто — администратор платформы (у него организации нет). По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "article_id",
+     "ru": "Статья",
+     "type": "text",
      "null": false,
-     "default": "'[]'",
-     "desc": "Уровень и когда получен: «Новичок», «Ученик»…"
+     "pk": true,
+     "desc": "Код статьи из kbArticles (refDB.json), как у шага: до 64 знаков (kb_article_reads_article_check).",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
+     "name": "read_at",
+     "ru": "Когда прочитана",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     }
+   ]
+  },
+  {
+   "name": "kb_levels",
+   "ru": "Полученные уровни",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Уровни знаний пользователя с датами: уровень записывается, когда процент его достиг, и не понижается. Только добавляются.",
+   "rls": "Включена. Политика kb_levels_isolation: строки своей организации видят все её пользователи (уровни сотрудников у владельца и в «Сотрудниках»). kb_levels_own_insert и kb_levels_own_update: добавляет и меняет пользователь только свои строки — шаг засчитывается тому, кто сам сделал действие. kb_levels_platform_admin: строки без организации видит и пишет только сам незаблокированный администратор платформы (app.is_platform_admin(), миграция 0047). Удалять строки роль приложения не может (REVOKE DELETE, TRUNCATE, миграция 0042); UPDATE отозван (миграция 0042).",
+   "issue": "#86 (сделано)",
+   "source": "ТЗ «База знаний» → «Прогресс хранится на сервере», «Точные правила подсчёта»; прототип modules/kb-lessons.js; packages/db/src/schema/kb.ts; docs/decisions.md п. Г-2 продукта",
+   "migration": "0041_kb, 0042_kb_grants, 0047_news (политика администратора)",
+   "indexes": [
+    "kb_levels_org_idx (org_id)"
    ],
-   "rls": "Включена. Пользователь видит только свои строки; организацию проверяет API.",
-   "issue": "этап 2 · #86",
-   "source": "demoDB.kbProgress; modules/kb-lessons.js"
+   "columns": [
+    {
+     "name": "user_id",
+     "ru": "Пользователь",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Чья отметка. Составной внешний ключ kb_levels_user_org_fk (user_id, org_id) → users (id, org_id): только пользователь своей организации; удаляется вместе с пользователем.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": true,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "По умолчанию — организация текущего запроса; пусто — администратор платформы (у него организации нет). По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "level",
+     "ru": "Уровень",
+     "type": "smallint",
+     "null": false,
+     "pk": true,
+     "desc": "Номер в kbLevels (refDB.json), от 0 до 20 (kb_levels_level_check); 0 — «Новичок».",
+     "status": "actual"
+    },
+    {
+     "name": "reached_at",
+     "ru": "Когда получен",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    }
+   ]
   },
   {
    "name": "news",
    "ru": "Новости платформы",
    "group": "kb",
-   "status": "planned",
-   "desc": "Что нового в версиях: черновики и опубликованные новости, которые пользователь видит в «Что нового».",
+   "status": "actual",
+   "desc": "Новости платформы — общие данные, org_id нет: черновик → опубликована; «Снято с публикации» — отметка off. Ведёт только администратор платформы, видят все пользователи всех организаций в ленте «Новости» и окне «Что нового».",
+   "rls": "Включена. Политика news_read: администратор платформы видит всё; остальные — опубликованные, не снятые, «для всех», с наступившей датой публикации (в 09:00 по Бишкеку — так считает сама политика, задача по расписанию не нужна). news_admin_insert и news_admin_update — только администратор платформы; news_admin_delete — только черновик. TRUNCATE отозван (миграция 0048).",
+   "issue": "#88 (сделано)",
+   "source": "refDB.news; ТЗ «База знаний» → «Новости», «Окно «Что нового» при входе»; «Админка → База знаний (содержимое) → Новости»; прототип modules/kb-news.js, admin/news.js; packages/db/src/schema/news.ts; docs/decisions.md п. Г-3 продукта",
+   "migration": "0047_news, 0048_news_grants",
+   "logic": [
+    "Начальное наполнение — история версий из refDB.json (коды v1 …).",
+    "Новость, вышедшая раньше создания учётной записи пользователя, у него считается прочитанной (app.current_user_created_at, docs/deviations.md п. Г-3 продукта)."
+   ],
+   "indexes": [
+    "news_publish_idx (publish_date)"
+   ],
    "columns": [
     {
      "name": "id",
@@ -6462,102 +7003,191 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «v58»."
+     "desc": "v1 … из refDB.json, у новых — «n» и случайные буквы; строчные латинские буквы, цифры, «_» и «-», до 64 знаков (news_id_check).",
+     "status": "actual"
     },
     {
      "name": "title",
      "ru": "Заголовок",
      "type": "text",
-     "null": false
+     "null": false,
+     "status": "actual"
     },
     {
-     "name": "news_type",
-     "ru": "Тип",
+     "name": "type",
+     "ru": "Вид",
      "type": "text",
      "null": false,
-     "desc": "«Нововведение», «Обновление», «Исправление»."
+     "desc": "update, feature, fix, announce (news_type_check, NewsType в @buhuchet/domain).",
+     "status": "actual"
     },
     {
-     "name": "version_label",
+     "name": "release",
      "ru": "Версия",
      "type": "text",
-     "null": true
+     "null": true,
+     "desc": "Например «1.4»; у объявлений можно без неё.",
+     "status": "actual"
     },
     {
-     "name": "pub_date",
-     "ru": "Дата",
+     "name": "publish_date",
+     "ru": "Дата публикации",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Будущая — новость появится сама в этот день в 09:00 по Бишкеку.",
+     "status": "actual"
     },
     {
      "name": "short",
      "ru": "Кратко",
      "type": "text",
-     "null": true
+     "null": false,
+     "desc": "Краткое описание для ленты.",
+     "status": "actual"
     },
     {
-     "name": "body_md",
-     "ru": "Текст",
+     "name": "md",
+     "ru": "Подробно",
+     "type": "text",
+     "null": false,
+     "desc": "Markdown.",
+     "status": "actual"
+    },
+    {
+     "name": "link_kind",
+     "ru": "«Подробнее»: вид",
      "type": "text",
      "null": true,
-     "desc": "Markdown."
+     "desc": "art — статья, mod — модуль Базы знаний; пусто вместе с link_id (news_link_check).",
+     "status": "actual"
     },
     {
-     "name": "status",
-     "ru": "Статус",
+     "name": "link_id",
+     "ru": "«Подробнее»: код",
      "type": "text",
-     "null": false,
-     "default": "'Черновик'",
-     "desc": "«Черновик» или «Опубликовано»."
-    },
-    {
-     "name": "audience",
-     "ru": "Кому",
-     "type": "text",
-     "null": false,
-     "default": "'all'",
-     "desc": "all — всем."
+     "null": true,
+     "desc": "Код статьи или модуля, до 64 знаков.",
+     "status": "actual"
     },
     {
      "name": "pinned",
      "ru": "Закреплена",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "status": "actual"
     },
     {
      "name": "show_on_login",
-     "ru": "Показать при входе",
+     "ru": "Показывать при входе",
+     "type": "boolean",
+     "null": false,
+     "default": "true",
+     "desc": "В окне «Что нового», пока пользователь её не прочитал.",
+     "status": "actual"
+    },
+    {
+     "name": "audience",
+     "ru": "Для кого",
+     "type": "text",
+     "null": false,
+     "default": "'all'",
+     "desc": "all — все пользователи, adm — только режим Админка (news_audience_check).",
+     "status": "actual"
+    },
+    {
+     "name": "status",
+     "ru": "Статус",
+     "type": "text",
+     "null": false,
+     "default": "'draft'",
+     "desc": "draft — черновик, published — опубликована (news_status_check).",
+     "status": "actual"
+    },
+    {
+     "name": "off",
+     "ru": "Снята с публикации",
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "«Что нового» показывается один раз."
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
+     "name": "published_at",
+     "ru": "Когда опубликована",
      "type": "timestamptz",
-     "null": false,
-     "default": "now()"
+     "null": true,
+     "desc": "Когда нажали «Опубликовать»: порядок в один день и «вышла» для прочитанности; заполнено ровно у опубликованной (news_published_check).",
+     "status": "actual"
+    },
+    {
+     "name": "edited_at",
+     "ru": "Изменено после публикации",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Изменено ДД.ММ.ГГГГ» — правка уже опубликованной новости.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто создал",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "onDelete": "set null",
+     "desc": "Администратор платформы; при удалении пользователя — пусто.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
      "ru": "Кто изменил",
      "type": "uuid",
      "null": true,
-     "fk": "users.id"
+     "fk": "users.id",
+     "onDelete": "set null",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия записи",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Защита от одновременной правки.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "этап 2 · #88",
-   "source": "refDB.news; admin/news.js"
+   ]
   },
   {
    "name": "news_reads",
    "ru": "Прочитанные новости",
    "group": "kb",
-   "status": "planned",
-   "desc": "Какие новости пользователь уже видел.",
+   "status": "actual",
+   "desc": "Прочитанные новости: открыта в ленте, показана в окне «Что нового» или «Отметить все прочитанными». Отметки только добавляются.",
+   "rls": "Включена. Политика news_reads_own: пользователь ставит и видит только свои отметки в своей организации; news_reads_platform_admin — отметки администратора платформы без организации; news_reads_admin_count — администратор платформы видит все (столбец «Прочитали»). UPDATE, DELETE и TRUNCATE отозваны (миграция 0048): отметки уходят только вместе с пользователем или черновиком.",
+   "issue": "#88 (сделано)",
+   "source": "demoDB.newsRead; ТЗ «База знаний» → «Новости», «Окно «Что нового» при входе»; «Админка → База знаний (содержимое) → Новости»; прототип modules/kb-news.js, admin/news.js; packages/db/src/schema/news.ts; docs/decisions.md п. Г-3 продукта",
+   "migration": "0047_news, 0048_news_grants",
+   "indexes": [
+    "news_reads_news_idx (news_id) — «Прочитали»",
+    "news_reads_org_idx (org_id)"
+   ],
    "columns": [
     {
      "name": "user_id",
@@ -6566,7 +7196,20 @@
      "null": false,
      "pk": true,
      "fk": "users.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Составной внешний ключ news_reads_user_org_fk (user_id, org_id) → users (id, org_id); удаляется вместе с пользователем.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": true,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "По умолчанию — организация текущего запроса; пусто — администратор платформы.",
+     "status": "actual"
     },
     {
      "name": "news_id",
@@ -6575,19 +7218,18 @@
      "null": false,
      "pk": true,
      "fk": "news.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "status": "actual"
     },
     {
-     "name": "at",
-     "ru": "Когда",
+     "name": "read_at",
+     "ru": "Когда прочитана",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
+     "default": "now()",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Пользователь видит только свои строки; организацию проверяет API.",
-   "issue": "этап 2 · #88",
-   "source": "demoDB.newsRead"
+   ]
   },
   {
    "name": "onboarding_answers",
@@ -6634,7 +7276,16 @@
    "ru": "Справочники платформы (начальная загрузка)",
    "group": "dicts",
    "status": "actual",
-   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь); банки — задача #74 (banks).",
+   "desc": "Мелкие разделы refDB.json прототипа, каждый — одной строкой как JSON. Разделы, на которые ссылаются контрагенты и отчёты, задача #20 разложила по своим таблицам (органы, режимы, основания, УГНС, виды отчётов, льготы, производственный календарь); банки — #74 (banks), категории задач — #79 (task_categories); коды стран телефонов — #92 (phone_codes).",
+   "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишет только команда загрузки pnpm db:seed.",
+   "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
+   "source": "packages/db/src/schema/platform.ts",
+   "migration": "0001_foundation_tables, 0051_admin_platform_dicts_more",
+   "logic": [
+    "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
+    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks, cats, а также phoneCodes: у них свои таблицы; db:seed --update удаляет их старые копии.",
+    "Остаются здесь: налоги, тексты сообщений, база знаний, опросник, группы ГКЭД и др."
+   ],
    "columns": [
     {
      "name": "key",
@@ -6642,7 +7293,7 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles, dictionaries (в нём остались категории задач).",
+     "desc": "Имя раздела refDB.json, например taxes, messageTemplates, kbArticles. Раздела dictionaries здесь больше нет: все его справочники — в своих таблицах.",
      "status": "actual"
     },
     {
@@ -6686,16 +7337,7 @@
      "default": "now()",
      "status": "actual"
     }
-   ],
-   "logic": [
-    "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
-    "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks: у них свои таблицы; db:seed --update удаляет их старые копии.",
-    "Остаются здесь: налоги, категории задач, тексты сообщений, база знаний, опросник, коды телефонов, группы ГКЭД и др."
-   ],
-   "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишет только команда загрузки pnpm db:seed.",
-   "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
-   "source": "packages/db/src/schema/platform.ts",
-   "migration": "0001_foundation_tables"
+   ]
   },
   {
    "name": "ui_texts",
@@ -6974,6 +7616,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -7009,14 +7659,14 @@
      "status": "actual"
     }
    ],
-   "rls": "Включена. Политика authorities_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "rls": "Включена. Политика authorities_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правит администратор платформы функциями app.admin_dict_* (справочник «organs» в перечне app.platform_dict_specs, миграция 0043).",
+   "issue": "#20 (сделано); правка в Админке — #92 (сделано, часть 1)",
    "source": "refDB.dictionaries.organs",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
    "logic": [
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ]
   },
   {
@@ -7097,6 +7747,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -7132,14 +7790,14 @@
      "status": "actual"
     }
    ],
-   "rls": "Включена. Политика ownership_forms_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0028); правку из Админки (#92) сделает узкая функция администратора платформы.",
-   "issue": "#57 (сделано); правка в Админке — #92",
+   "rls": "Включена. Политика ownership_forms_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0028); правит администратор платформы функциями app.admin_dict_* (справочник «forms» в перечне app.platform_dict_specs, миграция 0043).",
+   "issue": "#57 (сделано); правка в Админке — #92 (сделано, часть 1)",
    "source": "refDB.dictionaries.forms; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only",
+   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only, 0043_admin_platform_dicts",
    "logic": [
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1); поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (#92): правки пойдут в audit_log."
+    "История правок Админки пишется в platform_audit_log (миграция 0038)."
    ]
   },
   {
@@ -7257,6 +7915,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -7293,13 +7959,14 @@
     }
    ],
    "rls": "Включена. Политика tax_regimes_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2а, сделано)",
    "source": "refDB.dictionaries.regimes; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts, 0051_admin_platform_dicts_more",
    "logic": [
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся.",
+    "В Админке правятся поля перечня (название, полное, вид, что освобождает, кто, как, совмещение, заметка, статья) и «Выше» / «Ниже»; «Виды деятельности (ГКЭД)» — задача 2.38."
    ]
   },
   {
@@ -7469,6 +8136,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -7505,15 +8180,15 @@
     }
    ],
    "rls": "Включена. Политика tax_benefits_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2)",
    "source": "refDB.dictionaries.benefits; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
    "logic": [
     "За 60 дней до конца срока льготы ответственный получает предупреждение.",
     "Отчёты, которые статус добавляет или убирает, — tax_benefit_report_types; свои сроки — tax_benefit_due_rules; «Ставится по УГНС» — tax_benefit_offices.",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ]
   },
   {
@@ -7731,6 +8406,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -7767,14 +8450,15 @@
     }
    ],
    "rls": "Включена. Политика report_bases_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2а, сделано)",
    "source": "refDB.dictionaries.bases",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts, 0051_admin_platform_dicts_more",
    "logic": [
     "Какие виды отчётов включает основание — из связи report_type_bases (одна связь на обе стороны).",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся.",
+    "Виды отчётов основания в Админке — та же связь report_type_bases, что «Основание» у вида отчёта; правится с любой стороны функцией app.admin_dict_set_links."
    ]
   },
   {
@@ -8201,6 +8885,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -8237,9 +8929,9 @@
     }
    ],
    "rls": "Включена. Политика report_types_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2)",
    "source": "refDB.reportTypes; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
    "logic": [
     "По виду отчёта, периоду и правилам срока программа сама создаёт отчёты контрагента на каждый период (задача по расписанию, поток А).",
     "Срок проверяет report_types_rule_check: due_day ≥ 1, месяцы 1–12, «через месяцев» 0–12, кварталы 1–4.",
@@ -8247,7 +8939,7 @@
     "Новые виды отчётов организации запрашивают через «Запросить добавление» (dict_change_requests).",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ],
    "indexes": [
     "report_types_authority_idx (authority_code)"
@@ -8574,6 +9266,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -8614,12 +9314,12 @@
     "Отдельный учёт по видам деятельности разрешён для ЕНС-01, 05, 13, 15 (ст. 423 ч. 7).",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1); поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (#92): правки пойдут в audit_log."
+    "История правок Админки пишется в platform_audit_log (миграция 0038)."
    ],
    "rls": "Включена. Политика single_tax_rates_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0028); правку из Админки (#92) сделает узкая функция администратора платформы.",
-   "issue": "#57 (сделано); правка в Админке — #92",
+   "issue": "#57 (сделано); правка в Админке — #92 (часть 2)",
    "source": "refDB.enRates; «Справочники платформы (исчерпывающие).md»",
-   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only"
+   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only, 0043_admin_platform_dicts"
   },
   {
    "name": "property_rates",
@@ -8801,6 +9501,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -8836,15 +9544,15 @@
      "status": "actual"
     }
    ],
-   "rls": "Включена. Политика tax_offices_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "rls": "Включена. Политика tax_offices_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правит администратор платформы функциями app.admin_dict_* (справочник «ugns» в перечне app.platform_dict_specs, миграция 0043).",
+   "issue": "#20 (сделано); правка в Админке — #92 (сделано, часть 1)",
    "source": "refDB.dictionaries.ugns",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts",
    "logic": [
     "Контрагент из Excel или демо-данных с кодом «020» находит УГНС по коду ГНС.",
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ],
    "uniques": [
     "tax_offices_gns_code_key (gns_code), только где gns_code заполнен"
@@ -8856,10 +9564,10 @@
    "group": "dicts",
    "status": "actual",
    "desc": "Справочник платформы «Банковские провайдеры»: банки и электронные кошельки для реквизитов организации и сотрудников. В «Переводе по номеру телефона» выбираются только провайдеры с «Переводы по номеру телефона».",
-   "rls": "Включена. Политика banks_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0035); правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#74 (сделано); правка в Админке — поток Д (#92)",
+   "rls": "Включена. Политика banks_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0035); правит администратор платформы функциями app.admin_dict_* (справочник «banks» в перечне app.platform_dict_specs, миграция 0043).",
+   "issue": "#74 (сделано); правка в Админке — #92 (сделано, часть 1)",
    "source": "refDB.dictionaries.banks; ТЗ «Справочники платформы» → «Банковские провайдеры»; packages/db/src/schema/platform-dicts.ts",
-   "migration": "0034_money_requisites, 0035_banks_read_only",
+   "migration": "0034_money_requisites, 0035_banks_read_only, 0043_admin_platform_dicts",
    "logic": [
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду, как у других справочников платформы (раздел dictionaries.banks в platform_reference больше не копируется).",
     "Значение не удаляется, а отключается (active): реквизиты ссылаются на код, поэтому переименование банка их не ломает."
@@ -8926,6 +9634,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -8966,8 +9682,16 @@
    "name": "task_categories",
    "ru": "Категории задач",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Сбор документов, Сверка, Запрос в госорган и др.",
+   "status": "actual",
+   "desc": "Справочник платформы «Категории задач»: категория ручной задачи в форме задачи (Сбор документов, Сверка, Запрос в госорган и др.). Раньше — раздел dictionaries.cats в platform_reference.",
+   "rls": "Включена. Политика task_categories_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0045); правит администратор платформы функциями app.admin_dict_* (справочник «cats» в перечне app.platform_dict_specs, миграция 0045).",
+   "issue": "#79 (сделано); правка в Админке — механизм #92 (часть 1)",
+   "source": "refDB.dictionaries.cats; ТЗ «Справочники платформы» → «Категории задач»; packages/db/src/schema/platform-dicts.ts",
+   "migration": "0044_tasks, 0045_tasks_guards",
+   "logic": [
+    "«Используется» считает задачи по внешнему ключу tasks.category_code; значение не удаляется, а отключается (active).",
+    "Наполнение — pnpm db:seed из refDB.json по постоянному коду; поправленное в Админке (updated_by не пусто) db:seed --update не затирает. История правок Админки — platform_audit_log."
+   ],
    "columns": [
     {
      "name": "code",
@@ -8975,14 +9699,26 @@
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «КАТ-001»."
+     "desc": "Постоянный код, например «КАТ-001».",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
      "null": false,
-     "unique": true
+     "unique": true,
+     "desc": "Уникально (task_categories_name_key).",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Пояснение",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Видят все организации.",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -8990,34 +9726,61 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — значение отключено: не предлагается в новых задачах, старые ссылки сохраняются.",
+     "status": "actual"
+    },
+    {
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "desc": "Порядок в справочнике («№», «Выше» / «Ниже»).",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Когда администратор платформы добавил значение; у значений из наполнения — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы; пусто — значение из наполнения.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто поправил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы; пусто — из наполнения, такое db:seed --update обновляет.",
+     "status": "actual"
     },
     {
      "name": "updated_at",
      "ru": "Изменено",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "updated_by",
-     "ru": "Кто изменил",
-     "type": "uuid",
-     "null": true,
-     "fk": "users.id",
-     "desc": "Администратор платформы."
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
-     "ru": "Версия записи",
+     "ru": "Версия",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении: защита от одновременной правки.",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "этап 2 · #79 (своя таблица); пока раздел platform_reference",
-   "source": "refDB.json прототипа; «Справочники платформы (исчерпывающие).md», dictionaries.cats"
+   ]
   },
   {
    "name": "due_change_reasons",
@@ -9070,6 +9833,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -9105,14 +9876,14 @@
      "status": "actual"
     }
    ],
-   "rls": "Включена. Политика due_change_reasons_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0028); правку из Админки (#92) сделает узкая функция администратора платформы.",
-   "issue": "#57 (сделано); правка в Админке — #92",
+   "rls": "Включена. Политика due_change_reasons_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0028); правит администратор платформы функциями app.admin_dict_* (справочник «reasons» в перечне app.platform_dict_specs, миграция 0043).",
+   "issue": "#57 (сделано); правка в Админке — #92 (сделано, часть 1)",
    "source": "refDB.dictionaries.reasons",
-   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only",
+   "migration": "0027_forms_rates_reasons, 0028_forms_rates_reasons_read_only, 0043_admin_platform_dicts",
    "logic": [
     "Значение не удаляется, а отключается (active): отключённое не предлагается в новых записях, используемое удалить не даёт внешний ключ.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1); поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (#92): правки пойдут в audit_log."
+    "История правок Админки пишется в platform_audit_log (миграция 0038)."
    ]
   },
   {
@@ -9149,6 +9920,14 @@
      "status": "actual"
     },
     {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "«Создано»: когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто (docs/deviations.md п. 48 продукта, миграция 0043).",
+     "status": "actual"
+    },
+    {
      "name": "created_by",
      "ru": "Кто завёл",
      "type": "uuid",
@@ -9184,57 +9963,76 @@
      "status": "actual"
     }
    ],
-   "rls": "Включена. Политика production_calendar_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки (поток Д) сделает узкая функция администратора платформы.",
-   "issue": "#20 (сделано); правка в Админке — поток Д",
+   "rls": "Включена. Политика production_calendar_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE, миграция 0023): ни ошибка в коде, ни подменённый запрос не изменят справочник всех организаций; правку из Админки делают узкие функции администратора платформы app.admin_calendar_insert и app.admin_calendar_delete (миграция 0051).",
+   "issue": "#20 (сделано); правка в Админке — #92 (часть 2а, сделано); пересчёт сроков отчётов после правки — #93",
    "source": "refDB.holidays, workingSaturdays",
-   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only",
+   "migration": "0022_platform_dicts, 0023_platform_dicts_read_only, 0043_admin_platform_dicts, 0051_admin_platform_dicts_more",
    "logic": [
     "Правила дня — в @buhuchet/domain: isWorkingDay, nextWorkingDay, calendarYear (календарь года для вкладки «Календарь»).",
     "Изменение календаря пересчитывает ещё не сданные сроки (поток А); что пересчитано, видно в журнале календаря.",
     "Наполнение — pnpm db:seed из refDB.json по постоянному коду: без --update только добавляет недостающее, с --update обновляет изменившееся (версия +1) и приводит связи к refDB.json; поправленное в Админке (updated_by не пусто) не затирается.",
-    "История правок начинается с Админки (поток Д): правки пойдут в audit_log; отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
+    "История правок Админки пишется в platform_audit_log (миграция 0038); отметки прототипа «кто и когда» (_cb, _ua…) не переносятся."
    ]
   },
   {
    "name": "phone_codes",
-   "ru": "Коды стран телефона",
+   "ru": "Коды стран телефонов",
    "group": "dicts",
-   "status": "planned",
-   "desc": "Код страны, флаг и маска номера для полей телефона.",
+   "status": "actual",
+   "desc": "«Коды стран телефонов»: страна, флаг, телефонный код и маска номера; длина номера — по маске. Номер сотрудника хранится строкой «+996…», поэтому новые код и маска действуют только для новых номеров. Раньше — раздел phoneCodes в platform_reference; миграция перенесла его строки сюда, db:seed --update убирает старую копию.",
+   "rls": "Включена. Политика phone_codes_read: роль приложения только читает все строки (общий справочник, org_id нет). Права на запись у неё отозваны (INSERT, UPDATE, DELETE, TRUNCATE); правит администратор платформы общими функциями app.admin_dict_* (справочник phones).",
+   "uniques": [
+    "phone_codes_name_key (name)"
+   ],
+   "issue": "#92 (часть 2а, сделано)",
+   "source": "refDB.phoneCodes; admin/platform-dicts.js; packages/db/src/schema/platform-dicts.ts (countryPhoneCodes)",
+   "migration": "0051_admin_platform_dicts_more",
+   "logic": [
+    "Коды стран не удаляются, только отключаются; Кыргызстан не отключается — проверяет сервер (ADMIN_DICT_META).",
+    "Без «№» и «Выше» / «Ниже» (docs/deviations.md п. Д-2 продукта); порядок — sort_order, при равных — код.",
+    "Проверка телефона сотрудника читает эту таблицу (phoneCodeList в packages/db/src/staff.ts)."
+   ],
    "columns": [
     {
-     "name": "cc",
+     "name": "code",
      "ru": "Страна",
      "type": "text",
      "null": false,
      "pk": true,
-     "desc": "Например «KG»."
+     "desc": "Код страны: KG, KZ…; у добавленной администратором — X-01 …",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
-     "null": false
-    },
-    {
-     "name": "code",
-     "ru": "Код",
-     "type": "text",
      "null": false,
-     "desc": "Например «996»."
-    },
-    {
-     "name": "mask",
-     "ru": "Маска",
-     "type": "text",
-     "null": false,
-     "desc": "Например «XXX XXX XXX»."
+     "desc": "Уникально.",
+     "status": "actual"
     },
     {
      "name": "flag",
      "ru": "Флаг",
      "type": "text",
-     "null": false
+     "null": false,
+     "default": "''",
+     "status": "actual"
+    },
+    {
+     "name": "dial_code",
+     "ru": "Телефонный код",
+     "type": "text",
+     "null": false,
+     "desc": "Без «+»: 996. Ограничение phone_codes_dial_code_check: 1–4 цифры.",
+     "status": "actual"
+    },
+    {
+     "name": "mask",
+     "ru": "Маска номера",
+     "type": "text",
+     "null": false,
+     "desc": "После кода: «XXX XXX XXX», X — цифра. Ограничение phone_codes_mask_check: только X и пробелы, хотя бы одна X.",
+     "status": "actual"
     },
     {
      "name": "active",
@@ -9242,14 +10040,33 @@
      "type": "boolean",
      "null": false,
      "default": "true",
-     "desc": "Нет — запись скрыта из выбора, но старые ссылки на неё сохраняются."
+     "desc": "Нет — скрыт из выбора, у введённых номеров остаётся.",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
+     "name": "sort_order",
+     "ru": "Порядок",
+     "type": "integer",
      "null": false,
-     "default": "now()"
+     "desc": "Порядок справочника.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Когда администратор платформы добавил значение в Админке; у значений из наполнения — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто завёл",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Администратор платформы; пусто — значение из наполнения.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -9257,19 +10074,27 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Администратор платформы."
+     "desc": "Администратор платформы; заданный не даёт db:seed --update затереть правку.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "status": "actual"
     },
     {
      "name": "version",
      "ru": "Версия записи",
      "type": "integer",
      "null": false,
-     "default": "1"
+     "default": "1",
+     "desc": "Растёт при каждом сохранении. Устаревшее сохранение — «Запись изменена другим пользователем».",
+     "status": "actual"
     }
-   ],
-   "rls": "Включена. Приложение только читает; меняет администратор платформы через служебные команды и Админку.",
-   "issue": "раздел platform_reference (#20); своя таблица не нужна, пока на коды никто не ссылается",
-   "source": "refDB.phoneCodes"
+   ]
   },
   {
    "name": "message_templates",
@@ -9505,14 +10330,14 @@
    "group": "dicts",
    "status": "actual",
    "desc": "Запрос организации «Попросить добавить»: в какой справочник платформы, что добавить, комментарий. Администратор платформы отвечает «Добавлено» или «Отклонено»; организация видит свои запросы в «Мои запросы», но после отправки не меняет и не удаляет их.",
-   "rls": "Включена. Политика dict_change_requests_isolation: только своя организация. Ограничительная dict_change_requests_insert_guard: новый запрос — от текущего пользователя, статус new, без ответа и без рассмотревшего. Менять и удалять запросы роль приложения не может (REVOKE UPDATE, DELETE, TRUNCATE, миграция 0032). Число запросов всех организаций для Админки — функция app.admin_dict_requests().",
-   "issue": "#59 (сделано); ответ администратора — #92",
+   "rls": "Включена. Политика dict_change_requests_isolation: только своя организация. Ограничительная dict_change_requests_insert_guard: новый запрос — от текущего пользователя, статус new, без ответа и без рассмотревшего. Менять и удалять запросы роль приложения не может (REVOKE UPDATE, DELETE, TRUNCATE, миграция 0032). Число запросов всех организаций для Админки — функция app.admin_dict_requests(). Запросы всех организаций для вкладки «Запросы» — представление app.admin_dict_change_requests (миграция 0043).",
+   "issue": "#59 (сделано); ответ администратора — #92 (сделано, часть 1)",
    "source": "demoDB.dictRequests; ТЗ «Справочники платформы — только просмотр» → «Попросить добавить»; прототип modules/dicts.js requestDlg",
-   "migration": "0031_dict_change_requests, 0032_dict_change_requests_admin",
+   "migration": "0031_dict_change_requests, 0032_dict_change_requests_admin, 0043_admin_platform_dicts (ответ администратора)",
    "logic": [
     "Окно «Попросить добавить» и «Мои запросы» — в «Справочниках» организации (прототип modules/dicts.js requestDlg); видны дата, справочник, что добавить, статус и ответ (docs/deviations.md п. 46 продукта, решение заказчика 27.10.2026).",
-    "Ответ ставит Админка (задача #92) функцией администратора платформы: у роли приложения нет UPDATE.",
-    "Предел частоты отправки запросов — в задаче #92 (совет ревью безопасности задачи #59), готовыми пределами rate_limits."
+    "Ответ ставит Админка → «Справочники платформы» → «Запросы» функцией app.admin_answer_dict_request (миграция 0043): «Добавлено» — ответ по желанию, «Отклонено» — обязателен; у роли приложения нет UPDATE.",
+    "Не больше 20 запросов «Попросить добавить» в час от пользователя (rate_limits, задача #92)."
    ],
    "indexes": [
     "dict_change_requests_org_idx (org_id, created_at desc) — «Мои запросы» от новых к старым"
@@ -10129,6 +10954,111 @@
    "migration": "0038_platform_audit_log",
    "definer": true,
    "desc": "Ставит новый текст ui_texts, версию +1, «Изменено» и «Кто изменил» — администратор из контекста; заданный «Кто изменил» не даёт db:seed --update затереть правку. Пустой и длиннее 2000 знаков (UI_TEXT_MAX_LENGTH) текст не сохраняет. Отвечает новой версией; пусто — нет такого текста, версия устарела, текст не подходит или в контексте не администратор платформы. Подстановки {имя} проверяет сервер (uiTextProblem), историю пишет он же в той же транзакции."
+  },
+  {
+   "name": "app.platform_dict_specs (служебная таблица)",
+   "ru": "Перечень справочников, которые правит Админка",
+   "migration": "0043_admin_platform_dicts, 0045_tasks_guards, 0051_admin_platform_dicts_more",
+   "definer": false,
+   "desc": "Справочник (dict, ключ), его таблица (table_name, уникальна), поля, которые правит администратор (columns), и есть ли «№» и «Выше» / «Ниже» (ordered — только короткие справочники, docs/deviations.md п. Д-2 продукта). Сейчас: forms, organs, ugns, banks, reasons (0043), cats (0045), bases, regimes, phones (0051). Следующий справочник подключается строкой перечня, без новых функций. У роли приложения прав нет: читают только функции владельца схемы."
+  },
+  {
+   "name": "app.platform_dict_array_refs (служебная таблица)",
+   "ru": "Ссылки на код значения массивом",
+   "migration": "0043_admin_platform_dicts",
+   "definer": false,
+   "desc": "Где на код значения ссылаются массивом без внешнего ключа (справочник, таблица, столбец; ключ из трёх): их тоже считает «Используется». Сейчас: банки в org_accounts.phone_banks и employee_wallets.phone_banks. Строки добавляет миграция справочника; у роли приложения прав нет."
+  },
+  {
+   "name": "app.admin_dict_usage(dict)",
+   "ru": "Сколько раз используется значение",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Для каждого значения справочника — число ссылок внешними ключами на его код из любых таблиц, в том числе таблиц организаций (ссылки следующих задач считаются сами), и массивами из app.platform_dict_array_refs; ref — таблица ссылки. Не администратору платформы — пусто."
+  },
+  {
+   "name": "app.admin_dict_insert(dict, code, row)",
+   "ru": "Добавить значение справочника",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Поля — из row, только столбцы перечня; код — от сервера (nextDictCode), значение действующее, в конце порядка; «Создано», «Кто завёл», «Кто поправил» — администратор из контекста. Повтор названия или кода не даёт уникальный индекс. Отвечает версией; пусто — справочника нет в перечне или не администратор."
+  },
+  {
+   "name": "app.admin_dict_update(dict, code, row, version)",
+   "ru": "Изменить значение справочника",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Все поля перечня из row, версия +1, «Изменено» и «Кто поправил» — администратор (заданный «Кто поправил» не даёт db:seed --update затереть правку). Отвечает новой версией; пусто — нет значения, версия устарела или не администратор."
+  },
+  {
+   "name": "app.admin_dict_set_active(dict, code, active, version)",
+   "ru": "Отключить или включить значение",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Отключённое значение не предлагается в новых записях, в старых остаётся. Отвечает новой версией; пусто — как у правки."
+  },
+  {
+   "name": "app.admin_dict_move(dict, code, step, version)",
+   "ru": "«Выше» и «Ниже»",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Меняет значение местами с соседним в порядке справочника (sort_order, при равных — код); равные номера сначала выравниваются подряд; таблица на время перестановки закрыта для других правок. Только у справочников с ordered. Отвечает новой версией перемещённого; пусто — двигать некуда, версия устарела, нет порядка или не администратор."
+  },
+  {
+   "name": "app.admin_dict_delete(dict, code, version)",
+   "ru": "Удалить неиспользуемое значение",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Удаляет только значение, которое нигде не используется; используемое — ошибка foreign_key_violation (API отвечает 409 «Используется»). Сначала закрывает таблицы со ссылками массивом и строку значения, потом считает ссылки — одновременно сохранённый реквизит не останется со ссылкой на удалённый банк. Отвечает true — удалено, false — нет значения или версия устарела, пусто — не администратор."
+  },
+  {
+   "name": "app.admin_dict_change_requests (представление)",
+   "ru": "Запросы «Попросить добавить» всех организаций",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "Представление от владельца схемы (security_barrier), как app.admin_users: запросы всех организаций с названием организации и ФИО отправившего из учётной записи. Строки отдаёт только администратору платформы."
+  },
+  {
+   "name": "app.admin_answer_dict_request(id, status, answer, version)",
+   "ru": "Ответить на запрос",
+   "migration": "0043_admin_platform_dicts",
+   "definer": true,
+   "desc": "«Добавлено» (ответ по желанию) или «Отклонено» (ответ обязателен), не длиннее 2000 знаков (DICT_REQUEST_ANSWER_MAX); кто и когда ответил — администратор из контекста. Отвечает новой версией; пусто — нет запроса, версия устарела, ответ не подходит или не администратор."
+  },
+  {
+   "name": "app.platform_dict_links (служебная таблица)",
+   "ru": "Поля-связи справочников",
+   "migration": "0051_admin_platform_dicts_more",
+   "definer": false,
+   "desc": "Поле значения, которое хранится не столбцом, а строками таблицы связей: справочник и поле (ключ), таблица связей, столбец кода значения, столбец связанного кода; tag_column и tag — когда одна таблица держит несколько полей (строки поля — с этой меткой). Сейчас: bases.types → report_type_bases (base_code, report_type_code). У роли приложения прав нет: читает только функция владельца схемы."
+  },
+  {
+   "name": "app.admin_dict_set_links(dict, code, links)",
+   "ru": "Поля-связи значения",
+   "migration": "0051_admin_platform_dicts_more",
+   "definer": true,
+   "desc": "links — {поле: [коды]}; поля, которых нет в links, не меняются. Сначала убирает связи, которых нет в новых списках, потом добавляет новые, поэтому код, перенесённый из одного поля в другое той же таблицы, не теряется; есть ли связанные значения, проверяют внешние ключи. Строка значения на время записи закрыта для других правок. Отвечает true; false — нет значения; пусто — справочника нет в перечне, не администратор или поле не массив."
+  },
+  {
+   "name": "app.admin_calendar_insert(day, kind, name)",
+   "ru": "Добавить день календаря",
+   "migration": "0051_admin_platform_dicts_more",
+   "definer": true,
+   "desc": "Свои функции вместо общего механизма: ключ календаря — день («MM-DD» или дата), а не код. «Создано», «Кто завёл», «Кто поправил» — администратор из контекста; вид и формат дня проверяют ограничения таблицы. Отвечает версией; 0 — такой день уже есть; пусто — не администратор."
+  },
+  {
+   "name": "app.admin_calendar_delete(day, version)",
+   "ru": "Удалить день календаря",
+   "migration": "0051_admin_platform_dicts_more",
+   "definer": true,
+   "desc": "Удаляет день той версии, что видел администратор. Государственный праздник «каждый год» («MM-DD») не удаляется («Государственный праздник по закону, удалить нельзя»). Отвечает true; false — нет дня, версия устарела или день — праздник «каждый год»; пусто — не администратор."
+  },
+  {
+   "name": "app.current_user_created_at()",
+   "ru": "Когда создана учётная запись вошедшего",
+   "migration": "0048_news_grants",
+   "definer": true,
+   "desc": "Отдаёт только момент создания и только учётной записи вошедшего: новости, вышедшие раньше, у него прочитаны (docs/deviations.md п. Г-3 продукта). Нужна, потому что свою строку users администратор платформы по RLS не видит."
   },
   {
    "name": "app.rate_limit_take(kind, subject, max, window_seconds, lease_seconds)",
