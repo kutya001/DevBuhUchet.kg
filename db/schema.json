@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "updated": "2026-10-31",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main f498d16",
-    "what": "Фактические миграции 0000–0071: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main c05473e",
+    "what": "Фактические миграции 0000–0075: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -2869,7 +2869,7 @@
    ],
    "issue": "#61 (сделано); тариф Соцфонда — #64 (сделано); приостановка и архив — #68 (сделано); экраны — #65 (форма), #66 (список), #67 (карточка)",
    "source": "demoDB.contractors; ТЗ «Модуль Контрагенты» → «Регистрация контрагентов», «Сверка с ГКЭД», «Ответственный», «Плата за обслуживание»; прототип modules/contractors.js (addCpDlg, editCpDlg, transferDlg, cpActions), core/gked.js (gkCheck); packages/db/src/schema/contractors.ts; docs/decisions.md п. А-1 продукта",
-   "migration": "0039_contractors, 0040_contractors_guards, 0054_contractors_socfund, 0061_contractor_service_init, 0070_money_operations",
+   "migration": "0039_contractors, 0040_contractors_guards, 0054_contractors_socfund, 0061_contractor_service_init, 0070_money_operations, 0072_fees",
    "logic": [
     "Проверки сохранения одни для создания и «Изменить» (checkContractor): ИНН, телефон по «Кодам телефонов», поля, только действующие значения справочников, ГКЭД только подклассы, дубль ИНН (называет найденного, в том числе в архиве), сверка с ГКЭД. Создание — одна транзакция.",
     "Сверка с ГКЭД — порт прототипа gkCheck (packages/domain/src/contractors/gked.ts): запрет режима — 400 gked_blocked; вопрос о праве на режим — 400 gked_confirm_required, пока форма не подтвердит; подтверждение хранится в gked_confirmation и сбрасывается при смене ГКЭД, режима, формы.",
@@ -3131,8 +3131,8 @@
      "type": "boolean",
      "null": false,
      "default": "false",
-     "desc": "Одна сумма сразу на налоги и обслуживание; программа сама раскладывает. Поля пока нет: придёт с платой за обслуживание (2.21, #77, PR #152, миграция 0072).",
-     "status": "planned"
+     "desc": "«Платит одной суммой»: налоги и обслуживание одним поступлением, деление подставляется само (2.21, 0072).",
+     "status": "actual"
     },
     {
      "name": "need_receipt_file",
@@ -4834,6 +4834,16 @@
      "status": "actual"
     },
     {
+     "name": "ref_operation_id",
+     "ru": "Исходное поступление",
+     "type": "uuid",
+     "null": true,
+     "fk": "money_operations.id",
+     "onDelete": "restrict",
+     "desc": "Только у обратной записи (corr): к какому поступлению она относится — «Обратные записи» в окне поступления (прототип ref; money_operations_ref_check). Ссылка (ref_operation_id, org_id) → money_operations (id, org_id) этой же таблицы, ON DELETE RESTRICT (0074).",
+     "status": "actual"
+    },
+    {
      "name": "cancelled_at",
      "ru": "Отменена",
      "type": "timestamptz",
@@ -4914,14 +4924,15 @@
    "rls": "Включена. Политика money_operations_isolation: только своя организация.",
    "indexes": [
     "money_operations_contractor_idx (org_id, contractor_id, op_date)",
-    "money_operations_report_idx (org_id, report_id) WHERE report_id is not null"
+    "money_operations_report_idx (org_id, report_id) WHERE report_id is not null",
+    "money_operations_ref_idx (ref_operation_id) WHERE ref_operation_id is not null"
    ],
-   "issue": "#75 (сделано, PR #150); переводы и остаток — #76",
+   "issue": "#75 (сделано, PR #150); остаток, счёт сотрудника, обратные записи — #76 (часть 1 сделана, PR #154)",
    "source": "ТЗ «Виртуальные счета сотрудников» → «Операции по счёту»; прототип OPS, modules/finance.js, fin-op.js; demoDB.moneyOps; packages/db/src/schema/money.ts",
    "uniques": [
     "money_operations_id_org_unique (id, org_id) — для составных ссылок из money_allocations"
    ],
-   "migration": "0070_money_operations, 0071_money_operations_guards"
+   "migration": "0070_money_operations, 0071_money_operations_guards, 0074_finance_ops"
   },
   {
    "name": "money_allocations",
@@ -4999,8 +5010,8 @@
    "name": "fee_payments",
    "ru": "Оплата за обслуживание",
    "group": "money",
-   "status": "planned",
-   "desc": "Сколько контрагент заплатил фирме за обслуживание и за какой месяц.",
+   "status": "actual",
+   "desc": "Оплата за обслуживание: сумма, дата, куда поступили деньги (счёт организации — его название на момент оплаты — или владельцу), примечание. Часть за обслуживание из общего поступления от контрагента — оплата со ссылкой на это поступление. Распределение по месяцам — fee_allocations; нераспределённое — аванс.",
    "columns": [
     {
      "name": "id",
@@ -5009,7 +5020,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5018,7 +5030,9 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5027,84 +5041,93 @@
      "null": false,
      "fk": "contractors.id",
      "onDelete": "restrict",
-     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
-    },
-    {
-     "name": "month",
-     "ru": "За месяц",
-     "type": "date",
-     "null": false,
-     "desc": "Первое число месяца."
+     "desc": "Кто заплатил. Ссылка (contractor_id, org_id) → contractors (id, org_id), ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
      "name": "amount",
      "ru": "Сумма",
      "type": "bigint",
      "null": false,
-     "desc": " Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
+     "desc": "Больше 0 и не больше 10 млрд сомов (fee_payments_amount_check). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
-     "name": "pay_date",
+     "name": "paid_on",
      "ru": "Дата оплаты",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Дата из платёжного документа.",
+     "status": "actual"
     },
     {
-     "name": "received_to",
+     "name": "to_kind",
      "ru": "Куда поступили",
      "type": "text",
      "null": false,
-     "default": "'org'",
-     "desc": "org — счёт организации, owner — владельцу, иначе сотрудник."
+     "desc": "org — на счёт организации, owner — владельцу организации (fee_payments_to_check, FEE_TO_KINDS).",
+     "status": "actual"
     },
     {
-     "name": "employee_id",
-     "ru": "Сотрудник",
+     "name": "to_account_id",
+     "ru": "Счёт организации",
      "type": "uuid",
      "null": true,
-     "fk": "employees.id"
+     "desc": "Счёт организации с назначением «Обслуживание», если выбран; только при to_kind = org. Внешнего ключа нет: удаление счёта оплату не меняет.",
+     "status": "actual"
     },
     {
-     "name": "from_operation_id",
-     "ru": "Из поступления",
+     "name": "to_label",
+     "ru": "Как назывался счёт",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "Название счёта на момент оплаты: «Счёт организации · Мбанк · по номеру +996…»; до 300 знаков.",
+     "status": "actual"
+    },
+    {
+     "name": "operation_id",
+     "ru": "Общее поступление",
      "type": "uuid",
      "null": true,
      "fk": "money_operations.id",
-     "desc": "Если часть «одной суммы»."
+     "onDelete": "restrict",
+     "desc": "Поступление от контрагента (money_operations вида in), частью которого была оплата («Платит одной суммой»). Ссылка (operation_id, org_id) → money_operations, ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
      "name": "note",
-     "ru": "Комментарий",
+     "ru": "Примечание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "desc": "До 500 знаков (fee_payments_note_check).",
+     "status": "actual"
     },
     {
      "name": "deleted_at",
      "ru": "Удалена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "Удалена в окне операции вместе с общим поступлением (2.20) или сама (2.22): запись остаётся с причиной, в долг и итоги не входит; три поля удаления заполняются вместе (fee_payments_delete_check, 0074).",
+     "status": "actual"
+    },
+    {
+     "name": "deleted_by",
+     "ru": "Кто удалил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, удаливший оплату (0074).",
+     "status": "actual"
     },
     {
      "name": "delete_reason",
      "ru": "Причина удаления",
      "type": "text",
-     "null": true
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "null": true,
+     "desc": "Обязательна при удалении, до 500 знаков (0074).",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5112,7 +5135,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5120,7 +5144,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5128,18 +5171,91 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
    ],
    "logic": [
-    "Долг за обслуживание = начисления по тарифам за месяцы обслуживания − оплаты (считается, не хранится)."
+    "Начисления не хранятся: долг за обслуживание считает домен по журналу ставок contractor_tariffs и периодам обслуживания (packages/domain/src/fees/charges.ts, docs/decisions.md п. В-7 продукта) минус оплаты.",
+    "Сумма, дата, куда поступили и распределение по месяцам после записи не меняются: у роли приложения нет UPDATE, DELETE и TRUNCATE (0073); с 0075 — UPDATE только полей удаления и служебных полей правки. Стирать оплату роль приложения не может; исправление — задача 2.22."
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
+   "rls": "Включена. Политика fee_payments_isolation: только своя организация.",
    "indexes": [
-    "(org_id, contractor_id, month)"
+    "fee_payments_contractor_idx (org_id, contractor_id, paid_on)",
+    "fee_payments_operation_idx (operation_id) WHERE operation_id is not null"
    ],
-   "issue": "этап 2 · #77",
-   "source": "demoDB.feePayments, contractors[].feePaid"
+   "issue": "#77 (сделано, PR #152); удаление — #76 (PR #154), исправление — #76 часть 2",
+   "source": "ТЗ «Контрагенты» → «Плата за обслуживание»; прототип FEEPAYS, core/derive.js fpAlloc, fpAdv; demoDB.feePayments; packages/db/src/schema/fees.ts",
+   "uniques": [
+    "fee_payments_id_org_unique (id, org_id) — для составных ссылок из fee_allocations"
+   ],
+   "migration": "0072_fees, 0073_fees_guards, 0074_finance_ops, 0075_finance_ops_guards"
+  },
+  {
+   "name": "fee_allocations",
+   "ru": "Распределение оплаты за обслуживание",
+   "group": "money",
+   "status": "actual",
+   "desc": "Какой месяц и сколько покрывает оплата за обслуживание (прототип alloc); месяц — первое число. Сумма месяцев не больше суммы оплаты, остальное — аванс (проверяет сервер при записи).",
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер записи",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
+    },
+    {
+     "name": "payment_id",
+     "ru": "Оплата",
+     "type": "uuid",
+     "null": false,
+     "fk": "fee_payments.id",
+     "onDelete": "cascade",
+     "desc": "Ссылка (payment_id, org_id) → fee_payments (id, org_id), ON DELETE CASCADE.",
+     "status": "actual"
+    },
+    {
+     "name": "month",
+     "ru": "Месяц",
+     "type": "date",
+     "null": false,
+     "desc": "Первое число месяца обслуживания (fee_allocations_month_check).",
+     "status": "actual"
+    },
+    {
+     "name": "amount",
+     "ru": "Сумма",
+     "type": "bigint",
+     "null": false,
+     "desc": "Больше 0 и не больше 10 млрд сомов (fee_allocations_amount_check). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Распределение только добавляется: у роли приложения нет UPDATE, DELETE и TRUNCATE (0073)."
+   ],
+   "rls": "Включена. Политика fee_allocations_isolation: только своя организация.",
+   "uniques": [
+    "fee_allocations_key (payment_id, month) — месяц один раз в оплате"
+   ],
+   "issue": "#77 (сделано, PR #152)",
+   "source": "прототип FEEPAYS[].alloc, core/derive.js fpAlloc; packages/db/src/schema/fees.ts",
+   "migration": "0072_fees, 0073_fees_guards"
   },
   {
    "name": "services",
