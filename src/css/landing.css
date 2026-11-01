@@ -35,6 +35,10 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
 .lp-hero h1{margin:0 0 18px;font-size:clamp(30px,4.2vw,48px);line-height:1.1;font-weight:800;letter-spacing:-.03em}
 .lp-hero-p{margin:0 0 26px;font-size:17px;line-height:1.55;color:var(--muted)}
 .lp-cta-row{display:flex;gap:10px;flex-wrap:wrap}
+.lp-more{display:inline-flex;align-items:center;gap:4px;margin-top:14px;font-size:14.5px}
+.lp-demo-l{font-size:14px;white-space:nowrap;margin-right:4px}
+.lp-shots-cta{display:flex;justify-content:center;margin-top:22px}
+.lp-menu .btn+.btn{margin-top:8px}
 .lp-note{margin:18px 0 0;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px}
 .lp-note svg{color:var(--green);flex:none}
 .lp-hero-pic{position:relative;padding:0 150px 46px 0;min-width:0}
@@ -180,6 +184,7 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
   .lp-hero-in{grid-template-columns:minmax(0,1fr);gap:28px}
   .lp-hero-p{font-size:15.5px}
   .lp-cta-row .btn{flex:1 1 100%;justify-content:center}
+  .lp-shots-cta .btn{flex:1 1 100%;justify-content:center}
   .lp-hero-pic{padding:0 100px 36px 0}
   .lsh-t .c-sum{display:none}
   .lp-hero-pic .lsh-ph{width:128px}
@@ -210,3 +215,16 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
   .lp-fab .btn{width:100%;justify-content:center;min-height:48px;font-size:15.5px;box-shadow:var(--shadow-l)}
 }
 .land .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Демо-организация: полоса «Демо-версия» над программой (ТЗ «Лендинг» → «Демо-организация») */
+.demo-strip{position:fixed;left:0;right:0;top:0;z-index:45;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:7px 12px calc(7px);padding-top:calc(7px + env(safe-area-inset-top,0px));background:var(--pane-alt);border-bottom:1px solid var(--border);font-size:13px;box-sizing:border-box}
+.demo-strip .ds-t{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 280px}
+.demo-strip .ds-t svg{color:var(--b-blue);flex:none}
+.demo-strip .ds-sub{color:var(--muted)}
+.demo-strip .ds-r{display:flex;gap:8px;margin-left:auto}
+body.demo-on .app{height:calc(100% - var(--demo-h,46px));margin-top:var(--demo-h,46px)}
+@media (max-width:767px){
+  .demo-strip{padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top,0px));gap:6px 8px}
+  .demo-strip .ds-t{flex:1 1 100%}
+  .demo-strip .ds-r{flex:1 1 100%;margin-left:0}
+  .demo-strip .ds-r .btn{flex:1;justify-content:center}
+}

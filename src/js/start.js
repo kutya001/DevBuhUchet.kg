@@ -38,6 +38,7 @@ function dbAct(k){
   if(k==='export'){dbSave();dbDownload('TemDB.json',dbSnap());return}
   if(k==='ref'){const s=dbSnap();delete s.ref.gked;dbDownload('refDB.json',{meta:{file:'refDB.json',version:DB_VER,exported:TODAY+' '+bishkekNow().hm,description:'Справочники платформы с правками администратора из прототипа'},...s.ref});return}
   if(k==='gked'){dbDownload('gkedDB.json',{meta:{...(DBSRC.gked.db.meta||{}),file:'gkedDB.json',exported:TODAY+' '+bishkekNow().hm},items:dbClean(GK)});return}
+  if(k==='clear'&&DEMO.on){confirmDlg({title:'Очистить рабочие данные?',text:'Демо-организация вернётся к начальному виду: всё, что вы ввели и изменили, пропадёт.',ok:'Очистить',danger:true,run:()=>setDataMode('demo')});return}
   if(k==='clear'){confirmDlg({title:'Очистить рабочие данные?',text:`Всё, что вы ввели и изменили в прототипе, пропадёт, в том числе правки справочников. Данные вернутся к ${DATA_MODE==='empty'?'пустой организации (TemDB.json)':'демо-данным (demoDB.json)'}. Чтобы сохранить изменения, сначала нажмите «Экспорт TemDB.json».`,ok:'Очистить',danger:true,run:()=>setDataMode(DATA_MODE)});return}
   if(k==='load'){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
     inp.onchange=()=>{const f=inp.files[0];if(!f)return;f.text().then(tx=>{let j=null;try{j=JSON.parse(tx)}catch(e){}

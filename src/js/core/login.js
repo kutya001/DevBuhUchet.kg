@@ -1,7 +1,7 @@
 'use strict';
 // Вход и восстановление пароля
 /* ═════════════ Login & password recovery ═════════════ */
-function logoutDlg(){
+function logoutDlg(){if(DEMO.on)return demoExit('site');// в демо-версии экрана входа нет
   // «Выйти без сохранения?» — только если в открытой форме есть несохранённые изменения (решение заказчика 26.10.2026), как при закрытии окна
   const dirty=MODALS.some(m=>m.o.form&&m.dirty);
   const doOut=()=>{MODALS.slice().forEach(m=>m.close());S.loggedIn=false;showLogin()};

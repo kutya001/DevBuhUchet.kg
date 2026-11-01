@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;600&display=swap">
-<script>try{var __t=localStorage.getItem('bu.theme');if(__t==='light'||__t==='dark')document.documentElement.setAttribute('data-theme',__t)}catch(e){}</script>
+<script>try{var __t=localStorage.getItem((window.BU_DEMO?'budemo.':'bu.')+'theme');if(__t==='light'||__t==='dark')document.documentElement.setAttribute('data-theme',__t)}catch(e){}</script>
 <!-- Стили: src/css. Сборка (build.py) объединяет их в один <style> -->
 <link rel="stylesheet" href="src/css/base.css">
 <link rel="stylesheet" href="src/css/shell.css">
@@ -80,6 +80,7 @@
 <script src="src/js/modules/contractor-card.js"></script>
 <script src="src/js/modules/cp-page.js"></script>
 <script src="src/js/modules/landing.js"></script>
+<script src="src/js/modules/demo.js"></script>
 <script src="src/js/modules/report-pick.js"></script>
 <script src="src/js/modules/tax-pick.js"></script>
 <script src="src/js/modules/socfund-ui.js"></script>

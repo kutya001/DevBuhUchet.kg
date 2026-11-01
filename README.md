@@ -24,10 +24,12 @@
 
 ```
 index.html            каркас: разметка оболочки и подключение файлов из src по порядку
-build.py              сборка однофайловой версии → dist/prototype.html
+build.py              сборка однофайловой версии → dist/prototype.html и демо-версии → dist/demo.html
 dist/prototype.html   собранный файл (не править руками)
+dist/demo.html        демо-версия для сайта buhuchet.kg/demo: тот же файл с признаком BU_DEMO (не править руками)
 data/                 данные: demoDB.json, TemDB.json (пустой шаблон), refDB.json, gkedDB.json (ГКЭД 2022)
 vendor/pdfjs/         pdf.js 3.11.174 (Mozilla, Apache 2.0): чтение текста PDF для «Из свидетельства и выписки»
+vendor/fonts/         шрифты Inter и JetBrains Mono (SIL OFL 1.1): встраиваются в демо-версию, чтобы она не обращалась к внешним серверам
 docs/                 ТЗ, справочники платформы, ГКЭД, инструкция, план разработки, паттерны
 db/                   схема базы данных продукта: index.html (просмотр) + schema.json (описание) + check.py (проверка)
 src/css/              стили
@@ -123,11 +125,14 @@ src/js/start.js       запуск: сохранение TemDB, кнопки «�
 ## Сборка однофайловой версии
 
 ```
-python3 build.py                  # → dist/prototype.html
+python3 build.py                  # → dist/prototype.html и dist/demo.html
 python3 build.py "Прототип Buhuchet.kg v32.html"
+python3 build.py --demo apps/web/public/demo/index.html --site=/ --lead=/#lead   # демо-версия с адресами сайта
 ```
 
 Нужен только Python 3. Скрипт объединяет все стили в один `<style>`, все скрипты в один `<script>` в порядке из `index.html` и встраивает копию JSON из `data/` и библиотеку `vendor/pdfjs` (блоками `type="text/plain"`: pdf.js запускается только при первой загрузке PDF, поэтому «Из свидетельства и выписки» работает с диска и в артефакте без сети). Собранный файл публикуется в артефакт claude.ai и открывается с диска. После любой правки в `src` или `data` пересоберите его перед коммитом.
+
+Демо-версия (`dist/demo.html`, ТЗ «Лендинг» → «Демо-организация») — тот же файл с признаком `BU_DEMO`: сразу программа демо-организации от лица владельца, без экрана входа и Админки, с полосой «Демо-версия…»; всё хранится только в браузере гостя (ключи `budemo.*`), исходящие запросы запрещены (`Content-Security-Policy: connect-src 'none'`), шрифты встроены, страница закрыта от поисковиков. «Оставить заявку» и «Вернуться на сайт» ведут на адреса `--lead` и `--site` (по умолчанию — `prototype.html#landing/lead` и `prototype.html#landing` рядом с файлом).
 
 ## Локальный запуск
 
