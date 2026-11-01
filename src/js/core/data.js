@@ -275,7 +275,10 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     if(db.ref.statuses&&!db.ref.statuses.lead&&r.statuses&&r.statuses.lead)db.ref.statuses.lead=structuredClone(r.statuses.lead);
     ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k]&&a.tgLead==null&&r[k].tgLead!=null)a.tgLead=r[k].tgLead});
     const sw=(id,o,st,en)=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),h=(((r.kbArticles||[]).find(x=>x.id===id))||{}).html||'',i=h.indexOf(st),j=h.indexOf(en,i);if(a&&a.html&&a.html.includes(o)&&i>=0&&j>=0)a.html=a.html.replace(o,h.slice(i,j+en.length))};
-    /*SW65*/}
+    sw('a19_2','причиной «Демо-организация стенда».</li></ul>','причиной «Демо-организация стенда».</li>','дописывается к первой.</li></ul>');
+    sw('a4','«Сменить пароль».</li></ul><h4>4.2.','«Сменить пароль».</li>','<h4>4.2.');
+    sw('a19_4','без программиста («Изменить текст»).</li><li>Сейчас язык один','без программиста («Изменить текст»).</li>','<li>Сейчас язык один');
+    sw('a19_5','не отправляется.</li><li>«Бот платформы»','не отправляется.</li>','<li>«Бот платформы»')}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
