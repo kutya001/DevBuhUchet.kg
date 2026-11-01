@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 43,
+  "schemaVersion": 44,
   "updated": "2026-10-31",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main 7eca9b4",
-    "what": "Фактические миграции 0000–0081: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, разовые услуги и их оплаты, очередь и журнал Telegram, настройки уведомлений, словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main 8323419",
+    "what": "Фактические миграции 0000–0083: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, разовые услуги и их оплаты, очередь и журнал Telegram, настройки уведомлений, проекты контрагентов (ответственные, работы), словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -5673,8 +5673,8 @@
    "name": "projects",
    "ru": "Проекты",
    "group": "money",
-   "status": "planned",
-   "desc": "Крупные работы для контрагента со сроками, этапами, исполнителями и оплатами: например «Восстановление учёта 2024–2025».",
+   "status": "actual",
+   "desc": "Проект контрагента — крупная работа со сроками, ответственными, работами и оплатами: например «Восстановление учёта 2024–2025» (ТЗ «Проекты»; прототип modules/projects.js, projectDlg).",
    "columns": [
     {
      "name": "id",
@@ -5683,7 +5683,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5692,7 +5693,9 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5701,69 +5704,68 @@
      "null": false,
      "fk": "contractors.id",
      "onDelete": "restrict",
-     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
+     "desc": "Ссылка (contractor_id, org_id) → contractors (id, org_id), ON DELETE RESTRICT; после вставки не меняется.",
+     "status": "actual"
     },
     {
      "name": "name",
      "ru": "Название",
      "type": "text",
-     "null": false
+     "null": false,
+     "desc": "Не пустое, до 300 знаков (projects_text_check).",
+     "status": "actual"
+    },
+    {
+     "name": "starts_on",
+     "ru": "Начало",
+     "type": "date",
+     "null": false,
+     "desc": "Дата начала.",
+     "status": "actual"
+    },
+    {
+     "name": "ends_on",
+     "ru": "Окончание",
+     "type": "date",
+     "null": false,
+     "desc": "Не раньше начала (projects_dates_check).",
+     "status": "actual"
     },
     {
      "name": "description",
      "ru": "Описание",
      "type": "text",
-     "null": true
+     "null": false,
+     "default": "''",
+     "desc": "До 2000 знаков.",
+     "status": "actual"
     },
     {
-     "name": "date_from",
-     "ru": "Начало",
-     "type": "date",
-     "null": false
-    },
-    {
-     "name": "date_to",
-     "ru": "Окончание",
-     "type": "date",
-     "null": true
+     "name": "plan",
+     "ru": "Планируемая стоимость",
+     "type": "bigint",
+     "null": true,
+     "desc": "Пусто — не задана («стоимость договорная»); от 0 до 10 млрд сомов (projects_plan_check). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
      "name": "status",
      "ru": "Статус",
-     "type": "project_status",
+     "type": "text",
      "null": false,
      "default": "'planned'",
-     "desc": "Планируется, В работе, Завершён, Отменён."
+     "desc": "planned, in_progress, done, cancelled — перечисление project_status (projects_status_check, PROJECT_STATUSES).",
+     "status": "actual"
     },
     {
-     "name": "lead_id",
-     "ru": "Руководитель",
+     "name": "lead_employee_id",
+     "ru": "Главный ответственный",
      "type": "uuid",
      "null": false,
-     "fk": "employees.id"
-    },
-    {
-     "name": "plan_amount",
-     "ru": "Стоимость",
-     "type": "bigint",
-     "null": false,
-     "desc": "Плановая сумма по договору. Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "fk": "employees.id",
+     "onDelete": "restrict",
+     "desc": "Один из ответственных project_members (проверяет API). Ссылка (lead_employee_id, org_id) → employees, ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5771,7 +5773,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5779,7 +5782,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5787,19 +5809,34 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #82",
-   "source": "demoDB.projects; modules/projects.js"
+   "rls": "Включена. Политика projects_isolation: только своя организация.",
+   "issue": "#82 (часть 1 сделана, PR #160); оплаты — часть 2",
+   "source": "ТЗ «Проекты»; прототип modules/projects.js; demoDB.projects; packages/db/src/schema/projects.ts",
+   "logic": [
+    "Проект не удаляется: в прототипе удаления нет — «Отменить проект» (статус cancelled). Роль приложения меняет только поля окна проекта, статус и служебные столбцы; DELETE, TRUNCATE и смены контрагента и автора у неё нет (0083).",
+    "Задачи по проекту — tasks.project_id (того же контрагента).",
+    "Оплаты (транши) — project_payments, задача 2.26 часть 2."
+   ],
+   "uniques": [
+    "projects_id_org_unique (id, org_id)",
+    "projects_id_contractor_org_unique (id, contractor_id, org_id) — для ссылки задачи: проект того же контрагента"
+   ],
+   "indexes": [
+    "projects_contractor_idx (org_id, contractor_id)",
+    "projects_ends_idx (org_id, ends_on)"
+   ],
+   "migration": "0082_projects, 0083_projects_guards"
   },
   {
    "name": "project_members",
    "ru": "Исполнители проекта",
    "group": "money",
-   "status": "planned",
-   "desc": "Кто работает над проектом.",
+   "status": "actual",
+   "desc": "Ответственные проекта (прототип p.resps): сотрудники своей организации; порядок — как выбраны.",
    "columns": [
     {
      "name": "org_id",
@@ -5807,8 +5844,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "project_id",
@@ -5817,7 +5856,9 @@
      "null": false,
      "pk": true,
      "fk": "projects.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Первичный ключ (project_id, employee_id). Ссылка (project_id, org_id) → projects, ON DELETE CASCADE.",
+     "status": "actual"
     },
     {
      "name": "employee_id",
@@ -5825,19 +5866,38 @@
      "type": "uuid",
      "null": false,
      "pk": true,
-     "fk": "employees.id"
+     "fk": "employees.id",
+     "onDelete": "restrict",
+     "desc": "Ссылка (employee_id, org_id) → employees, ON DELETE RESTRICT.",
+     "status": "actual"
+    },
+    {
+     "name": "position",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "default": "0",
+     "desc": "Как выбраны.",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #82",
-   "source": "demoDB.projects[].resps"
+   "rls": "Включена. Политика project_members_isolation: только своя организация.",
+   "issue": "#82 (сделано, PR #160)",
+   "source": "прототип p.resps; packages/db/src/schema/projects.ts",
+   "logic": [
+    "Меняются в «Изменить проект»: строки удаляются и добавляются, сами не меняются (UPDATE и TRUNCATE у роли приложения отозваны, 0083)."
+   ],
+   "indexes": [
+    "project_members_employee_idx (org_id, employee_id) — область «Свои»"
+   ],
+   "migration": "0082_projects, 0083_projects_guards"
   },
   {
    "name": "project_works",
    "ru": "Этапы проекта",
    "group": "money",
-   "status": "planned",
-   "desc": "Список работ проекта с исполнителем, сроком и отметкой «Выполнено».",
+   "status": "actual",
+   "desc": "Работы по проекту (прототип p.works): название, исполнитель, срок, «сделано»; порядок — position.",
    "columns": [
     {
      "name": "id",
@@ -5846,7 +5906,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5854,8 +5915,10 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "project_id",
@@ -5863,56 +5926,53 @@
      "type": "uuid",
      "null": false,
      "fk": "projects.id",
-     "onDelete": "cascade"
+     "onDelete": "cascade",
+     "desc": "Ссылка (project_id, org_id) → projects, ON DELETE CASCADE.",
+     "status": "actual"
     },
     {
      "name": "name",
-     "ru": "Работа",
+     "ru": "Название",
      "type": "text",
-     "null": false
+     "null": false,
+     "desc": "Не пустое, до 300 знаков (project_works_name_check).",
+     "status": "actual"
     },
     {
-     "name": "executor_id",
+     "name": "executor_employee_id",
      "ru": "Исполнитель",
      "type": "uuid",
-     "null": true,
-     "fk": "employees.id"
+     "null": false,
+     "fk": "employees.id",
+     "onDelete": "restrict",
+     "desc": "Ссылка (executor_employee_id, org_id) → employees, ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
-     "name": "due",
+     "name": "due_date",
      "ru": "Срок",
      "type": "date",
-     "null": true
+     "null": true,
+     "desc": "Пусто — без срока.",
+     "status": "actual"
     },
     {
      "name": "done",
-     "ru": "Выполнено",
+     "ru": "Сделано",
      "type": "boolean",
      "null": false,
-     "default": "false"
+     "default": "false",
+     "desc": "Отметка «сделано».",
+     "status": "actual"
     },
     {
-     "name": "sort_order",
+     "name": "position",
      "ru": "Порядок",
      "type": "integer",
      "null": false,
-     "default": "0"
-    },
-    {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
-    },
-    {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "default": "0",
+     "desc": "Порядок в проекте.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5920,7 +5980,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5928,12 +5989,39 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #82",
-   "source": "demoDB.projects[].works"
+   "rls": "Включена. Политика project_works_isolation: только своя организация; ограничивающая project_works_delete_open — удалять только несделанные.",
+   "issue": "#82 (сделано, PR #160)",
+   "source": "прототип p.works, projectDlg; packages/db/src/schema/projects.ts",
+   "logic": [
+    "Сделанную работу из проекта не убирают (прототип projectDlg: у сделанной вместо корзины — «сделано»): ограничивающая политика project_works_delete_open пускает DELETE только к несделанным (0082).",
+    "Роль приложения меняет только name, executor_employee_id, due_date, done, position и служебные столбцы; проект и автор — нет (0083)."
+   ],
+   "indexes": [
+    "project_works_project_idx (project_id, position)"
+   ],
+   "migration": "0082_projects, 0083_projects_guards"
   },
   {
    "name": "project_payments",
@@ -6098,7 +6186,7 @@
    ],
    "issue": "#79 (сделано); регулярные — #80, Telegram — #81",
    "source": "demoDB.tasks; ТЗ «Задачи» → «Ручные задачи», «Выполнение», «Подтверждение выполнения»; прототип modules/tasks.js; packages/db/src/schema/tasks.ts",
-   "migration": "0044_tasks, 0045_tasks_guards",
+   "migration": "0044_tasks, 0045_tasks_guards, 0082_projects, 0083_projects_guards",
    "logic": [
     "Кто что может с задачей — правила @buhuchet/domain (tasks/rules.ts) в API: ставить задачи могут только старшие; без права «Все задачи» сотрудник видит свои (исполнитель или постановщик).",
     "Смена статуса пишется в «Историю статусов» (status_history, шкала task); шаги Базы знаний tdone и tconf засчитываются по ней (правило status).",
@@ -6111,7 +6199,8 @@
     "tasks_author_idx (org_id, author_employee_id, status) — «Поставленные мной»",
     "tasks_contractor_idx (org_id, contractor_id, created_at) — задачи в карточке контрагента",
     "tasks_due_idx (org_id, due_date)",
-    "tasks_pending_idx (org_id) WHERE status = 'on_confirm' — счётчик «На подтверждении»"
+    "tasks_pending_idx (org_id) WHERE status = 'on_confirm' — счётчик «На подтверждении»",
+    "tasks_project_idx (org_id, project_id) WHERE project_id is not null"
    ],
    "columns": [
     {
@@ -6174,8 +6263,8 @@
      "type": "uuid",
      "null": true,
      "fk": "projects.id",
-     "desc": "Если задача из проекта. Поля пока нет: придёт с проектами (2.26).",
-     "status": "planned"
+     "desc": "Проект контрагента задачи (2.26); пусто — задача без проекта. Ссылка (project_id, contractor_id, org_id) → projects (id, contractor_id, org_id): проект того же контрагента; у общей задачи проекта нет (tasks_project_check). Изменяемое поле задачи (0083).",
+     "status": "actual"
     },
     {
      "name": "executor_employee_id",
