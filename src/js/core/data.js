@@ -5,10 +5,10 @@
    в артефакте и при открытии с диска — из копии, которую сборка встраивает в страницу (блоки db-*). */
 const DB_VER=1,DB_KEY='bu.temdb';
 const DB_FILES={demo:'demoDB.json',empty:'TemDB.json',ref:'refDB.json',gked:'gkedDB.json'};
-const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','indicatorImports','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog'];
+const DB_ORG_KEYS=['organization','roles','employees','contractors','reports','moneyOps','history','tasks','feePayments','services','projects','files','indicators','indicatorValues','indicatorMonths','indicatorHistory','indicatorImports','kbProgress','newsRead','platformOrgs','platformUsers','dictRequests','telegramLog','leads'];
 const DB_REF_KEYS=['dictionaries','taxes','enRates','propertyRates','bizSize','notes','reportTypes','singleTaxRates','taxRates','defaultRates','phoneCodes','holidays','workingSaturdays','statuses','statusNames','roleTemplates','messageTemplates','localization','kbGroups','kbSteps','kbLevels','kbArticles','news','dictHistory','dictLoads','calendarAudit','permissions','kbUi','kbShows','onboarding'];
 const DB_OBJ=new Set(['notes','organization','kbProgress','newsRead','dictionaries','taxRates','defaultRates','holidays','statuses','statusNames','messageTemplates','kbLevels','calendarAudit','kbUi','onboarding']);
-const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',indicatorImports:'Загрузки показателей из Excel',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram'};
+const DB_T={organization:'Организация',roles:'Роли',employees:'Сотрудники',contractors:'Контрагенты',reports:'Отчёты',moneyOps:'Поступления и оплаты',history:'История',tasks:'Задачи',feePayments:'Оплаты за обслуживание',services:'Разовые услуги',projects:'Проекты',files:'Файлы',indicators:'Показатели',indicatorValues:'Значения показателей',indicatorMonths:'Статусы месяцев показателей',indicatorHistory:'История показателей',indicatorImports:'Загрузки показателей из Excel',kbProgress:'Прогресс в Базе знаний',newsRead:'Прочитанные новости',platformOrgs:'Организации платформы',platformUsers:'Учётные записи',dictRequests:'Запросы на справочники',telegramLog:'Журнал Telegram',leads:'Заявки с сайта'};
 function dbRead(name,id){
   if(/^https?:/.test(location.protocol))try{const x=new XMLHttpRequest();x.open('GET','data/'+name+'?v='+Date.now(),false);x.send();
     if(x.status===200){const v=JSON.parse(x.responseText);if(v&&v.meta&&v.meta.file===name)return {db:v,from:'папка data'}}}catch(e){}
@@ -21,6 +21,8 @@ const DB_TXT_REF=[[r=>r.taxes,x=>x.code,['guide']],[r=>r.enRates,x=>x.code,['exp
 let DATA_MODE=store.get('data','demo'),DBMISS=[];
 // Недостающие разделы (старый или чужой файл) берутся из пустого шаблона и refDB.json — прототип не ломается, а показывает, чего не хватило
 function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.meta||{};
+  // Заявки с лендинга (v65): у данных, сохранённых раньше, раздел появляется сам — в демо-режиме с демо-заявками
+  if(db.leads==null&&db.meta.file==='TemDB.json'&&!db.meta.v65)db.leads=structuredClone((db.meta.mode!=='empty'&&DBSRC.demo.db.leads)||[]);
   DB_ORG_KEYS.forEach(k=>{if(db[k]==null){miss.push(DB_T[k]||k);db[k]=structuredClone(e[k]!=null?e[k]:DB_OBJ.has(k)?{}:[])}});
   const hadRef=!!db.ref;db.ref=db.ref||{};
   DB_REF_KEYS.forEach(k=>{if(db.ref[k]==null){if(hadRef)miss.push('справочник '+k);db.ref[k]=structuredClone(r[k]!=null?r[k]:DB_OBJ.has(k)?{}:[])}});
@@ -268,6 +270,12 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   if(!db.meta.v64){db.meta.v64=1;
     const sw=(id,o,st,en)=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),h=(((r.kbArticles||[]).find(x=>x.id===id))||{}).html||'',i=h.indexOf(st),j=h.indexOf(en,i);if(a&&a.html&&a.html.includes(o)&&i>=0&&j>=0)a.html=a.html.replace(o,h.slice(i,j+en.length))};
     sw('a8','<li>Прежние версии не меняются. В списке видна последняя версия, остальные — в карточке.</li>','<li>Прежние версии не меняются: в их меню','остальные — в карточке.</li>')}
+  // Лендинг (v65): тексты группы «Лендинг» в «Локализации», статусы заявок, шаблон «Telegram: новая заявка с сайта», справка
+  if(!db.meta.v65){db.meta.v65=1;const l=db.ref.localization;if(Array.isArray(l)){const have=new Set(l.map(x=>x.key));(r.localization||[]).forEach(x=>{if(!have.has(x.key))l.push(structuredClone(x))})}
+    if(db.ref.statuses&&!db.ref.statuses.lead&&r.statuses&&r.statuses.lead)db.ref.statuses.lead=structuredClone(r.statuses.lead);
+    ['messageTemplates','templateNotes'].forEach(k=>{const a=db.ref[k];if(a&&r[k]&&a.tgLead==null&&r[k].tgLead!=null)a.tgLead=r[k].tgLead});
+    const sw=(id,o,st,en)=>{const a=(db.ref.kbArticles||[]).find(x=>x.id===id),h=(((r.kbArticles||[]).find(x=>x.id===id))||{}).html||'',i=h.indexOf(st),j=h.indexOf(en,i);if(a&&a.html&&a.html.includes(o)&&i>=0&&j>=0)a.html=a.html.replace(o,h.slice(i,j+en.length))};
+    /*SW65*/}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
