@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 42,
+  "schemaVersion": 43,
   "updated": "2026-10-31",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main 5558039",
-    "what": "Фактические миграции 0000–0077: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
+    "ref": "main 7eca9b4",
+    "what": "Фактические миграции 0000–0081: организации и их профиль, пользователи, сеансы входа, счёт неверных паролей по логину, привязка Telegram и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, разовые услуги и их оплаты, очередь и журнал Telegram, настройки уведомлений, словарь текстов интерфейса, журнал расписания, очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs), функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -1639,15 +1639,6 @@
      "default": "now()",
      "desc": "Когда Telegram привязан последний раз.",
      "status": "actual"
-    },
-    {
-     "name": "notify_mode",
-     "ru": "Какие уведомления",
-     "type": "text",
-     "null": false,
-     "default": "'all'",
-     "desc": "Например «Все» или «Только просрочки и сводка». Поля пока нет: появится с напоминаниями в Telegram.",
-     "status": "planned"
     }
    ],
    "rls": "Включена. Политика telegram_links_isolation: роль приложения видит только строки своей организации. Добавлять, менять и удалять строки роли приложения запрещено (INSERT, UPDATE, DELETE, TRUNCATE отозваны): всё меняют только функции app.* (SECURITY DEFINER), см. «Правила → Функции базы».",
@@ -1660,7 +1651,8 @@
     "Привязка по одноразовой ссылке t.me/<бот>?start=<токен> из профиля: бот получает токен, app.telegram_link_peek узнаёт, чья ссылка, app.telegram_link_use привязывает чат.",
     "Новая привязка заменяет прежнюю. Если чат сменился, неиспользованный код «Забыли пароль?» отменяется (app.auth_reset_revoke).",
     "Отвязка (app.telegram_unlink) — из профиля; тоже отменяет неиспользованный код.",
-    "app.telegram_chat показывает привязку и привязан ли тот же чат к другим логинам."
+    "app.telegram_chat показывает привязку и привязан ли тот же чат к другим логинам.",
+    "Какие уведомления получает сотрудник — отдельная таблица telegram_notify_settings (0078), не поле привязки."
    ]
   },
   {
@@ -5344,11 +5336,11 @@
    "migration": "0076_finance_journal, 0077_finance_journal_guards"
   },
   {
-   "name": "services",
+   "name": "one_off_services",
    "ru": "Разовые услуги",
    "group": "money",
-   "status": "planned",
-   "desc": "Платные разовые услуги контрагенту: проверка учёта, консультация, восстановление документов.",
+   "status": "actual",
+   "desc": "Разовая услуга контрагенту (ТЗ «Ручная операция «Разовая услуга»»; прототип SERVICES, modules/services.js serviceDlg): контрагент, название, дата, стоимость, исполнитель, описание. Одна операция журнала «Финансовые операции» со статусом оплаты — его считают по действующим оплатам.",
    "columns": [
     {
      "name": "id",
@@ -5357,7 +5349,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5366,7 +5359,9 @@
      "null": false,
      "fk": "organizations.id",
      "onDelete": "restrict",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "contractor_id",
@@ -5375,61 +5370,85 @@
      "null": false,
      "fk": "contractors.id",
      "onDelete": "restrict",
-     "desc": "ON DELETE RESTRICT: контрагента с такими записями база удалить не даст (docs/decisions.md п. А-1 продукта)."
+     "desc": "Ссылка (contractor_id, org_id) → contractors (id, org_id), ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
      "name": "name",
-     "ru": "Услуга",
+     "ru": "Название",
      "type": "text",
-     "null": false
-    },
-    {
-     "name": "description",
-     "ru": "Описание",
-     "type": "text",
-     "null": true
+     "null": false,
+     "desc": "Не пустое, до 300 знаков (one_off_services_text_check).",
+     "status": "actual"
     },
     {
      "name": "service_date",
      "ru": "Дата",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Дата услуги.",
+     "status": "actual"
     },
     {
      "name": "amount",
      "ru": "Стоимость",
      "type": "bigint",
      "null": false,
-     "desc": " Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
+     "desc": "Больше 0 и не больше 10 млрд сомов (one_off_services_amount_check). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
-     "name": "responsible_id",
-     "ru": "Ответственный",
+     "name": "performer_employee_id",
+     "ru": "Исполнитель",
      "type": "uuid",
+     "null": true,
+     "fk": "employees.id",
+     "onDelete": "restrict",
+     "desc": "Сотрудник (прототип resp). Ссылка (performer_employee_id, org_id) → employees, ON DELETE RESTRICT.",
+     "status": "actual"
+    },
+    {
+     "name": "description",
+     "ru": "Описание",
+     "type": "text",
      "null": false,
-     "fk": "employees.id"
+     "default": "''",
+     "desc": "До 2000 знаков.",
+     "status": "actual"
+    },
+    {
+     "name": "edited",
+     "ru": "Изменена",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Изменены стоимость или дата (прототип edited): отметка «Изменена».",
+     "status": "actual"
     },
     {
      "name": "deleted_at",
      "ru": "Удалена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "«Удалить» — отметка с причиной: запись не стирается и уходит из итогов; три поля удаления заполняются вместе (…_delete_check).",
+     "status": "actual"
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "deleted_by",
+     "ru": "Кто удалил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, удаливший запись.",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "name": "delete_reason",
+     "ru": "Причина удаления",
+     "type": "text",
+     "null": true,
+     "desc": "Обязательна при удалении, до 500 знаков.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5437,7 +5456,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5445,7 +5465,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5453,19 +5492,31 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #78",
-   "source": "demoDB.services; modules/services.js"
+   "rls": "Включена. Политика one_off_services_isolation: только своя организация.",
+   "issue": "#76 (сделано, PR #158, задача 2.22 часть 3)",
+   "source": "ТЗ «Ручная операция «Разовая услуга»»; прототип SERVICES, modules/services.js; demoDB.services; packages/db/src/schema/finance.ts",
+   "logic": [
+    "Не стирается: «Удалить» — отметка с причиной, удалённая уходит из итогов вместе со своими оплатами.",
+    "Роль приложения меняет только поля окна услуги (name, service_date, amount, performer_employee_id, description), edited, отметку удаления и служебные столбцы; DELETE, TRUNCATE и смены контрагента и автора у неё нет (0081)."
+   ],
+   "uniques": [
+    "one_off_services_id_org_unique (id, org_id) — для составных ссылок из оплат"
+   ],
+   "indexes": [
+    "one_off_services_contractor_idx (org_id, contractor_id, service_date)"
+   ],
+   "migration": "0080_one_off_services, 0081_one_off_services_guards"
   },
   {
-   "name": "service_payments",
+   "name": "one_off_service_payments",
    "ru": "Оплаты разовых услуг",
    "group": "money",
-   "status": "planned",
-   "desc": "Оплаты по разовой услуге (можно частями).",
+   "status": "actual",
+   "desc": "Оплата разовой услуги (прототип s.pays, svcPay → tranchDlg): сумма, дата, примечание; можно частями. Сумма действующих оплат не больше стоимости (проверяет сервер под блокировкой услуги).",
    "columns": [
     {
      "name": "id",
@@ -5474,7 +5525,8 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
@@ -5482,51 +5534,79 @@
      "type": "uuid",
      "null": false,
      "fk": "organizations.id",
-     "onDelete": "cascade",
-     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки."
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Чья запись. По этому полю работает защита RLS: организация видит только свои строки.",
+     "status": "actual"
     },
     {
      "name": "service_id",
      "ru": "Услуга",
      "type": "uuid",
      "null": false,
-     "fk": "services.id",
-     "onDelete": "cascade"
+     "fk": "one_off_services.id",
+     "onDelete": "restrict",
+     "desc": "Ссылка (service_id, org_id) → one_off_services (id, org_id), ON DELETE RESTRICT.",
+     "status": "actual"
     },
     {
      "name": "amount",
      "ru": "Сумма",
      "type": "bigint",
      "null": false,
-     "desc": " Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50»."
+     "desc": "Больше 0 и не больше 10 млрд сомов (one_off_service_payments_amount_check). Хранится в тыйынах (1 сом = 100 тыйынов), на экране — «1 250,50».",
+     "status": "actual"
     },
     {
-     "name": "pay_date",
-     "ru": "Дата",
+     "name": "paid_on",
+     "ru": "Дата оплаты",
      "type": "date",
-     "null": false
+     "null": false,
+     "desc": "Дата из платёжного документа.",
+     "status": "actual"
+    },
+    {
+     "name": "note",
+     "ru": "Примечание",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "До 500 знаков.",
+     "status": "actual"
+    },
+    {
+     "name": "edited",
+     "ru": "Изменена",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Изменены стоимость или дата (прототип edited): отметка «Изменена».",
+     "status": "actual"
     },
     {
      "name": "deleted_at",
      "ru": "Удалена",
      "type": "timestamptz",
-     "null": true
+     "null": true,
+     "desc": "«Удалить» — отметка с причиной: запись не стирается и уходит из итогов; три поля удаления заполняются вместе (…_delete_check).",
+     "status": "actual"
     },
     {
-     "name": "created_at",
-     "ru": "Создано",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись создана."
+     "name": "deleted_by",
+     "ru": "Кто удалил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, удаливший запись.",
+     "status": "actual"
     },
     {
-     "name": "updated_at",
-     "ru": "Изменено",
-     "type": "timestamptz",
-     "null": false,
-     "default": "now()",
-     "desc": "Когда запись менялась в последний раз."
+     "name": "delete_reason",
+     "ru": "Причина удаления",
+     "type": "text",
+     "null": true,
+     "desc": "Обязательна при удалении, до 500 знаков.",
+     "status": "actual"
     },
     {
      "name": "created_by",
@@ -5534,7 +5614,8 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, создавший запись; для записей, созданных системой по расписанию, пусто."
+     "desc": "Пользователь, создавший запись.",
+     "status": "actual"
     },
     {
      "name": "updated_by",
@@ -5542,7 +5623,26 @@
      "type": "uuid",
      "null": true,
      "fk": "users.id",
-     "desc": "Пользователь, менявший запись последним."
+     "desc": "Пользователь, менявший запись последним.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись создана.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда запись менялась в последний раз.",
+     "status": "actual"
     },
     {
      "name": "version",
@@ -5550,12 +5650,24 @@
      "type": "integer",
      "null": false,
      "default": "1",
-     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем»."
+     "desc": "Растёт при каждом сохранении. Если двое правят одну запись, второй получает «Запись изменена другим пользователем».",
+     "status": "actual"
     }
    ],
-   "rls": "Включена. Строки видны только своей организации (org_id = текущая организация запроса).",
-   "issue": "этап 2 · #78",
-   "source": "demoDB.services[].pays"
+   "rls": "Включена. Политика one_off_service_payments_isolation: только своя организация.",
+   "issue": "#76 (сделано, PR #158, задача 2.22 часть 3)",
+   "source": "demoDB.services[].pays; прототип svcPay, tranchDlg; packages/db/src/schema/finance.ts",
+   "logic": [
+    "Не стирается: «Удалить» — отметка с причиной.",
+    "Роль приложения меняет только amount, paid_on, note, edited, отметку удаления и служебные столбцы; DELETE, TRUNCATE и смены услуги и автора у неё нет (0081)."
+   ],
+   "uniques": [
+    "one_off_service_payments_id_org_unique (id, org_id)"
+   ],
+   "indexes": [
+    "one_off_service_payments_service_idx (service_id, paid_on)"
+   ],
+   "migration": "0080_one_off_services, 0081_one_off_services_guards"
   },
   {
    "name": "projects",
@@ -11432,11 +11544,11 @@
    "source": "План разработки: «Фоновые работы»"
   },
   {
-   "name": "outbox_messages",
-   "ru": "Исходящие сообщения",
+   "name": "telegram_outbox",
+   "ru": "Журнал отправок и очередь Telegram",
    "group": "system",
-   "status": "planned",
-   "desc": "Очередь сообщений в Telegram (коды, напоминания, сводки, задачи) и журнал отправки с повторами при ошибке.",
+   "status": "actual",
+   "desc": "Очередь и журнал сообщений Telegram (ТЗ «Уведомления в Telegram», Админка → «Модуль Телеграмм»: журнал и повтор; прототип admin/telegram.js, TG_LOG; задача 2.25, docs/decisions.md п. Б-5 продукта). Напоминания и события ждут в очереди (pending) и уходят пачками с повторами; служебные сообщения бота уходят сразу и пишутся после отправки.",
    "columns": [
     {
      "name": "id",
@@ -11445,102 +11557,258 @@
      "null": false,
      "pk": true,
      "default": "gen_random_uuid()",
-     "desc": "Уникальный номер записи, создаётся базой."
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
     },
     {
      "name": "org_id",
      "ru": "Организация",
      "type": "uuid",
      "null": true,
-     "fk": "organizations.id"
-    },
-    {
-     "name": "channel",
-     "ru": "Канал",
-     "type": "text",
-     "null": false,
-     "default": "'telegram'",
-     "desc": "telegram."
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья строка; пусто — у администратора платформы (без организации). По этому полю работает защита RLS.",
+     "status": "actual"
     },
     {
      "name": "user_id",
-     "ru": "Кому",
+     "ru": "Получатель",
      "type": "uuid",
-     "null": true,
-     "fk": "users.id"
+     "null": false,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Пользователь. Ссылка на users и (user_id, org_id) → users (id, org_id), ON DELETE CASCADE.",
+     "status": "actual"
     },
     {
      "name": "chat_id",
-     "ru": "Чат",
+     "ru": "Чат Telegram",
      "type": "bigint",
-     "null": true
-    },
-    {
-     "name": "template_key",
-     "ru": "Шаблон",
-     "type": "text",
-     "null": true,
-     "fk": "message_templates.key",
-     "desc": "Ключ из «Текстов сообщений»."
+     "null": false,
+     "desc": "Куда отправлено (telegram_links.chat_id на момент отправки).",
+     "status": "actual"
     },
     {
      "name": "kind",
-     "ru": "Вид",
+     "ru": "Вид сообщения",
      "type": "text",
      "null": false,
-     "desc": "Например «Новая задача», «Напоминание», «Код входа»."
+     "desc": "reminders, task_new, task_on_confirm, task_confirmed, task_rework, task_cancelled, report_fix, code, linked, relinked, unlinked, pass_changed, pass_reset, broadcast (telegram_outbox_kind_check).",
+     "status": "actual"
     },
     {
-     "name": "body",
+     "name": "text",
      "ru": "Текст",
      "type": "text",
-     "null": false,
-     "desc": "Готовый текст после подстановок."
+     "null": true,
+     "desc": "Текст сообщения; у кода восстановления (code) — всегда пусто: в журнал код не пишется (telegram_outbox_code_text_check, docs/deviations.md п. 12 продукта).",
+     "status": "actual"
     },
     {
      "name": "status",
      "ru": "Состояние",
      "type": "text",
      "null": false,
-     "default": "'В очереди'",
-     "desc": "«В очереди», «Отправлено», «Ошибка»."
+     "default": "'pending'",
+     "desc": "pending — ждёт отправки, sent — отправлено, error — ошибка (telegram_outbox_status_check).",
+     "status": "actual"
     },
     {
      "name": "tries",
      "ru": "Попыток",
      "type": "integer",
      "null": false,
-     "default": "0"
+     "default": "0",
+     "desc": "Сколько раз пытались отправить; ≥ 0.",
+     "status": "actual"
     },
     {
-     "name": "error",
+     "name": "next_at",
+     "ru": "Когда отправлять",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда отправить или повторить.",
+     "status": "actual"
+    },
+    {
+     "name": "last_error",
      "ru": "Ошибка",
      "type": "text",
-     "null": true
+     "null": true,
+     "desc": "Текст последней ошибки отправки (до 300 знаков у служебных).",
+     "status": "actual"
+    },
+    {
+     "name": "sent_at",
+     "ru": "Отправлено",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Когда отправлено.",
+     "status": "actual"
+    },
+    {
+     "name": "dedupe_key",
+     "ru": "Ключ повтора",
+     "type": "text",
+     "null": true,
+     "desc": "Уникален: одно напоминание за день одному человеку, даже если расписание запустилось дважды (telegram_outbox_dedupe_key).",
+     "status": "actual"
     },
     {
      "name": "created_at",
      "ru": "Создано",
      "type": "timestamptz",
      "null": false,
-     "default": "now()"
-    },
-    {
-     "name": "sent_at",
-     "ru": "Отправлено",
-     "type": "timestamptz",
-     "null": true
+     "default": "now()",
+     "desc": "Когда строка создана.",
+     "status": "actual"
     }
    ],
    "logic": [
-    "Сообщение кладётся в очередь в той же транзакции, что и событие; отправляет обработчик. Журнал виден в Админке «Telegram»."
+    "Строки организации видны только ей (RLS); строки администраторов платформы (без организации) пишет только функция app.telegram_log (0079); экран журнала в Админке — задача 2.41.",
+    "Роль приложения строки не удаляет; у строки меняются только отметки отправки — status, tries, next_at, last_error, sent_at; текст и получатель — нет (0079). TRUNCATE у неё нет.",
+    "Задача отправки берёт организации с сообщениями к отправке функцией app.telegram_outbox_orgs и для каждой открывает свою транзакцию; заблокированной организации сообщения не отправляются."
    ],
-   "rls": "Включена. Служебная таблица: читает и пишет только приложение, пользователи напрямую не видят.",
+   "rls": "Включена. Политика telegram_outbox_isolation: только своя организация.",
    "indexes": [
-    "(status, created_at)"
+    "telegram_outbox_due_idx (org_id, next_at) WHERE status = pending",
+    "telegram_outbox_org_created_idx (org_id, created_at)"
    ],
-   "issue": "этап 2 · #81",
-   "source": "demoDB.telegramLog; admin/telegram.js"
+   "issue": "#80 (сделано, PR #155, задачи 2.24 + 2.25)",
+   "source": "ТЗ «Уведомления в Telegram»; прототип admin/telegram.js TG_LOG; demoDB.telegramLog; packages/db/src/schema/telegram.ts",
+   "uniques": [
+    "telegram_outbox_dedupe_key (dedupe_key)"
+   ],
+   "migration": "0078_telegram_outbox, 0079_telegram_outbox_functions"
+  },
+  {
+   "name": "telegram_notify_settings",
+   "ru": "Какие уведомления получает сотрудник",
+   "group": "system",
+   "status": "actual",
+   "desc": "«Уведомления в Telegram» в профиле (ТЗ «Уведомления в Telegram»; прототип modules/profile.js notifyBox): режим владельца и главного бухгалтера и отключённые переключатели. Нет строки — «Все», всё включено.",
+   "columns": [
+    {
+     "name": "user_id",
+     "ru": "Пользователь",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Один набор на пользователя. Ссылка (user_id, org_id) → users (id, org_id), ON DELETE CASCADE.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья запись. По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "mode",
+     "ru": "Режим",
+     "type": "text",
+     "null": false,
+     "default": "'all'",
+     "desc": "all — все, digest — только сводка и просрочки, manual — только задачи (telegram_notify_settings_mode_check, NOTIFY_MODES).",
+     "status": "actual"
+    },
+    {
+     "name": "off",
+     "ru": "Отключены",
+     "type": "text[]",
+     "null": false,
+     "default": "'{}'",
+     "desc": "Отключённые переключатели из before, over, tasks, regtasks, week (telegram_notify_settings_off_check, NOTIFY_KINDS).",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда менялось.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто изменил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "desc": "Пользователь, менявший последним.",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия записи",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Растёт при каждом сохранении.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "DELETE и TRUNCATE у роли приложения отозваны (0079)."
+   ],
+   "rls": "Включена. Политика telegram_notify_settings_isolation: только своя организация.",
+   "issue": "#80 (сделано, PR #155)",
+   "source": "прототип modules/profile.js notifyBox; packages/db/src/schema/telegram.ts",
+   "migration": "0078_telegram_outbox, 0079_telegram_outbox_functions"
+  },
+  {
+   "name": "telegram_digest_days",
+   "ru": "Дни собранных напоминаний",
+   "group": "system",
+   "status": "actual",
+   "desc": "Отметка «напоминания за день организации собраны» (одно сообщение в день каждому), чтобы расписание каждую минуту не собирало их заново.",
+   "columns": [
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "desc": "Чья отметка; первичный ключ (org_id, day).",
+     "status": "actual"
+    },
+    {
+     "name": "day",
+     "ru": "День",
+     "type": "date",
+     "null": false,
+     "pk": true,
+     "desc": "День по часовому поясу организации.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Когда собраны.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Отметки не меняются и не удаляются: UPDATE, DELETE и TRUNCATE у роли приложения отозваны (0079).",
+    "Кому пора собирать — функция app.telegram_digest_orgs."
+   ],
+   "rls": "Включена. Политика telegram_digest_days_isolation: только своя организация.",
+   "issue": "#80 (сделано, PR #155)",
+   "source": "packages/db/src/schema/telegram.ts",
+   "migration": "0078_telegram_outbox, 0079_telegram_outbox_functions"
   }
  ],
  "functions": [
@@ -11977,6 +12245,27 @@
    "migration": "0061_contractor_service_init",
    "definer": false,
    "desc": "Триггер contractors_initial_service_period AFTER INSERT ON contractors (только kind = regular): период с месяца начала обслуживания. Работает с правами того, кто создаёт контрагента, — строка проходит ту же изоляцию организаций."
+  },
+  {
+   "name": "app.telegram_log(user, chat, kind, text, ok, error)",
+   "ru": "Записать служебное сообщение бота",
+   "migration": "0079_telegram_outbox_functions",
+   "definer": true,
+   "desc": "Только служебные виды code, linked, relinked, unlinked, pass_changed, pass_reset (иначе ошибка): пишет в telegram_outbox уже отправленное сообщение — в том числе у администратора платформы без организации и там, где организация ещё не известна (вебхук бота, «Забыли пароль?»). Организацию берёт у пользователя; текст кода не пишется никогда (docs/deviations.md п. 12 продукта)."
+  },
+  {
+   "name": "app.telegram_outbox_orgs(now)",
+   "ru": "Организации с сообщениями к отправке",
+   "migration": "0079_telegram_outbox_functions",
+   "definer": true,
+   "desc": "Номера действующих организаций, у которых в очереди есть pending с next_at ≤ now; отдаёт только номера, как app.org_ids()."
+  },
+  {
+   "name": "app.telegram_digest_orgs(now)",
+   "ru": "Кому пора собрать напоминания",
+   "migration": "0079_telegram_outbox_functions",
+   "definer": true,
+   "desc": "Действующие организации с включёнными «Напоминаниями в Telegram» и хотя бы одним привязанным Telegram, у которых время сводки по их часовому поясу наступило, а за этот день напоминания ещё не собраны (telegram_digest_days). Отдаёт номер организации и день."
   }
  ]
 }
