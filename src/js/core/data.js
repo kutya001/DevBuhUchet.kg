@@ -287,6 +287,8 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     l.forEach(x=>{if(old[x.key]!=null&&x.ru===old[x.key]){const n=(r.localization||[]).find(y=>y.key===x.key);if(n){x.ru=n.ru;x._ua=n._ua;x._ub=n._ub}}})}}
   // v70 (Кутман 02.11.2026): с лендинга убран пункт «Серверы в Европе (Франкфурт), соединение защищено HTTPS» — ключ land.sec.6 больше не нужен
   if(!db.meta.v70){db.meta.v70=1;const l=db.ref.localization;if(Array.isArray(l)){const i=l.findIndex(x=>x.key==='land.sec.6');if(i>=0)l.splice(i,1)}}
+  // v71 (Кутман 02.11.2026): ответ «Где хранятся данные?» на лендинге без Франкфурта — если администратор не менял прежний текст
+  if(!db.meta.v71){db.meta.v71=1;const l=db.ref.localization;const n=(r.localization||[]).find(y=>y.key==='land.faq.6.a');if(Array.isArray(l)&&n)l.forEach(x=>{if(x.key==='land.faq.6.a'&&x.ru==='На серверах в Европе (Франкфурт) с ежедневными резервными копиями.'){x.ru=n.ru;x._ua=n._ua;x._ub=n._ub}})}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
