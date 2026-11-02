@@ -285,6 +285,8 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   if(!db.meta.v66){db.meta.v66=1;const l=db.ref.localization;if(Array.isArray(l)){const rl=r.localization||[];rl.forEach((x,i)=>{if(l.some(y=>y.key===x.key))return;let j=-1;for(let k=i-1;k>=0&&j<0;k--)j=l.findIndex(y=>y.key===rl[k].key);l.splice(j<0?l.length:j+1,0,structuredClone(x))})}
     if(Array.isArray(l)){const old={'land.c.phone':'+996 555 000 000','land.c.tg':'@buhuchet_kg','land.c.email':'info@buhuchet.kg'};
     l.forEach(x=>{if(old[x.key]!=null&&x.ru===old[x.key]){const n=(r.localization||[]).find(y=>y.key===x.key);if(n){x.ru=n.ru;x._ua=n._ua;x._ub=n._ub}}})}}
+  // v70 (Кутман 02.11.2026): с лендинга убран пункт «Серверы в Европе (Франкфурт), соединение защищено HTTPS» — ключ land.sec.6 больше не нужен
+  if(!db.meta.v70){db.meta.v70=1;const l=db.ref.localization;if(Array.isArray(l)){const i=l.findIndex(x=>x.key==='land.sec.6');if(i>=0)l.splice(i,1)}}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
