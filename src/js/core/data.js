@@ -289,6 +289,8 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   if(!db.meta.v70){db.meta.v70=1;const l=db.ref.localization;if(Array.isArray(l)){const i=l.findIndex(x=>x.key==='land.sec.6');if(i>=0)l.splice(i,1)}}
   // v71 (Кутман 02.11.2026): ответ «Где хранятся данные?» на лендинге без Франкфурта — если администратор не менял прежний текст
   if(!db.meta.v71){db.meta.v71=1;const l=db.ref.localization;const n=(r.localization||[]).find(y=>y.key==='land.faq.6.a');if(Array.isArray(l)&&n)l.forEach(x=>{if(x.key==='land.faq.6.a'&&x.ru==='На серверах в Европе (Франкфурт) с ежедневными резервными копиями.'){x.ru=n.ru;x._ua=n._ua;x._ub=n._ub}})}
+  // v72 (Кутман 02.11.2026): кнопка темы на лендинге — новый ключ land.btn.theme после того же ключа, что в refDB.json
+  if(!db.meta.v72){db.meta.v72=1;const l=db.ref.localization;const rl=r.localization||[];if(Array.isArray(l))['land.btn.theme'].forEach(k=>{if(l.some(y=>y.key===k))return;const i=rl.findIndex(y=>y.key===k);if(i<0)return;const j=i>0?l.findIndex(y=>y.key===rl[i-1].key):-1;l.splice(j<0?l.length:j+1,0,structuredClone(rl[i]))})}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
