@@ -15,6 +15,8 @@ const finishMs=(dist,v)=>Math.round(Math.max(120,Math.min(320,Math.abs(v)>.05?Ma
 const afterAnim=(el,ms,fn)=>{let done=false;const f=e=>{if(done||e&&e.target!==el)return;done=true;el.removeEventListener('transitionend',f);fn()};el.addEventListener('transitionend',f);setTimeout(f,ms+60)};
 // Плавная прокрутка строки вкладок за то же время, что и листание страницы
 const EASE_F=t=>1-Math.pow(1-t,2.4);
+// Завершение анимации — один раз: по окончании перехода или сразу, если начался новый свайп (ТЗ 06.11.2026: «предыдущий сразу доводится до конца, новый начинается от уже открытой вкладки»)
+const once=f=>{let d=false;return()=>{if(d)return;d=true;f()}};
 function scrollAnim(el,to,ms){if(el._sa)cancelAnimationFrame(el._sa);const from=el.scrollLeft;if(!ms||Math.abs(to-from)<1){el.scrollLeft=to;return}const t0=performance.now();const step=now=>{const k=Math.min(1,(now-t0)/ms);el.scrollLeft=from+(to-from)*EASE_F(k);el._sa=k<1?requestAnimationFrame(step):0};el._sa=requestAnimationFrame(step)}
 function rgbaA(c,k){const m=c.match(/rgba?\(([^)]+)\)/);if(!m)return c;const p=m[1].split(',').map(x=>x.trim());const a=p.length>3?+p[3]:1;return `rgba(${p[0]},${p[1]},${p[2]},${(a*k).toFixed(3)})`}
 // Swipe down closes a sheet/form/popover: from the grabber or header any time, from the content when it is scrolled to the top.
@@ -64,7 +66,7 @@ function formPager(m){const el=m.el;let st=null;const tr=tracker();
     [box,otb].forEach(r=>r.querySelectorAll('[id]').forEach(x=>x.id+='__o'));
     st.nq=q;st.snap=box;st.otb=otb;st.scr=scr;st.W=W;slide(q.kids,st.dir*W,0)}
   function paint(d,ms){if(st.snap){st.snap.style.transition=ms?`transform ${ms}ms ${EASE}`:'none';st.snap.style.transform=d?`translateX(${d}px)`:'';slide(st.nq.kids,d+st.dir*st.W,ms)}else slide(st.q.kids,d,ms)}
-  el.addEventListener('touchstart',e=>{if(st&&st.busy)return;st=null;if(e.touches.length>1||e.target.closest('input,textarea,select,.grabber,.mh'))return;const q=parts();if(!q||!q.mb.contains(e.target))return;
+  el.addEventListener('touchstart',e=>{if(st&&st.busy&&st.fin)st.fin();st=null;if(e.touches.length>1||e.target.closest('input,textarea,select,.grabber,.mh'))return;const q=parts();if(!q||!q.mb.contains(e.target))return;
     const hs=hScrollEl(e.target,el);if(hs===true)return;const btns=[...q.tb.querySelectorAll('.tab')];const i=btns.findIndex(b=>b.classList.contains('on'));if(i<0||btns.length<2)return;
     const p=e.touches[0];st={x0:p.clientX,y0:p.clientY,mode:null,dx:0,hs,btns,i,q};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
   el.addEventListener('touchmove',e=>{if(!st||st.busy)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
@@ -79,13 +81,13 @@ function formPager(m){const el=m.el;let st=null;const tr=tracker();
       if(fire){s0.nq.kids.forEach(k=>{k.style.transition='';k.style.transform=''});s0.nq.mb.classList.remove('fp-on');return}
       // отмена: снова прежняя вкладка, прокрутка как была (окно перерисуется в том же кадре)
       const b=s0.nq.tb.querySelectorAll('.tab')[s0.i];if(b)b.click();const q2=parts();if(q2)q2.mb.scrollTop=s0.scr};
-    if(!ms){done();return}
+    if(!ms){done();return}s0.fin=once(done);
     if(fire){s0.snap.style.transition=`transform ${ms}ms ${EASE}`;s0.snap.style.transform=`translateX(${-s0.dir*W}px)`;slide(s0.nq.kids,0,ms)}else paint(0,ms);
-    afterAnim(s0.snap,ms,done)};
+    afterAnim(s0.snap,ms,s0.fin)};
   el.addEventListener('touchend',()=>end(false));el.addEventListener('touchcancel',()=>end(true))}
 // Swipe left/right on the work area pages between module tabs: the current tab slides with the finger and the neighbour slides in.
 const TAB_SCROLL={};
-(function pager(){const pane=$('#pane');let st=null;const tr=tracker();
+(function pager(){const pane=$('#pane');let st=null,pend=null;const tr=tracker();
   const kids=pg=>[...pg.children].filter(k=>!k.classList.contains('tabrow'));
   function renderNeighbour(tabId){const cur=$('#page');const ids=[...cur.querySelectorAll('[id]')];ids.forEach(x=>x.id+='__o');cur.id='page__o';
     const nb=document.createElement('div');nb.className='page pg-nb';nb.id='page';pane.appendChild(nb);const top=pane.scrollTop,keep=S.tab;S.tab=tabId;
@@ -113,7 +115,7 @@ const TAB_SCROLL={};
         st.bg={l:tabRelL(ntabs,nt)+(sc-sn),w:nt.offsetWidth,t:nt.getBoundingClientRect().top-ntabs.getBoundingClientRect().top-ntabs.clientTop,h:nt.offsetHeight}}
       else{st.sl1=tabsTarget(tabs,st.tb);st.bg={l:st.tb.offsetLeft,w:st.tb.offsetWidth,t:st.tb.offsetTop,h:st.tb.offsetHeight}}}}
   function cleanup(){pane.classList.remove('paging');(st.cur||[]).forEach(k=>{k.style.transition='';k.style.transform='';k.style.willChange=''});const tabs=$('#tabs');if(tabs)tabs.classList.remove('swiping');if(st.ghost)st.ghost.remove()}
-  pane.addEventListener('touchstart',e=>{st=null;if(MODALS.length||POP||TOUR.on||$('#sheet').classList.contains('open')||e.touches.length>1)return;const p=e.touches[0];
+  pane.addEventListener('touchstart',e=>{if(pend)pend();st=null;if(MODALS.length||POP||TOUR.on||$('#sheet').classList.contains('open')||e.touches.length>1)return;const p=e.touches[0];
     const hs=hScrollEl(e.target,pane);if(p.clientX<20||hs===true)return;const tabs=modTabs(curMod());const i=tabs.findIndex(x=>x.id===S.tab);if(i<0||tabs.length<2)return;
     st={x0:p.clientX,y0:p.clientY,mode:null,tabs,i,dx:0,dir:0,hs};tr.reset();tr.add(p.clientX,p.clientY,e.timeStamp)},{passive:true});
   pane.addEventListener('touchmove',e=>{if(!st)return;const p=e.touches[0];tr.add(p.clientX,p.clientY,e.timeStamp);const dx=p.clientX-st.x0,dy=p.clientY-st.y0;
@@ -123,10 +125,10 @@ const TAB_SCROLL={};
     const fire=!cancel&&st.nb&&(((-dx*st.dir)>W/3&&v*st.dir<.1)||(-v*st.dir>FLICK&&-dx*st.dir>SLOP));
     if(fire)ckHit('swipe');const target=fire?-st.dir*W:0;const ms=RM()?0:fire?finishMs(W-Math.abs(dx),v):230;const s0=st;
     if(ms)paint(target,true,ms);
-    const finish=()=>{st=s0;if(fire){const pane=$('#pane');const old=$('#page');TAB_SCROLL[S.mod+'.'+S.tab]=pane.scrollTop;cleanup();old.remove();const nb=st.nb;
+    const finish=()=>{pend=null;st=s0;{const tb=$('#tabs');if(tb&&tb._sa){cancelAnimationFrame(tb._sa);tb._sa=0}}if(fire){const pane=$('#pane');const old=$('#page');TAB_SCROLL[S.mod+'.'+S.tab]=pane.scrollTop;cleanup();old.remove();const nb=st.nb;
         nb.querySelectorAll('[id]').forEach(x=>{if(x.id.endsWith('__n'))x.id=x.id.slice(0,-3)});nb.id='page';const sv=+nb.dataset.sv||0;nb.classList.remove('pg-nb');nb.removeAttribute('style');delete nb.dataset.sv;
         S.tab=st.to;(nb._ttl||[]).forEach(([e,k,v])=>e[k]=v);history.replaceState(null,'','#'+S.mod+'.'+S.tab);pane.scrollTop=sv;fitTabs()}
       else{cleanup();if(st.nb){st.nb.remove();renderPage(false)}}st=null};
-    if(ms)afterAnim(st.cur[0]||pane,ms,finish);else finish();st=null}
+    if(ms){pend=once(finish);afterAnim(st.cur[0]||pane,ms,pend)}else finish();st=null}
   pane.addEventListener('touchend',()=>end(false));pane.addEventListener('touchcancel',()=>end(true))})();
 
