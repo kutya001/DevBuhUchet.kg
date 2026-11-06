@@ -44,6 +44,9 @@
 .pane.paging{overflow-x:hidden}
 .pg-nb{position:absolute;left:0;right:0;pointer-events:none}
 .pg-nb>.tabrow{visibility:hidden}
+/* Листание вкладок окна свайпом: неподвижная копия прежней вкладки едет рядом с новой */
+.mb.fp-on{position:relative}
+.fp-snap{position:absolute;display:flex;flex-direction:column;pointer-events:none;will-change:transform}
 .modal,.pop{touch-action:pan-y}
 .state.fe b{max-width:520px;text-wrap:balance}
 .state .btn .ic{color:inherit}
