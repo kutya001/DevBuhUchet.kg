@@ -554,6 +554,8 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
   .lp-fab[hidden]{display:none}
   .lp-fab .btn{width:100%;justify-content:center;min-height:48px;font-size:15.5px;box-shadow:var(--shadow-l)}
 }
+/* Узкие экраны (обложка Galaxy Fold, 280 px): в шапке остаётся только знак логотипа */
+@media (max-width:319px){.lp-bn{display:none}.lp-cont{overflow-wrap:anywhere}}
 @media (max-width:374px){.lp-hero-pic .lsh-desk,.lp-hero-pic .lsh-ph{zoom:.54}.lp-hero-pic .lsh-ph{margin:44px 0 0 -100px}.lp-head-r{gap:4px}}
 .land .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* Демо-организация: полоса «Демо-версия» над программой (ТЗ «Лендинг» → «Демо-организация») */
