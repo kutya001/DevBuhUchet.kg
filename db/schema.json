@@ -1,13 +1,13 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 57,
-  "updated": "2026-11-07",
+  "schemaVersion": 58,
+  "updated": "2026-11-08",
   "sources": [
    {
     "name": "Продукт kutya001/Buhuchet.kg",
-    "ref": "main a28899e",
-    "what": "Фактические миграции 0000–0104: организации и их профиль, пользователи, сеансы входа, коды входа администратора платформы, счёт неверных паролей по логину, привязка Telegram (с подтверждением замены кодом из прежнего чата) и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, разовые услуги и их оплаты, очередь и журнал Telegram, настройки уведомлений, проекты контрагентов (ответственные, работы, транши), словарь текстов интерфейса, журнал расписания и состояние задач расписания (оповещения о сбоях), очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий, заявки с сайта и их история; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs) и «Телеграм», функции базы и правило сортировки app.ru_natural."
+    "ref": "main 88b089c",
+    "what": "Фактические миграции 0000–0107: организации и их профиль, пользователи, сеансы входа, коды входа администратора платформы, счёт неверных паролей по логину, привязка Telegram (с подтверждением замены кодом из прежнего чата) и коды «Забыли пароль?», сотрудники, роли и права, контрагенты (дополнительные ГКЭД, льготы, основания, журнал ставок), назначения отчётов, отчёты, изменения сроков и строки расчёта налога, шаблоны ролей, цвета статусов и шаблоны сообщений, учётная политика, подключённые виды отчётов и запросы «Попросить добавить», прогресс обучения в «Базе знаний» (шаги, прочитанные статьи, уровни, знакомые элементы показов), новости платформы и их прочтения, видео платформы, их загрузки, просмотры и открытия сотрудников и общий счёт просмотров гостей лендинга, история изменений (организаций и платформы) и история статусов, настройки вида списков, ГКЭД, справочники платформы для контрагентов и отчётов (органы, режимы, основания, УГНС, виды отчётов, льготы и их связи, производственный календарь, формы собственности, ставки единого налога, причины изменения срока, банковские провайдеры, категории задач), мелкие справочники (JSON), реквизиты организации и сотрудников, файлы, ручные задачи и комментарии, показатели контрагентов, операции с деньгами на налоги и детализация поступлений, оплата за обслуживание и её распределение по месяцам, закрытые месяцы финансов, разовые услуги и их оплаты, очередь и журнал Telegram, настройки уведомлений, проекты контрагентов (ответственные, работы, транши), словарь текстов интерфейса, журнал расписания и состояние задач расписания (оповещения о сбоях), очередь пересчёта сроков, загрузки справочников из Excel, журнал частоты действий, заявки с сайта и их история; RLS, роль buhuchet_app, функции и представления Админки «Организации», «Учётные записи», «Локализация» и «Справочники платформы» (перечень app.platform_dict_specs) и «Телеграм», функции базы и правило сортировки app.ru_natural."
    },
    {
     "name": "Прототип kutya001/DevBuhUchet.kg",
@@ -131,7 +131,8 @@
   "integer[]": "Список целых чисел.",
   "text[]": "Список строк.",
   "smallint": "Небольшое целое число (день, месяц).",
-  "smallint[]": "Список небольших целых чисел."
+  "smallint[]": "Список небольших целых чисел.",
+  "real": "Дробное число (4 байта) — секунды и проценты просмотра, не деньги."
  },
  "enums": [
   {
@@ -7985,7 +7986,7 @@
    "rls": "Включена. Политика kb_progress_isolation: строки своей организации видят все её пользователи (уровни сотрудников у владельца и в «Сотрудниках»). kb_progress_own_insert и kb_progress_own_update: добавляет и меняет пользователь только свои строки — шаг засчитывается тому, кто сам сделал действие. kb_progress_platform_admin: строки без организации видит и пишет только сам незаблокированный администратор платформы (app.is_platform_admin(), миграция 0047). Удалять строки роль приложения не может (REVOKE DELETE, TRUNCATE, миграция 0042); UPDATE — только столбцов done_how, done_at и skipped_at.",
    "issue": "#86 (сделано); засчитывание показом «Показать как» и «Обзор экрана» — #87 (сделано)",
    "source": "demoDB.kbProgress; ТЗ «База знаний» → «Прогресс хранится на сервере», «Точные правила подсчёта»; прототип modules/kb-lessons.js; packages/db/src/schema/kb.ts; docs/decisions.md п. Г-2 продукта",
-   "migration": "0041_kb, 0042_kb_grants, 0047_news (политика администратора), 0091_kb_progress_hand",
+   "migration": "0041_kb, 0042_kb_grants, 0047_news (политика администратора), 0091_kb_progress_hand, 0105_videos",
    "logic": [
     "Программа строится из прав роли и функций учётной политики при каждом запросе; шаги, которых нет в программе пользователя, просто не считаются.",
     "Шаг «Сделать» засчитывается по истории изменений (audit_log, только действие самого пользователя) или по привязанному Telegram; «Посмотреть» — «Перейти» и 3 секунды на экране, чтение статьи до конца или первое использование функции.",
@@ -8032,7 +8033,7 @@
      "ru": "Как засчитан",
      "type": "text",
      "null": true,
-     "desc": "action — действием, data — действием, сделанным раньше, show — показом «Показать как», art — чтением статьи, use — первым использованием, visit — открытием экрана, hand — кнопкой «Отметить выполненным» (с 0091) (kb_progress_how_check, KB_HOWS). Пусто — не выполнен (только пропущен).",
+     "desc": "action — действием, data — действием, сделанным раньше, show — показом «Показать как», art — чтением статьи, use — первым использованием, visit — открытием экрана, hand — кнопкой «Отметить выполненным» (с 0091), video — привязанное к шагу «Посмотреть» видео получило «Просмотрено» (с 0105) (kb_progress_how_check, KB_HOWS). Пусто — не выполнен (только пропущен).",
      "status": "actual"
     },
     {
@@ -8231,7 +8232,7 @@
    "rls": "Включена. Политика news_read: администратор платформы видит всё; остальные — опубликованные, не снятые, «для всех», с наступившей датой публикации (в 09:00 по Бишкеку — так считает сама политика, задача по расписанию не нужна). news_admin_insert и news_admin_update — только администратор платформы; news_admin_delete — только черновик. TRUNCATE отозван (миграция 0048).",
    "issue": "#88 (сделано)",
    "source": "refDB.news; ТЗ «База знаний» → «Новости», «Окно «Что нового» при входе»; «Админка → База знаний (содержимое) → Новости»; прототип modules/kb-news.js, admin/news.js; packages/db/src/schema/news.ts; docs/decisions.md п. Г-3 продукта",
-   "migration": "0047_news, 0048_news_grants",
+   "migration": "0047_news, 0048_news_grants, 0107_news_video_link",
    "logic": [
     "Начальное наполнение — история версий из refDB.json (коды v1 …).",
     "Новость, вышедшая раньше создания учётной записи пользователя, у него считается прочитанной (app.current_user_created_at, docs/deviations.md п. Г-3 продукта)."
@@ -8301,7 +8302,7 @@
      "ru": "«Подробнее»: вид",
      "type": "text",
      "null": true,
-     "desc": "art — статья, mod — модуль Базы знаний; пусто вместе с link_id (news_link_check).",
+     "desc": "art — статья, mod — модуль Базы знаний, video — видео платформы (с 0107); пусто вместе с link_id (news_link_check).",
      "status": "actual"
     },
     {
@@ -8309,7 +8310,7 @@
      "ru": "«Подробнее»: код",
      "type": "text",
      "null": true,
-     "desc": "Код статьи или модуля, до 64 знаков.",
+     "desc": "Код статьи, модуля или видео, до 64 знаков.",
      "status": "actual"
     },
     {
@@ -8602,6 +8603,642 @@
      "status": "actual"
     }
    ]
+  },
+  {
+   "name": "videos",
+   "ru": "Видео платформы",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Видео платформы для вкладки «Видео» Базы знаний, окна «?» модулей, статей, новостей, шагов уроков и лендинга — общие данные, org_id нет. Загружает, меняет и удаляет только администратор платформы: файл MP4/WebM до 500 МБ в хранилище (platform/videos/<загрузка>) или ссылка YouTube. Черновик → опубликовано; «Снято с публикации» — отметка off. Удалённое видео остаётся строкой с deleted_at: файл из хранилища удаляется, а статистика просмотров сохраняет название с пометкой «удалено».",
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Код видео",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "desc": "v и 12 случайных знаков (videos_id_check: ^[a-z0-9][a-z0-9_-]{0,63}$); на него ссылаются статьи (<kb-video data-id>), новости (#video:<код>, link_kind video) и шаги уроков.",
+     "status": "actual"
+    },
+    {
+     "name": "title",
+     "ru": "Название",
+     "type": "text",
+     "null": false,
+     "desc": "От 1 до 120 знаков (videos_title_check).",
+     "status": "actual"
+    },
+    {
+     "name": "kind",
+     "ru": "Вид",
+     "type": "text",
+     "null": false,
+     "desc": "instr — видеоинструкция, pres — презентация (videos_kind_check, VideoKind).",
+     "status": "actual"
+    },
+    {
+     "name": "source",
+     "ru": "Источник",
+     "type": "text",
+     "null": false,
+     "desc": "file — файл в хранилище, yt — ссылка YouTube (videos_source_check).",
+     "status": "actual"
+    },
+    {
+     "name": "yt_id",
+     "ru": "Код YouTube",
+     "type": "text",
+     "null": true,
+     "desc": "11 знаков; есть ровно у source = yt (videos_yt_check).",
+     "status": "actual"
+    },
+    {
+     "name": "file_key",
+     "ru": "Ключ файла",
+     "type": "text",
+     "null": true,
+     "desc": "Ключ в хранилище; у файла есть, пока видео не удалено (файл удаляется вместе с ним), у YouTube — пусто (videos_file_check).",
+     "status": "actual"
+    },
+    {
+     "name": "file_name",
+     "ru": "Имя файла",
+     "type": "text",
+     "null": true,
+     "desc": "Имя загруженного файла.",
+     "status": "actual"
+    },
+    {
+     "name": "file_size",
+     "ru": "Размер файла",
+     "type": "bigint",
+     "null": true,
+     "desc": "Байты, от 1 до 524 288 000 (500 МБ).",
+     "status": "actual"
+    },
+    {
+     "name": "file_type",
+     "ru": "Тип файла",
+     "type": "text",
+     "null": true,
+     "desc": "video/mp4 или video/webm — по содержимому файла.",
+     "status": "actual"
+    },
+    {
+     "name": "duration",
+     "ru": "Длительность",
+     "type": "integer",
+     "null": true,
+     "desc": "Секунды, от 1 до 43 200 (12 часов); пусто — ещё неизвестна (YouTube до первого запуска, WebM без длительности в файле) — тогда её записывает app.video_set_duration.",
+     "status": "actual"
+    },
+    {
+     "name": "cover_key",
+     "ru": "Ключ обложки",
+     "type": "text",
+     "null": true,
+     "desc": "JPEG-копия в хранилище (platform/video-covers/<id>); пусто вместе с cover_kind (videos_cover_check).",
+     "status": "actual"
+    },
+    {
+     "name": "cover_kind",
+     "ru": "Вид обложки",
+     "type": "text",
+     "null": true,
+     "desc": "own — своя картинка, frame — кадр с первой секунды файла.",
+     "status": "actual"
+    },
+    {
+     "name": "description",
+     "ru": "Описание",
+     "type": "text",
+     "null": false,
+     "default": "''",
+     "desc": "До 1000 знаков (videos_description_check).",
+     "status": "actual"
+    },
+    {
+     "name": "module",
+     "ru": "Модуль",
+     "type": "text",
+     "null": true,
+     "desc": "Модуль меню (^[a-z][a-z0-9]{0,31}$); пусто — «Общее»; у видеоинструкции обязателен (videos_module_check).",
+     "status": "actual"
+    },
+    {
+     "name": "article",
+     "ru": "Связанная статья",
+     "type": "text",
+     "null": true,
+     "desc": "Код статьи Базы знаний, до 64 знаков (videos_article_check).",
+     "status": "actual"
+    },
+    {
+     "name": "ord",
+     "ru": "Порядок",
+     "type": "integer",
+     "null": false,
+     "default": "0",
+     "desc": "Место в группе модуля, от 0 до 100 000.",
+     "status": "actual"
+    },
+    {
+     "name": "audience",
+     "ru": "Для кого",
+     "type": "text",
+     "null": false,
+     "default": "'all'",
+     "desc": "all — для всех, adm — только администратор платформы (videos_audience_check).",
+     "status": "actual"
+    },
+    {
+     "name": "status",
+     "ru": "Статус",
+     "type": "text",
+     "null": false,
+     "default": "'draft'",
+     "desc": "draft — черновик, published — опубликовано (videos_status_check).",
+     "status": "actual"
+    },
+    {
+     "name": "off",
+     "ru": "Снято с публикации",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Снятое видео не видно в списках; у тех, кто уже смотрел, — окно «Видео снято с публикации».",
+     "status": "actual"
+    },
+    {
+     "name": "landing",
+     "ru": "Показывать на лендинге",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Только у опубликованного и не удалённого видео (videos_landing_check).",
+     "status": "actual"
+    },
+    {
+     "name": "landing_ord",
+     "ru": "Порядок на лендинге",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "От 1 до 100 000.",
+     "status": "actual"
+    },
+    {
+     "name": "yt_bad",
+     "ru": "YouTube: видео недоступно",
+     "type": "boolean",
+     "null": false,
+     "default": "false",
+     "desc": "Видео удалено или закрыто на YouTube — пометка в Админке; ставит и снимает app.video_set_yt_bad.",
+     "status": "actual"
+    },
+    {
+     "name": "published_at",
+     "ru": "Опубликовано",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Есть ровно у опубликованного видео (videos_published_check).",
+     "status": "actual"
+    },
+    {
+     "name": "deleted_at",
+     "ru": "Удалено",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Удалённое видео остаётся строкой для статистики просмотров.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто создал",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "onDelete": "set null",
+     "desc": "Администратор платформы; удалён — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_by",
+     "ru": "Кто изменил",
+     "type": "uuid",
+     "null": true,
+     "fk": "users.id",
+     "onDelete": "set null",
+     "desc": "Последний изменивший; удалён — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Создано",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Момент создания.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Момент последнего изменения.",
+     "status": "actual"
+    },
+    {
+     "name": "version",
+     "ru": "Версия",
+     "type": "integer",
+     "null": false,
+     "default": "1",
+     "desc": "Защита от одновременной правки; длительность и отметка YouTube её не меняют.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Вошедшим видны опубликованные, не снятые, не удалённые видео «для всех»; какие именно — по модулям меню и «Для кого» решает API. Видео, которые смотрели сотрудники организации, видны и снятые и удалённые — в статистике просмотров название с пометкой.",
+    "Ссылка на видео — /app/kb/video?video=<код> (вкладка «Видео» Базы знаний и сразу окно видео); внутри программы — #video:<код> в новости и <kb-video data-id> в статье (docs/deviations.md п. О-54 продукта).",
+    "Длительность YouTube и отметку «не открывается» сообщает только вошедший пользователь (POST /api/kb/videos/{id}/meta, не чаще 30 раз в час); окно видео на лендинге их не отправляет (п. О-55).",
+    "Файл до 500 МБ браузер кладёт в хранилище частями по 10 МБ (многочастная загрузка S3, video_uploads); сохранение видео забирает загрузку себе (п. О-56).",
+    "Изменения пишутся в историю Базы знаний (раздел video, KB_HISTORY_SECTIONS)."
+   ],
+   "rls": "Включена. Политика videos_read: администратор платформы видит всё; остальные — опубликованные, не снятые, не удалённые «для всех», а также видео, у которых есть строка video_views (свои просмотры организации). videos_admin_insert и videos_admin_update — только администратор платформы (app.is_platform_admin()). Удалять строки роль приложения не может (REVOKE DELETE, 0106); длительность и отметку YouTube без администратора меняют только функции app.video_set_duration и app.video_set_yt_bad.",
+   "indexes": [
+    "videos_module_idx (module)"
+   ],
+   "issue": "видео платформы (PR #209, сделано)",
+   "source": "refDB.videos, demoDB.videoViews, demoDB.videoGuest; ТЗ «База знаний» → «Видео»; прототип v79 modules/video.js, admin/video-admin.js; packages/db/src/schema/kb.ts; docs/deviations.md п. О-54…О-57 продукта",
+   "migration": "0105_videos, 0106_video_functions"
+  },
+  {
+   "name": "video_uploads",
+   "ru": "Загрузки видео",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Загрузки администратора платформы, ещё не ставшие видео: файл, который браузер кладёт в хранилище частями (kind video, многочастная загрузка S3), и JPEG-обложка (kind cover). Сохранение видео забирает загрузку себе (строка удаляется); незаконченные и неиспользованные через сутки убирает задача kb.cleanup-video-uploads (раз в час).",
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер загрузки",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "desc": "Задаёт сервер (без значения по умолчанию); входит в ключ файла в хранилище.",
+     "status": "actual"
+    },
+    {
+     "name": "kind",
+     "ru": "Что загружается",
+     "type": "text",
+     "null": false,
+     "desc": "video — файл видео, cover — обложка (video_uploads_kind_check).",
+     "status": "actual"
+    },
+    {
+     "name": "storage_key",
+     "ru": "Ключ в хранилище",
+     "type": "text",
+     "null": false,
+     "unique": true,
+     "desc": "Где лежит файл; уникален.",
+     "status": "actual"
+    },
+    {
+     "name": "s3_upload_id",
+     "ru": "Номер многочастной загрузки",
+     "type": "text",
+     "null": true,
+     "desc": "Номер многочастной загрузки S3 — чтобы её закончить или прервать; у обложки и после окончания загрузки — пусто.",
+     "status": "actual"
+    },
+    {
+     "name": "file_name",
+     "ru": "Имя файла",
+     "type": "text",
+     "null": false,
+     "desc": "Имя выбранного файла.",
+     "status": "actual"
+    },
+    {
+     "name": "size_bytes",
+     "ru": "Размер",
+     "type": "bigint",
+     "null": false,
+     "desc": "Байты, от 1 до 524 288 000 (video_uploads_size_check).",
+     "status": "actual"
+    },
+    {
+     "name": "content_type",
+     "ru": "Тип файла",
+     "type": "text",
+     "null": false,
+     "desc": "Видео — video/mp4 или video/webm, обложка — image/jpeg (video_uploads_type_check).",
+     "status": "actual"
+    },
+    {
+     "name": "state",
+     "ru": "Состояние",
+     "type": "text",
+     "null": false,
+     "default": "'uploading'",
+     "desc": "uploading — части ещё идут; ready — файл проверен (MP4 или WebM, длительность) или обложка положена (video_uploads_state_check).",
+     "status": "actual"
+    },
+    {
+     "name": "duration",
+     "ru": "Длительность",
+     "type": "integer",
+     "null": true,
+     "desc": "Секунды — из начала проверенного файла.",
+     "status": "actual"
+    },
+    {
+     "name": "created_by",
+     "ru": "Кто загружает",
+     "type": "uuid",
+     "null": false,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Администратор платформы; удалён — удаляются и загрузки.",
+     "status": "actual"
+    },
+    {
+     "name": "created_at",
+     "ru": "Начата",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "По нему задача расписания находит загрузки старше суток.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Браузер получает подписанные ссылки на части по 10 МБ на 15 минут, сервер собирает файл и проверяет начало; при обрыве — «Продолжить» (docs/deviations.md п. О-56 продукта).",
+    "Задача kb.cleanup-video-uploads: app.video_uploads_stale отдаёт ключи и номера многочастных загрузок, задача прерывает их и удаляет файлы, затем app.video_uploads_drop убирает строки."
+   ],
+   "rls": "Включена. Политика video_uploads_admin (все действия): только свои загрузки незаблокированного администратора платформы (app.is_platform_admin() и created_by = app.current_user_id()). У задачи расписания администратора в контексте нет — она работает функциями app.video_uploads_stale и app.video_uploads_drop (0106).",
+   "indexes": [
+    "video_uploads_created_idx (created_at) — загрузки старше суток"
+   ],
+   "uniques": [
+    "storage_key"
+   ],
+   "issue": "видео платформы (PR #209, сделано)",
+   "source": "ТЗ «Админка → База знаний → Видео» (файл до 500 МБ, полоса загрузки, «Отменить», «Продолжить»); прототип v79 admin/video-admin.js (VID_MAX); packages/db/src/schema/kb.ts; apps/web/src/kbadm/video-upload.ts; docs/deviations.md п. О-56 продукта",
+   "migration": "0105_videos, 0106_video_functions"
+  },
+  {
+   "name": "video_views",
+   "ru": "Просмотры видео",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Просмотр видео сотрудником (прототип demoDB.videoViews), одна строка на пользователя и видео: проигранные отрезки (каждая секунда — один раз), где остановился, «Просмотрено» (с 90 % секунд, ставится один раз и не снимается), сколько раз открывал, первое открытие и последний просмотр. Собственные просмотры администратора платформы не записываются.",
+   "columns": [
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Организация зрителя (по умолчанию app.current_org_id()). (user_id, org_id) → users (id, org_id), каскадно. По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "user_id",
+     "ru": "Пользователь",
+     "type": "uuid",
+     "null": false,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Кто смотрел; удалён — удаляются и его просмотры.",
+     "status": "actual",
+     "pk": true
+    },
+    {
+     "name": "video_id",
+     "ru": "Видео",
+     "type": "text",
+     "null": false,
+     "fk": "videos.id",
+     "onDelete": "restrict",
+     "desc": "Какое видео; строку видео с просмотрами удалить нельзя.",
+     "status": "actual",
+     "pk": true
+    },
+    {
+     "name": "segs",
+     "ru": "Проигранные отрезки",
+     "type": "jsonb",
+     "null": false,
+     "default": "'[]'",
+     "desc": "[[с, по], …] в секундах, слитые и по порядку (video_views_segs_check: массив).",
+     "status": "actual"
+    },
+    {
+     "name": "pos",
+     "ru": "Где остановился",
+     "type": "real",
+     "null": false,
+     "default": "0",
+     "desc": "Секунда — для «Продолжить с 2:10»; не меньше 0 (video_views_pos_check).",
+     "status": "actual"
+    },
+    {
+     "name": "done_at",
+     "ru": "Просмотрено",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Когда набралось 90 % секунд видео (VIDEO_DONE_SHARE); не снимается.",
+     "status": "actual"
+    },
+    {
+     "name": "opens",
+     "ru": "Открытий",
+     "type": "integer",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько раз открывал окно видео; не меньше 0.",
+     "status": "actual"
+    },
+    {
+     "name": "first_at",
+     "ru": "Первое открытие",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Момент первого открытия.",
+     "status": "actual"
+    },
+    {
+     "name": "last_at",
+     "ru": "Последний просмотр",
+     "type": "timestamptz",
+     "null": true,
+     "desc": "Последнее открытие, в котором что-то проигралось.",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Момент последнего изменения строки.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "«Просмотрено» засчитывает шаг «Посмотреть», к которому привязано видео (kb_progress.done_how = video).",
+    "Статистику просмотров организации видят владелец и право «Видеть уровни сотрудников» (решает API); администратор платформы — «Просмотры видео» в Админке по всем организациям."
+   ],
+   "rls": "Включена. Политика video_views_isolation (SELECT): строки своей организации. video_views_own_insert и video_views_own_update: пользователь пишет только свои строки своей организации. video_views_platform_admin_read: администратор платформы читает все. Удалять строки роль приложения не может (REVOKE DELETE, 0106).",
+   "indexes": [
+    "video_views_org_idx (org_id, video_id)",
+    "video_views_video_idx (video_id)"
+   ],
+   "issue": "видео платформы (PR #209, сделано)",
+   "source": "refDB.videos, demoDB.videoViews, demoDB.videoGuest; ТЗ «База знаний» → «Видео»; прототип v79 modules/video.js, admin/video-admin.js; packages/db/src/schema/kb.ts; docs/deviations.md п. О-54…О-57 продукта",
+   "migration": "0105_videos, 0106_video_functions"
+  },
+  {
+   "name": "video_sessions",
+   "ru": "Открытия видео",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Одно открытие окна видео (ТЗ «По каждому открытию запоминаются дата и время, с какой по какую секунду смотрели и сколько секунд проигралось»): окно открыли — строка, без запуска — с пустыми отрезками.",
+   "columns": [
+    {
+     "name": "id",
+     "ru": "Номер открытия",
+     "type": "uuid",
+     "null": false,
+     "pk": true,
+     "default": "gen_random_uuid()",
+     "desc": "Уникальный номер записи, создаётся базой.",
+     "status": "actual"
+    },
+    {
+     "name": "org_id",
+     "ru": "Организация",
+     "type": "uuid",
+     "null": false,
+     "fk": "organizations.id",
+     "onDelete": "restrict",
+     "default": "app.current_org_id()",
+     "desc": "Организация зрителя (по умолчанию app.current_org_id()). (user_id, org_id) → users (id, org_id), каскадно. По этому полю работает защита RLS.",
+     "status": "actual"
+    },
+    {
+     "name": "user_id",
+     "ru": "Пользователь",
+     "type": "uuid",
+     "null": false,
+     "fk": "users.id",
+     "onDelete": "cascade",
+     "desc": "Кто смотрел; удалён — удаляются и его просмотры.",
+     "status": "actual"
+    },
+    {
+     "name": "video_id",
+     "ru": "Видео",
+     "type": "text",
+     "null": false,
+     "fk": "videos.id",
+     "onDelete": "restrict",
+     "desc": "Какое видео; строку видео с просмотрами удалить нельзя.",
+     "status": "actual"
+    },
+    {
+     "name": "opened_at",
+     "ru": "Открыто",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Дата и время открытия окна.",
+     "status": "actual"
+    },
+    {
+     "name": "segs",
+     "ru": "Проигранные отрезки",
+     "type": "jsonb",
+     "null": false,
+     "default": "'[]'",
+     "desc": "[[с, по], …] в секундах за это открытие (video_sessions_segs_check: массив).",
+     "status": "actual"
+    },
+    {
+     "name": "updated_at",
+     "ru": "Изменено",
+     "type": "timestamptz",
+     "null": false,
+     "default": "now()",
+     "desc": "Момент последнего изменения строки.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Сумма отрезков открытия — «сколько секунд проигралось»; итог по видео — в video_views."
+   ],
+   "rls": "Включена. Политики как у video_views: video_sessions_isolation (SELECT своей организации), video_sessions_own_insert и video_sessions_own_update (только свои строки), video_sessions_platform_admin_read. Удалять строки роль приложения не может (REVOKE DELETE, 0106).",
+   "indexes": [
+    "video_sessions_view_idx (org_id, user_id, video_id, opened_at)",
+    "video_sessions_video_idx (video_id)"
+   ],
+   "issue": "видео платформы (PR #209, сделано)",
+   "source": "refDB.videos, demoDB.videoViews, demoDB.videoGuest; ТЗ «База знаний» → «Видео»; прототип v79 modules/video.js, admin/video-admin.js; packages/db/src/schema/kb.ts; docs/deviations.md п. О-54…О-57 продукта",
+   "migration": "0105_videos, 0106_video_functions"
+  },
+  {
+   "name": "video_guest_stats",
+   "ru": "Просмотры гостей лендинга",
+   "group": "kb",
+   "status": "actual",
+   "desc": "Просмотры гостей лендинга только общим числом по видео (ТЗ «без имён, адресов и сторонних счётчиков», прототип demoDB.videoGuest): сколько раз запустили и сумма процентов просмотра — средний процент = pct_sum / starts.",
+   "columns": [
+    {
+     "name": "video_id",
+     "ru": "Видео",
+     "type": "text",
+     "null": false,
+     "pk": true,
+     "fk": "videos.id",
+     "onDelete": "cascade",
+     "desc": "Одна строка на видео; удалена строка видео — удаляется и счёт.",
+     "status": "actual"
+    },
+    {
+     "name": "starts",
+     "ru": "Запусков",
+     "type": "integer",
+     "null": false,
+     "default": "0",
+     "desc": "Сколько раз гости запустили видео; не меньше 0 (video_guest_stats_check).",
+     "status": "actual"
+    },
+    {
+     "name": "pct_sum",
+     "ru": "Сумма процентов",
+     "type": "real",
+     "null": false,
+     "default": "0",
+     "desc": "Сумма процентов просмотра при закрытии окна (каждый от 0 до 100); не меньше 0.",
+     "status": "actual"
+    }
+   ],
+   "logic": [
+    "Пишет только функция app.video_guest_add (у гостя нет контекста) и только для видео, которое сейчас на лендинге."
+   ],
+   "rls": "Включена. Политика video_guest_stats_admin_read (SELECT): только администратор платформы. Добавлять, менять и удалять строки роль приложения не может (REVOKE INSERT, UPDATE, DELETE, 0106) — только app.video_guest_add.",
+   "issue": "видео платформы (PR #209, сделано)",
+   "source": "refDB.videos, demoDB.videoViews, demoDB.videoGuest; ТЗ «База знаний» → «Видео»; прототип v79 modules/video.js, admin/video-admin.js; packages/db/src/schema/kb.ts; docs/deviations.md п. О-54…О-57 продукта",
+   "migration": "0105_videos, 0106_video_functions"
   },
   {
    "name": "platform_reference",
@@ -13297,6 +13934,41 @@
    "migration": "0098_admin_login_code",
    "definer": true,
    "desc": "Код больше не действует, вход засчитан (в суточный предел такой код не считается); false — уже использован (второй одновременный ввод), истёк или пароль сменили после него."
+  },
+  {
+   "name": "app.video_uploads_stale(before, limit)",
+   "ru": "Старые загрузки видео",
+   "migration": "0106_video_functions",
+   "definer": true,
+   "desc": "Незаконченные загрузки и неиспользованные обложки старше before (не больше 1000 за раз): номер, ключ в хранилище и номер многочастной загрузки S3, чтобы её прервать. Для задачи kb.cleanup-video-uploads — у неё нет администратора в контексте."
+  },
+  {
+   "name": "app.video_uploads_drop(ids, before)",
+   "ru": "Убрать загрузки видео",
+   "migration": "0106_video_functions",
+   "definer": true,
+   "desc": "Удаляет строки video_uploads из списка, файлы которых уже удалены из хранилища (только старше before); отвечает, сколько убрано."
+  },
+  {
+   "name": "app.video_set_duration(video, duration)",
+   "ru": "Длительность видео узнана",
+   "migration": "0106_video_functions",
+   "definer": true,
+   "desc": "Записывает длительность (1–43 200 с), узнанную у зрителя (YouTube до первого запуска, WebM без длительности в файле): только вошедший пользователь, только у опубликованного, не снятого, не удалённого видео и только пока она неизвестна. Версия записи не меняется; записанную длительность меняет лишь администратор платформы (docs/deviations.md п. О-55 продукта)."
+  },
+  {
+   "name": "app.video_set_yt_bad(video, bad)",
+   "ru": "YouTube: видео недоступно",
+   "migration": "0106_video_functions",
+   "definer": true,
+   "desc": "Ставит или снимает пометку «YouTube: видео недоступно» у не удалённого видео YouTube; сообщает только вошедший пользователь. false — у видео уже такая пометка."
+  },
+  {
+   "name": "app.video_guest_add(video, start, pct)",
+   "ru": "Просмотр гостя лендинга",
+   "migration": "0106_video_functions",
+   "definer": true,
+   "desc": "Гость лендинга запустил видео (start) или закрыл окно, посмотрев pct процентов (0–100): прибавляет к video_guest_stats, только если видео сейчас на лендинге (опубликовано, не снято, не удалено, «Показывать на лендинге», для всех). Без имён и адресов."
   }
  ]
 }
