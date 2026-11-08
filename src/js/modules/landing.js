@@ -11,14 +11,14 @@ function landRoute(){const h=location.hash;if(h!=='#landing'&&h!=='#landing/lead
   if(DEMO.on)demoOff();landShow();if(h==='#landing/lead'){history.replaceState(history.state,'','#landing');setTimeout(()=>landGo('lead',!LAND.sent),60)}return true}
 function landShow(){let el=$('#land');if(!el){el=document.createElement('div');el.id='land';el.className='land';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Лендинг buhuchet.kg');document.body.append(el)}
   const fresh=!LAND.open;if(fresh){LAND.back=S.mod?'#'+S.mod+(S.tab?'.'+S.tab:''):'#home';LAND.title0=document.title;LAND.sent=null;LAND.shot=0;LAND.more={}}
-  LAND.open=true;el.hidden=false;document.body.classList.add('land-on');document.title=LT('land.title');landTheme0();if(fresh)landIntro();landDraw()}
+  LAND.open=true;el.hidden=false;document.body.classList.add('land-on');document.title=LT('land.title');landTheme0();if(fresh)buIntro();landDraw()}
 // Тема лендинга: по умолчанию светлая (Кутман 02.11.2026); выбор кнопкой запоминается так же, как кнопкой темы в программе
 const landThemeSaved=()=>{try{const t=localStorage.getItem(BU_P+'theme');return t==='light'||t==='dark'}catch(e){return false}};
 function landTheme0(){if(!landThemeSaved()){document.documentElement.setAttribute('data-theme','light');LAND.themeTmp=true}}
 function landTheme1(){if(LAND.themeTmp&&!landThemeSaved())document.documentElement.removeAttribute('data-theme');LAND.themeTmp=false;if($('#theme'))paintTheme()}
 function landThemeToggle(){const t=effTheme()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);store.set('theme',t);try{localStorage.setItem(BU_P+'theme',t)}catch(e){}LAND.themeTmp=false;
   $$('[data-lp-theme]').forEach(b=>b.innerHTML=ic(t==='dark'?'sun':'moon'));if($('#theme'))paintTheme()}
-function landHide(){const el=$('#land');if(el)el.hidden=true;if(LAND.open)landTheme1();document.body.classList.remove('land-on');if(LAND.open)document.title=LAND.title0;LAND.open=false;LAND.menu=false;if(LAND.io){LAND.io.disconnect();LAND.io=null}landFxStop();landIntroEnd(true)}
+function landHide(){const el=$('#land');if(el)el.hidden=true;if(LAND.open)landTheme1();document.body.classList.remove('land-on');if(LAND.open)document.title=LAND.title0;LAND.open=false;LAND.menu=false;if(LAND.io){LAND.io.disconnect();LAND.io=null}landFxStop()}
 function landClose(){const b=LAND.back||'#home';landHide();if(location.hash!==b)location.hash=b;else route()}
 // «Войти» открывает страницу входа; после входа — рабочая страница
 function landLogin(){const b=LAND.back||'#home';landHide();history.replaceState(history.state,'',b);showLogin()}
@@ -116,7 +116,7 @@ function landBind(el){const page=$('#land-page',el);
   $('#land-x',el).onclick=landClose;
   $('#lp-test',el).onchange=e=>{LAND.test=e.target.checked;const top=page.scrollTop;landDraw();$('#land-page').scrollTop=top};
   $('#lp-net',el).onchange=e=>{LAND.netErr=e.target.checked};
-  $('#lp-intro-r',el).onclick=()=>{$('#land-page',el).scrollTop=0;landIntro(true);landDraw()};
+  $('#lp-intro-r',el).onclick=()=>{$('#land-page',el).scrollTop=0;buIntro();landDraw()};
   page.onclick=e=>{const b=e.target.closest('[data-lp-go],[data-lp-lead],[data-lp-login],[data-lp-top],[data-lp-menu],[data-lp-consent],[data-lp-shot],[data-lp-demo],[data-lp-theme],[data-lp-more],[data-lp-flip],[data-lp-tile],[data-lp-emb]');if(!b)return;const d=b.dataset;
     if(d.lpMore){const k=d.lpMore,s=$('#lp-'+k,el),o=!LAND.more[k];LAND.more[k]=o;s.classList.toggle('open',o);b.setAttribute('aria-expanded',o);b.firstElementChild.textContent=o?LT('land.less'):(k==='lead'?LT('land.c.title'):LT('land.more'));return}
     if(d.lpFlip!=null)return b.classList.toggle('now');
@@ -182,15 +182,24 @@ function landEmblem(){const r=(i,l)=>{const a=i*Math.PI/6,x=Math.sin(a),y=-Math.
     <g class="e-part e-scales" data-e="scales"><path class="e-post" d="M150 118V197"/><path class="e-base" d="M129 205H171L163 196H137Z"/><g class="e-beam"><path class="e-bar" d="M88 124H212"/>${pan(88,'l',LE('land.emb.debit'))}${pan(212,'r',LE('land.emb.credit'))}<circle class="e-piv" cx="150" cy="124" r="5"/></g><circle class="e-top" cx="150" cy="112" r="4"/></g>
     <g class="e-part e-curve" data-e="curve"><path class="e-inf" d="${L}" pathLength="1"/><path class="e-comet" d="${L}" pathLength="1"/></g></svg>`}
 // Заставка при первом открытии сайта (один раз за сеанс): спираль логотипа рисуется от центра, встают B и u, буквами пишется BuhUchet, потом знак и надпись улетают в шапку
-function landIntro(force){if(landRM())return false;if(!force){let s=null;try{s=sessionStorage.getItem(BU_P+'intro')}catch(e){}if(s)return false}try{sessionStorage.setItem(BU_P+'intro','1')}catch(e){}
-  landIntroEnd(true);const o=document.createElement('div');o.className='lp-intro';o.setAttribute('aria-hidden','true');
+// Заставка (Кутман 08.11): при каждом новом входе — открытие сайта (лендинг или учётная часть), открытие лендинга, вход в программу по логину и в демо-организацию.
+// Спираль логотипа рисуется от центра, внутри B и u, ниже по буквам складывается BuhUchet.kg; затем знак и надпись улетают туда, где логотип на экране:
+// в шапку лендинга, на карточку входа или в меню программы (на телефоне меню скрыто — знак уходит вверх и тает). Нажатие или клавиша — пропуск. При «уменьшить движение» заставки нет.
+function buIntroTargets(){const vis=e=>{if(!e)return null;const r=e.getBoundingClientRect();return r.width&&r.height&&r.bottom>0&&r.right>0&&r.left<innerWidth&&r.top<innerHeight?e:null};
+  if(LAND.open)return [vis($('#land .lp-logo .logo')),vis($('#land .lp-bn'))];
+  const lg=$('#login');if(lg)return [vis($('.logo',lg)),vis($('.brand-name',lg))];
+  const b=$$('.brand').find(x=>vis(x));return b?[vis($('.logo',b)),vis($('.brand-name',b))]:[null,null]}
+function buIntro(){if(landRM()||LAND.intro)return false;
+  buIntroEnd(true);const o=document.createElement('div');o.className='lp-intro';o.setAttribute('aria-hidden','true');
   o.innerHTML=`<div class="lp-intro-c"><svg class="lp-intro-lg" viewBox="${LOGO_SVG.vb}" focusable="false">${lpLogoBody('lp-inm','lp-in-l')}</svg><div class="lp-intro-w">${[...'BuhUchet'].map((c,i)=>`<span style="--i:${i}">${c}</span>`).join('')}<span class="kg" style="--i:9">.kg</span></div><i class="lp-intro-ln"></i></div>`;
   document.body.append(o);const land=$('#land');if(land)land.classList.add('lp-intro-on');LAND.intro=true;
   const fly=()=>{if(o.classList.contains('fly'))return;const fit=(a,b)=>{if(!a||!b)return '';const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();if(!r1.height||!r2.height)return '';return `translate(${(r2.left+r2.width/2-r1.left-r1.width/2).toFixed(1)}px,${(r2.top+r2.height/2-r1.top-r1.height/2).toFixed(1)}px) scale(${(r2.height/r1.height).toFixed(3)})`};
-    const lg=$('.lp-intro-lg',o),w=$('.lp-intro-w',o);lg.style.transform=fit(lg,$('#land .lp-logo .logo'));w.style.transform=fit(w,$('#land .lp-bn'));o.classList.add('fly');
-    if(LAND.afterIntro){const f=LAND.afterIntro;LAND.afterIntro=null;setTimeout(f,150)}LAND.introT2=setTimeout(()=>landIntroEnd(),850)};
+    const [tl,tw]=buIntroTargets(),lg=$('.lp-intro-lg',o),w=$('.lp-intro-w',o),tf=fit(lg,tl);lg.style.transform=tf||'translateY(-34vh) scale(.3)';if(!tf)lg.classList.add('gone');w.style.transform=fit(w,tw)||'translateY(-26vh) scale(.4)';
+    if(tl&&!LAND.open){tl.classList.add('bu-intro-tg');LAND.introTg=tl}o.classList.add('fly');
+    if(LAND.afterIntro){const f=LAND.afterIntro;LAND.afterIntro=null;setTimeout(f,150)}LAND.introT2=setTimeout(()=>buIntroEnd(),850)};
   LAND.introT1=setTimeout(fly,2700);o.onclick=()=>{clearTimeout(LAND.introT1);fly()};LAND.introKey=e=>{if(LAND.intro){clearTimeout(LAND.introT1);fly()}};document.addEventListener('keydown',LAND.introKey,{once:true});return true}
-function landIntroEnd(quiet){clearTimeout(LAND.introT1);clearTimeout(LAND.introT2);if(LAND.introKey)document.removeEventListener('keydown',LAND.introKey);$$('.lp-intro').forEach(x=>x.remove());const land=$('#land');if(land)land.classList.remove('lp-intro-on');LAND.intro=false;
+function buIntroEnd(quiet){clearTimeout(LAND.introT1);clearTimeout(LAND.introT2);if(LAND.introKey)document.removeEventListener('keydown',LAND.introKey);$$('.lp-intro').forEach(x=>x.remove());const land=$('#land');if(land)land.classList.remove('lp-intro-on');LAND.intro=false;
+  if(LAND.introTg){LAND.introTg.classList.remove('bu-intro-tg');LAND.introTg=null}
   if(!quiet&&LAND.afterIntro){const f=LAND.afterIntro;LAND.afterIntro=null;f()}}
 function landFxStop(){LAND.tm.forEach(t=>{clearInterval(t);clearTimeout(t)});LAND.tm=[];clearTimeout(LAND.wt);if(LAND.rv){LAND.rv.disconnect();LAND.rv=null}if(LAND.ro){LAND.ro.disconnect();LAND.ro=null}if(LAND.raf){cancelAnimationFrame(LAND.raf);LAND.raf=0}if(LAND.braf){cancelAnimationFrame(LAND.braf);LAND.braf=0}LAND.P=null;LAND.afterIntro=null}
 // Числа полосы цифр досчитываются от нуля, когда полоса показалась
