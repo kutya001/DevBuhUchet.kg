@@ -1,5 +1,5 @@
 'use strict';
-// Таблица ввода чисел «как в Excel»: «Показатели» — «Ввод за месяц» и «Ввод по месяцам»
+// Таблица ввода чисел «как в Excel»: все таблицы ввода «Показателей» и вкладка «Показатели» в карточке контрагента
 /* ═════════════ Таблица как в Excel ═════════════
    Выделение: щелчок, протягивание мышью, Shift+щелчок, Shift+стрелки, щелчок по заголовку столбца или строки, Ctrl+A.
    Ввод: начните печатать — значение ячейки заменится; F2 или двойной щелчок — правка текущего значения; Enter — сохранить и вниз
@@ -11,7 +11,8 @@
    Ячейки данных — <td data-sr="строка" data-sc="столбец">; заголовки столбцов — data-exc, строк — data-exr.
    o: rows, cols — размеры; get(r,c) → {t: текст для правки и копирования, n: число или null, ed: можно править, why: почему нельзя};
    put([{r,c,t}]) → {bad:[тексты не числом]} записывает (пустой текст — стереть); draw(r,c) перерисовывает ячейку; after(изменённые) — после записи;
-   stat — элемент строки состояния (как внизу Excel: количество, сумма, среднее выделенного); hint — её текст без выделения; label(r,c) — имя ячейки для экранного диктора */
+   stat — элемент строки состояния (как внизу Excel: количество, сумма, среднее выделенного); hint — её текст без выделения; label(r,c) — имя ячейки для экранного диктора;
+   menu(r,c) → дополнительные пункты меню правой кнопки для текущей ячейки */
 const exCoarse=()=>matchMedia('(pointer:coarse)').matches;
 function exTable(wrap,o){
   const C=[];$$('td[data-sr]',wrap).forEach(t=>{(C[+t.dataset.sr]=C[+t.dataset.sr]||[])[+t.dataset.sc]=t});
@@ -117,6 +118,6 @@ function exTable(wrap,o){
     menu(p.t,[{label:'Копировать',icon:'copy',sub:'Ctrl+C',run:copyOut},{label:'Вырезать',icon:'x',sub:'Ctrl+X',run:()=>{copyOut();clear()}},
       {label:'Вставить',icon:'paste',sub:'Ctrl+V',run:()=>rd?navigator.clipboard.readText().then(t=>{kb.focus({preventScroll:true});paste(t)},()=>toast('Браузер не дал прочитать буфер обмена: нажмите Ctrl+V','alert',true)):toast('Нажмите Ctrl+V','alert',true)},
       {sep:true},{label:'Заполнить вниз',icon:'down',sub:'Ctrl+D — первой строкой выделения',run:fillDown},{label:'Очистить',icon:'trash',sub:'Delete',run:clear},
-      {sep:true},{label:'Отменить',icon:'refresh',sub:'Ctrl+Z',disabled:!st.undo.length,reason:'Изменений ещё не было',run:undo}],{x:e.clientX,y:e.clientY})});
+      {sep:true},{label:'Отменить',icon:'refresh',sub:'Ctrl+Z',disabled:!st.undo.length,reason:'Изменений ещё не было',run:undo},...(o.menu?(L=>L.length?[{sep:true},...L]:[])(o.menu(st.a.r,st.a.c)):[])],{x:e.clientX,y:e.clientY})});
   stat();
   return {pick,focus:()=>kb.focus({preventScroll:true}),paste,clear,undo,get sel(){return st.a?rect():null}}}
