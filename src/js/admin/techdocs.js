@@ -5,7 +5,7 @@
 // описание API — снимок data/apiDocs.json, собранный скриптом db/api_snapshot.py по репозиторию продукта (коммит main записан в файле).
 // На GitHub Pages файлы читаются по адресу; в собранном файле — из встроенных блоков td-schema, td-page, td-api (в демо-версии их нет).
 // Только просмотр: из модуля ничего не меняется в базе и не вызывается ни один метод API.
-const TDOC={cache:{},url:'',frame:null,ready:false,q:[],hash:'#/t',idx:null,tbl:'',hl:''};
+const TDOC={cache:{},url:'',frame:null,ready:false,q:[],hash:'#/t',idx:null,tbl:'',hl:'',full:false,fs:false};
 function tdRead(path,id,json){if(path in TDOC.cache)return TDOC.cache[path];let v=null;
   const el=document.getElementById(id);if(el)try{v=JSON.parse(el.textContent)}catch(e){v=null}
   if(v==null&&/^https?:/.test(location.protocol))try{const x=new XMLHttpRequest();x.open('GET',path+'?v='+Date.now(),false);x.send();if(x.status===200)v=json?JSON.parse(x.responseText):x.responseText}catch(e){v=null}
@@ -33,7 +33,11 @@ function tdPost(m){if(TDOC.frame&&TDOC.ready&&TDOC.frame.isConnected)TDOC.frame.
 addEventListener('message',e=>{const f=TDOC.frame;if(!f||!f.contentWindow||e.source!==f.contentWindow||!e.data||!e.data.tdx)return;const d=e.data;
   if(d.ready){TDOC.ready=true;f.contentWindow.postMessage({tdx:1,theme:tdTheme()},'*');TDOC.q.splice(0).forEach(tdPost)}
   if(d.hash)TDOC.hash=d.hash;
-  if(d.open)tdMethod(d.open)});
+  // окно метода, открытое из схемы, забирает фокус у рамки — Esc и Tab работают в окне
+  if(d.open){tdMethod(d.open);const m=MODALS[MODALS.length-1];if(m&&m.el){const box=m.el.querySelector('.modal')||m.el;if(!box.hasAttribute('tabindex'))box.tabIndex=-1;box.focus({preventScroll:true})}}
+  if('full' in d)tdFull(d.full);
+  // Esc, который схема не обработала: закрывает верхнее окно, без окон — полноэкранный режим
+  if(d.esc){const m=MODALS[MODALS.length-1];if(m)m.close();else if(TDOC.full)tdFull(false)}});
 new MutationObserver(()=>{if(TDOC.frame&&TDOC.ready)tdPost({theme:tdTheme()})}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 // Переходы на вкладку «Схема базы»: таблица, диаграмма с таблицами метода, функция базы
 function tdGoDb(hash){MODALS.filter(m=>m.o.td).forEach(m=>m.close());TDOC.hash=hash;
@@ -42,19 +46,37 @@ const tdShowTable=n=>tdGoDb('#/t/'+encodeURIComponent(n));
 const tdShowMethod=id=>tdGoDb('#/d/'+encodeURIComponent('@'+id));
 const tdShowFn=n=>tdGoDb('#/r/'+encodeURIComponent(n));
 
-function tdVer(){const a=tdApi(),s=tdSchema();if(!a||!s)return '';const am=a.meta,sm=s.meta;
+function tdVer(extra){const a=tdApi(),s=tdSchema();if(!a||!s)return '';const am=a.meta,sm=s.meta;
   const old=(am.schemaVersion||0)<(sm.schemaVersion||0)||String(am.date||'')<String(sm.updated||'');
-  return `<div class="td-ver">${ic('info','sm')}<span>Описание API собрано по репозиторию продукта ${esc(am.repo)}: ветка <b>${esc(am.branch)}</b>, коммит <code>${esc(am.commit)}</code> от ${fmtD(am.date)} · ${am.methods} ${plural(am.methods,'метод','метода','методов')}. Схема базы — описание версии ${esc(sm.schemaVersion)} от ${fmtD(sm.updated)} · ${s.tables.length} ${plural(s.tables.length,'таблица','таблицы','таблиц')}.</span></div>
+  return `<div class="td-ver">${ic('info','sm')}<span>Описание API собрано по репозиторию продукта ${esc(am.repo)}: ветка <b>${esc(am.branch)}</b>, коммит <code>${esc(am.commit)}</code> от ${fmtD(am.date)} · ${am.methods} ${plural(am.methods,'метод','метода','методов')}. Схема базы — описание версии ${esc(sm.schemaVersion)} от ${fmtD(sm.updated)} · ${s.tables.length} ${plural(s.tables.length,'таблица','таблицы','таблиц')}.</span>${extra||''}</div>
     ${old?`<div class="note yellow">${ic('alert')}<span>Описание API собрано по более старой версии, чем схема базы.</span></div>`:''}`}
 function tdMissing(what){return `<div class="state">${ic('alert','lg')}<b>Не удалось прочитать ${what}</b><span>Откройте прототип через GitHub Pages или соберите файл заново (python3 build.py): описание встраивается при сборке.</span></div>`}
 function renderTdocs(body,tab,fresh){
   if(!tdApi()||!tdSchema()){body.innerHTML=tdMissing(!tdSchema()?'db/schema.json':'data/apiDocs.json');return}
   if(tab==='api')return tdApiTab(body,fresh);
   const url=tdFrameUrl();if(!url){body.innerHTML=tdVer()+tdMissing('db/index.html');return}
-  body.innerHTML=`${tdVer()}<div class="td-frame-w"><iframe class="td-frame" title="Схема базы данных Buhuchet.kg" loading="eager"></iframe></div>`;
+  tdFullOff();
+  body.innerHTML=`${tdVer(`<button class="btn sm td-fbtn" id="td-full" title="Схема базы на весь экран: Esc — обычный вид">${ic('maximize','sm')}На весь экран</button>`)}<div class="td-frame-w"><iframe class="td-frame" title="Схема базы данных Buhuchet.kg" loading="eager" allow="fullscreen"></iframe></div>`;
+  $('#td-full',body).onclick=()=>tdFull(true);
   const f=$('.td-frame',body);TDOC.frame=f;TDOC.ready=false;f.src=url+TDOC.hash;tdFit()}
+/* «На весь экран»: рамка со схемой закрывает всё окно программы, браузер по возможности переходит в полноэкранный режим.
+   Окна (карточка метода) открываются поверх. Выход — кнопкой в шапке схемы, Esc или выходом браузера из полноэкранного режима */
+function tdFull(on){const w=TDOC.frame&&TDOC.frame.isConnected&&TDOC.frame.closest('.td-frame-w');if(!w)return;on=!!on;if(on===TDOC.full)return;
+  TDOC.full=on;w.classList.toggle('full',on);document.body.classList.toggle('td-full',on);
+  const de=document.documentElement;
+  if(on&&!document.fullscreenElement&&de.requestFullscreen){const p=de.requestFullscreen();TDOC.fs=true;if(p&&p.catch)p.catch(()=>{TDOC.fs=false})}
+  if(!on&&TDOC.fs){TDOC.fs=false;if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{})}
+  tdPost({full:on});if(!on)tdFit()}
+// сброс без рамки: перерисовка раздела, уход в другой модуль
+function tdFullOff(){if(!TDOC.full&&!document.body.classList.contains('td-full'))return;TDOC.full=false;document.body.classList.remove('td-full');
+  if(TDOC.fs){TDOC.fs=false;if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{})}}
+// Esc в полноэкранном режиме браузера забирает сам браузер: выходим из него, а Esc срабатывает как обычно — закрывает открытое окно, без окон возвращает обычный вид
+document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement||!TDOC.fs)return;TDOC.fs=false;if(!TDOC.full)return;const m=MODALS[MODALS.length-1];if(m)m.close();else tdFull(false)});
+// Esc в программе (фокус вне схемы): сначала закрываются окна, затем полноэкранный режим
+addEventListener('keydown',e=>{if(e.key==='Escape'&&TDOC.full&&!MODALS.length&&!document.querySelector('.pop')){e.preventDefault();tdFull(false)}},true);
+addEventListener('hashchange',()=>setTimeout(()=>{if(TDOC.full&&(S.mod!=='tdocs'||S.tab!=='db'))tdFullOff()}));
 // Рамка занимает высоту окна под шапкой модуля; страница схемы внутри листается сама
-function tdFit(){const f=TDOC.frame;if(!f||!f.isConnected)return;const top=f.getBoundingClientRect().top+(window.scrollY||0);const bn=$('#bnav');const b=bn&&getComputedStyle(bn).display!=='none'?bn.offsetHeight:0;f.style.height=Math.max(420,innerHeight-Math.max(0,f.getBoundingClientRect().top)-b-(isMobile()?8:16))+'px'}
+function tdFit(){const f=TDOC.frame;if(!f||!f.isConnected||TDOC.full)return;const top=f.getBoundingClientRect().top+(window.scrollY||0);const bn=$('#bnav');const b=bn&&getComputedStyle(bn).display!=='none'?bn.offsetHeight:0;f.style.height=Math.max(420,innerHeight-Math.max(0,f.getBoundingClientRect().top)-b-(isMobile()?8:16))+'px'}
 addEventListener('resize',()=>{if(S.mod==='tdocs')tdFit()});
 
 /* ── вкладка «API» ── */
@@ -70,7 +92,7 @@ function tdApiTab(body,fresh){const a=tdApi();
       {key:'sum',label:'Описание',type:'text',w:320,val:m=>m.sum},
       {key:'acc',label:'Доступ',type:'enum',w:170,val:m=>TD_ACC[m.acc]||m.acc,html:m=>`<span class="pill sm ${m.acc==='admin'?'purple':m.acc==='public'?'yellow':m.acc==='perm'?'blue':'faint'}">${esc(TD_ACC[m.acc]||m.acc)}</span>`},
       {key:'perm',label:'Право',type:'text',w:220,hide:true,val:m=>m.perm.map(tdPermName).join(', ')},
-      {key:'n',label:'Таблиц',type:'int',w:80,num:true,val:m=>new Set([...m.r,...m.w]).size},
+      {key:'n',label:'Таблиц',type:'int',w:80,num:true,agg:'',val:m=>new Set([...m.r,...m.w]).size},
       {key:'w',label:'Меняет данные',type:'enum',w:120,val:m=>m.w.length?'Да':'Нет',html:m=>m.w.length?`<span class="pill sm orange">Да</span>`:'<span class="faint">Нет</span>'},
       {key:'tb',label:'Таблицы',type:'text',w:280,hide:true,val:m=>[...new Set([...m.r,...m.w])].join(', ')},
       {key:'rate',label:'Предел запросов',type:'text',w:200,hide:true,val:m=>m.rate||''},
