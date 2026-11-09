@@ -319,6 +319,9 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
   if(!db.meta.v79){db.meta.v79=1;const l=db.ref.localization;const rl=r.localization||[];if(Array.isArray(l))rl.filter(x=>/^land\.video\./.test(x.key)).forEach(x=>{if(l.some(y=>y.key===x.key))return;const i=rl.indexOf(x);const j=i>0?l.findIndex(y=>y.key===rl[i-1].key):-1;l.splice(j<0?l.length:j+1,0,structuredClone(x))});
     const sv={cp1:'vd-cps',rtabs:'vd-reports',journal:'vd-fin',regtasks:'vd-tasks'};(db.ref.kbSteps||[]).forEach(s=>{if(sv[s.id]&&s.video==null)s.video=sv[s.id]});
     const av={a2:'vd-intro',a7:'vd-cps',a8:'vd-reports',a11:'vd-fin',a13:'vd-tasks'};(db.ref.kbArticles||[]).forEach(a=>{if(av[a.id]&&!/<kb-video/.test(a.html||''))a.html=`<p><kb-video data-id="${av[a.id]}"></kb-video></p>`+(a.html||'')})}
+  // v80: показатели в расчёте налогов — отметка «Для расчёта налогов» у «Выручки», «ФОТ» и численности, если организация ещё ничего не отмечала
+  if(!db.meta.v80){db.meta.v80=1;const ks=db.indicators;if(Array.isArray(ks)&&!ks.some(i=>i.tax)){const f=(re,role,ts)=>{const i=ks.find(x=>!x.archived&&ts.includes(x.type)&&re.test(String(x.name||'').trim()));if(i)i.tax=role};
+    f(/^выручка/i,'rev',['som','dec']);f(/^(фот|фонд оплаты труда)$/i,'fot',['som','dec']);f(/^(количество сотрудников|численность)/i,'emp',['int'])}}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
