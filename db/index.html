@@ -395,6 +395,29 @@ main:has(#tab-d:not([hidden])){padding-bottom:14px}
   .grid2{grid-template-columns:1fr}
 }
 @media (min-width:900px){ .detail.closed{display:block} }
+
+/* Встроенная в Админку прототипа («Техническая документация»): без заголовка страницы и своей кнопки темы — тема как в программе */
+.emb .hd h1,.emb #theme{display:none}
+.emb .hd{padding-top:8px;padding-bottom:4px}
+/* «Где используется в API» и подсветка таблиц метода */
+.apiu{display:flex;flex-direction:column;gap:2px;margin:0}
+.apiu button{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;text-align:left;background:none;border:0;border-top:1px solid var(--border);padding:7px 2px;cursor:pointer;border-radius:0}
+.apiu button:hover{background:var(--surface-2)}
+.apiu .ap{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--link)}
+.apiu .as{grid-column:2/4;color:var(--muted);font-size:13px}
+.apiu.sm button{grid-template-columns:56px minmax(0,1fr) auto;padding:5px 0}
+.mth{display:inline-block;font:600 11px/1.7 var(--mono);border-radius:5px;padding:0 6px;text-align:center;min-width:48px}
+.m-GET{background:var(--blue-bg);color:var(--blue)}.m-POST{background:var(--green-bg);color:var(--green)}.m-PUT,.m-PATCH{background:var(--yellow-bg);color:var(--yellow)}.m-DELETE{background:var(--red-bg);color:var(--red)}
+.b-rd{background:var(--blue-bg);color:var(--blue)}.b-wr{background:var(--orange-bg);color:var(--orange)}
+.dapi{display:flex;gap:6px;align-items:center;min-width:0}
+.dapi select{max-width:340px}
+.dapi .hlk{display:inline-flex;gap:8px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.dapi .hlk i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.node.hl-r{box-shadow:0 0 0 3px var(--blue),var(--shadow)}
+.node.hl-w{box-shadow:0 0 0 3px var(--orange),var(--shadow)}
+.node.dim{opacity:.3}
+.node.dim:hover{opacity:.75}
+@media (max-width:899px){.dapi select{max-width:none;flex:1 1 auto;min-width:0}.dapi .hlk{display:none}.dapi{flex:1 1 100%}}
 </style>
 </head>
 <body>
@@ -437,6 +460,7 @@ main:has(#tab-d:not([hidden])){padding-bottom:14px}
     <div class="dtools">
       <button class="btn tbtn" type="button" id="d-side" aria-pressed="false" title="Список таблиц: найти, показать, скрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Таблицы</span></button>
       <select id="d-what" aria-label="Что показать"></select>
+      <div class="dapi" id="d-api-w" hidden><select id="d-api" aria-label="Подсветить метод API"></select><span class="hlk"><span><i style="background:var(--blue)"></i>читает</span><span><i style="background:var(--orange)"></i>меняет</span></span></div>
       <div class="dopts" id="d-opts">
         <select id="d-cols" aria-label="Поля в таблицах"><option value="all">Все поля</option><option value="keys">Только ключи и ссылки</option><option value="none">Свернуть все таблицы</option></select>
         <select id="d-color" aria-label="Цвет таблиц"><option value="group">Цвет: по группам</option><option value="status">Цвет: есть в базе или нет</option></select>
@@ -497,9 +521,20 @@ const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return n+' '+(m===1&&h!==11?a:m>=2
 const fmtDate=s=>s?s.split('-').reverse().join('.'):'';
 let DB,TBL,GRP,ENUM,IN,ST={q:'',status:'all',groups:new Set()};
 let detailName=null;
+// Встраивание в Админку прототипа: страница получает описание базы и карту API (какие методы читают и меняют таблицу) от прототипа,
+// переходы к методу API отправляет ему сообщением; своя история браузера не ведётся (адрес меняется без новых записей)
+const EMB=window.TDX_IN||null;
+if(EMB)document.documentElement.classList.add('emb');
+const toHost=m=>{try{parent.postMessage(Object.assign({tdx:1},m),'*')}catch(e){}};
+const API_T=EMB&&EMB.api?EMB.api.t||{}:{},API_M=EMB&&EMB.api?EMB.api.m||{}:{};
+const RW={r:'чтение',w:'запись',rw:'чтение и запись'};
+function apiUse(name,sm){const l=API_T[name]||[];if(!l.length)return '<p class="faint" style="margin:0">Методов API, которые читают или меняют эту таблицу, в описании API нет.</p>';
+  return `<div class="apiu${sm?' sm':''}">${l.map(([id,rw])=>{const m=API_M[id];return `<button type="button" data-api="${esc(id)}" title="Открыть метод на вкладке «API»"><span><span class="mth m-${m.m}">${m.m}</span></span><span class="ap">${esc(m.p)}</span><span class="badge ${rw==='r'?'b-rd':'b-wr'}">${RW[rw]}</span>${sm?'':`<span class="as">${esc(m.s)}</span>`}</button>`}).join('')}</div>`}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-api]');if(b)toHost({open:b.dataset.api})});
 
 /* ═════════════ Загрузка ═════════════ */
 async function load(){
+  if(EMB){init(EMB.schema);return}
   try{
     const r=await fetch('schema.json',{cache:'no-cache'});
     if(!r.ok)throw new Error('HTTP '+r.status);
@@ -524,7 +559,7 @@ function init(db){
 /* ═════════════ Навигация: адрес #/t/таблица, #/d/группа, #/e/перечисление, #/r ═════════════ */
 function go(hash,replace){
   if(location.hash===hash)return route();
-  history[replace?'replaceState':'pushState']({app:1},'',hash);route();
+  history[replace||EMB?'replaceState':'pushState']({app:1},'',hash);route();
 }
 window.addEventListener('popstate',route);
 function route(){
@@ -535,13 +570,15 @@ function route(){
   if(tab==='t'||!tab){openDetail(TBL.has(name)?name:null)}else document.body.style.overflow='';
   if(tab==='d')openErd(name||$('#d-what').value||'core');
   if(tab==='e'&&name){const el=document.getElementById('enum-'+name);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}}
+  if(tab==='r'&&name){const el=document.getElementById('fn-'+name);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}}
+  if(EMB)toHost({hash:location.hash});
 }
 function showTab(id){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
   ['t','d','e','r'].forEach(k=>$('#tab-'+k).hidden=k!==id);
 }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{
-  const k=b.dataset.tab;go(k==='t'?(detailName&&!isPhone()?'#/t/'+detailName:'#/t'):k==='d'?'#/d/'+($('#d-what').value||'core'):'#/'+k);
+  const k=b.dataset.tab;go(k==='t'?(detailName&&!isPhone()?'#/t/'+detailName:'#/t'):k==='d'?'#/d/'+encodeURIComponent($('#d-what').value||'core'):'#/'+k);
 }));
 const isPhone=()=>matchMedia('(max-width:899px)').matches;
 
@@ -614,6 +651,7 @@ function openDetail(name){
       ${relMap(t)}
       ${t.logic&&t.logic.length?`<h3>Бизнес-логика</h3><ul class="list">${t.logic.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
       <h3>Защита строк (RLS)</h3><p style="margin-top:0">${esc(t.rls)}</p>
+      ${EMB?`<h3>Где используется в API · ${(API_T[t.name]||[]).length}</h3>${apiUse(t.name)}`:''}
       ${t.uniques&&t.uniques.length?`<h3>Уникальность</h3><ul class="list">${t.uniques.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
       ${t.indexes&&t.indexes.length?`<h3>Индексы</h3><ul class="list">${t.indexes.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
       ${t.source?`<h3>Откуда взято</h3><p style="margin-top:0" class="muted">${esc(t.source)}</p>`:''}
@@ -622,7 +660,7 @@ function openDetail(name){
   box.scrollTop=0;
   if(isPhone())document.body.style.overflow='hidden';
   else{const r=box.getBoundingClientRect();if(r.top<0||r.top>innerHeight)scrollTo({top:0})}
-  $('#back').onclick=()=>{history.state&&history.state.app?history.back():go('#/t',true)};
+  $('#back').onclick=()=>{!EMB&&history.state&&history.state.app?history.back():go('#/t',true)};
 }
 function overview(){
   const by=DB.groups.map(g=>{const ts=DB.tables.filter(t=>t.group===g.id);return `<button type="button" class="tcard" data-ov="${g.id}" style="--g:${g.color}"><div class="t1"><span class="ru">${esc(g.ru)}</span></div><div class="d">${ts.slice(0,6).map(t=>esc(t.ru)).join(', ')}${ts.length>6?'…':''}</div><div class="meta"><span>${plural(ts.length,'таблица','таблицы','таблиц')}</span>${ts.some(t=>t.status==='actual')?`<span class="badge b-actual">${ts.filter(t=>t.status==='actual').length} в базе</span>`:''}</div></button>`}).join('');
@@ -703,7 +741,8 @@ const colorNow=n=>EO.color==='status'?cssVar(TBL.get(n).status==='actual'?'--st-
 /* что входит в вид: группа — её таблицы и (свёрнутыми) таблицы, на которые она ссылается */
 function baseSet(v){
   const main=[],light=[];
-  if(v==='all')DB.tables.forEach(t=>light.push(t.name));
+  if(v.startsWith('@')){const m=API_M[v.slice(1)];if(m)main.push(...new Set([...m.r,...m.w].filter(n=>TBL.has(n))))}
+  else if(v==='all')DB.tables.forEach(t=>light.push(t.name));
   else if(v.startsWith('=')){main.push(v.slice(1));light.push(...links(v.slice(1)))}
   else{
     DB.tables.forEach(t=>{if(t.group===v)main.push(t.name)});
@@ -812,6 +851,8 @@ function autoLayout(names){
   const pos=new Map();if(!names.length)return pos;
   const v=E.view;
   if(v.startsWith('='))return focusLayout(names);
+  // таблицы метода API — по слоям связей, без деления на группы
+  if(v.startsWith('@'))return layered(names).pos;
   const by=new Map();names.forEach(n=>{const g=TBL.get(n).group;if(!by.has(g))by.set(g,[]);by.get(g).push(n)});
   if(v==='all'){
     // вся база: каждая группа в своей рамке, рамки — рядами
@@ -878,6 +919,7 @@ function renderErd(v,{keep=false,fitAfter=true}={}){
 }
 function openErd(v){
   const sel=$('#d-what'),fg=$('#d-focus');
+  if(v.startsWith('@')){const id=v.slice(1),m=API_M[id];if(m&&!sel.querySelector(`option[value="${CSS.escape(v)}"]`))$('#d-mth').insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(m.m+' '+m.p)}</option>`);if(m)HL='';}
   if(v.startsWith('=')){const n=v.slice(1);if(TBL.has(n)&&!fg.querySelector(`option[value="=${n}"]`))fg.insertAdjacentHTML('beforeend',`<option value="=${n}">${esc(TBL.get(n).ru)}</option>`)}
   if(![...sel.options].some(o=>o.value===v))v='core';
   sel.value=v;
@@ -1008,7 +1050,12 @@ function select(n){
   E.sel=n&&E.nodes.has(n)?n:null;redraw();
   document.querySelectorAll('#es-list .si').forEach(r=>r.classList.toggle('cur',r.dataset.row===E.sel));
 }
-function markSel(){const nb=new Set(E.sel?links(E.sel):[]);E.nodes.forEach(o=>{o.el.classList.toggle('sel',o.n===E.sel);o.el.classList.toggle('nbr',nb.has(o.n))})}
+function markSel(){const nb=new Set(E.sel?links(E.sel):[]);const h=hlNow();E.nodes.forEach(o=>{o.el.classList.toggle('sel',o.n===E.sel);o.el.classList.toggle('nbr',nb.has(o.n));
+  o.el.classList.toggle('hl-w',!!h&&h.w.has(o.n));o.el.classList.toggle('hl-r',!!h&&!h.w.has(o.n)&&h.r.has(o.n));o.el.classList.toggle('dim',!!h&&!h.w.has(o.n)&&!h.r.has(o.n))})}
+// Подсвеченный метод: выбран в поле «Подсветить метод API» или открыт вид «таблицы метода»
+let HL='';
+function hlNow(){const id=HL||(E.view&&E.view.startsWith('@')?E.view.slice(1):'');const m=id&&API_M[id];return m?{r:new Set(m.r),w:new Set(m.w)}:null}
+function hlSet(id){HL=id||'';const s=$('#d-api');if(s)s.value=HL;markSel()}
 function flashRow(n,c){const o=E.nodes.get(n);if(!o)return;const r=o.el.querySelector(`.nr[data-c="${c}"]`);if(!r)return;r.classList.add('flash');setTimeout(()=>r.classList.remove('flash'),1600)}
 let lastTap={n:'',t:0};
 function tap(el){
@@ -1206,6 +1253,7 @@ function inspect(n,col,quiet){
     <h3>Связи</h3><div class="rel"><div class="cap">Ссылается на · ${outs.length}</div><div class="chips">${chips(outs)}</div><div class="cap">На неё ссылаются · ${ins.length}</div><div class="chips">${chips(ins)}</div></div>
     ${t.logic&&t.logic.length?`<h3>Бизнес-логика</h3><ul class="list">${t.logic.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
     <h3>Защита строк (RLS)</h3><p style="margin:0">${esc(t.rls)}</p>
+    ${EMB?`<h3>Где используется в API · ${(API_T[t.name]||[]).length}</h3>${apiUse(t.name,1)}`:''}
     ${t.uniques&&t.uniques.length?`<h3>Уникальность</h3><ul class="list">${t.uniques.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
     ${t.indexes&&t.indexes.length?`<h3>Индексы</h3><ul class="list">${t.indexes.map(x=>`<li><code>${esc(x)}</code></li>`).join('')}</ul>`:''}
   </div>`;
@@ -1295,8 +1343,11 @@ $('#es-reset').onclick=()=>{dropState(E.view);E.sel=null;closeIns();renderErd(E.
 /* ─── панель над холстом ─── */
 function initErd(){
   const o=DB.groups.map(g=>`<option value="${g.id}">${esc(g.ru)} · ${DB.tables.filter(t=>t.group===g.id).length}</option>`).join('');
-  $('#d-what').innerHTML=`<optgroup label="Группа">${o}</optgroup><option value="all">Вся база · ${DB.tables.length} — все таблицы сразу</option><optgroup label="Таблица и её соседи" id="d-focus"></optgroup>`;
-  $('#d-what').onchange=()=>go('#/d/'+$('#d-what').value);
+  $('#d-what').innerHTML=`<optgroup label="Группа">${o}</optgroup><option value="all">Вся база · ${DB.tables.length} — все таблицы сразу</option><optgroup label="Таблица и её соседи" id="d-focus"></optgroup>${EMB?'<optgroup label="Таблицы метода API" id="d-mth"></optgroup>':''}`;
+  $('#d-what').onchange=()=>go('#/d/'+encodeURIComponent($('#d-what').value));
+  if(EMB&&EMB.api){const by={};Object.entries(API_M).forEach(([id,m])=>{(by[m.g]=by[m.g]||[]).push([id,m])});
+    $('#d-api').innerHTML='<option value="">Подсветить метод API…</option>'+Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0],'ru')).map(([g,l])=>`<optgroup label="${esc(g)}">${l.sort((a,b)=>a[1].p.localeCompare(b[1].p)||a[1].m.localeCompare(b[1].m)).map(([id,m])=>`<option value="${esc(id)}">${esc(m.m+' '+m.p)}</option>`).join('')}</optgroup>`).join('');
+    $('#d-api-w').hidden=false;$('#d-api').onchange=e=>hlSet(e.target.value)}
   $('#d-cols').value=EO.cols;$('#d-color').value=EO.color;$('#d-desc').checked=EO.desc;$('#d-std').checked=EO.std;
   const seg=()=>document.querySelectorAll('[data-lbl]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lbl===EO.lbl)));seg();
   $('#d-cols').onchange=e=>{EO.cols=e.target.value;saveOpts();E.shown.forEach(n=>{E.st.modes[n]=EO.cols});saveState();renderErd(E.view,{keep:true})};
@@ -1340,7 +1391,7 @@ function renderRules(){
   const m=DB.meta;
   $('#rules').innerHTML=`
   <div class="box"><h2>Общие правила базы</h2><ul class="list">${m.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
-  ${(DB.functions||[]).length?`<div class="box"><h2>Функции базы</h2><p class="muted" style="margin:0 0 10px">Функции в схеме app, которые вызывает приложение. Метка SECURITY DEFINER — функция работает с правами владельца схемы и обходит RLS, поэтому отдаёт только узко нужное.</p><div class="fns">${DB.functions.map(f=>`<div class="fn"><code>${esc(f.name)}</code><div><b style="font-weight:600">${esc(f.ru)}</b>${f.definer?' <span class="badge b-fk">SECURITY DEFINER</span>':''} <span class="faint" style="font-size:12px">${esc(f.migration)}</span><div class="muted" style="font-size:14px">${esc(f.desc)}</div></div></div>`).join('')}</div></div>`:''}
+  ${(DB.functions||[]).length?`<div class="box"><h2>Функции базы</h2><p class="muted" style="margin:0 0 10px">Функции в схеме app, которые вызывает приложение. Метка SECURITY DEFINER — функция работает с правами владельца схемы и обходит RLS, поэтому отдаёт только узко нужное.</p><div class="fns">${DB.functions.map(f=>`<div class="fn" id="fn-${esc(f.name.replace(/\(.*$/,'').replace(/^app\./,''))}"><code>${esc(f.name)}</code><div><b style="font-weight:600">${esc(f.ru)}</b>${f.definer?' <span class="badge b-fk">SECURITY DEFINER</span>':''} <span class="faint" style="font-size:12px">${esc(f.migration)}</span><div class="muted" style="font-size:14px">${esc(f.desc)}</div></div></div>`).join('')}</div></div>`:''}
   <div class="box"><h2>Как читать</h2><div class="legend">
     ${statusBadge('actual')}<span>${esc(m.statuses.actual.desc)}</span>
     ${statusBadge('planned')}<span>${esc(m.statuses.planned.desc)}</span>
@@ -1359,6 +1410,7 @@ function renderRules(){
 /* ═════════════ Тема ═════════════ */
 const THEMES=['auto','light','dark'],THEME_RU={auto:'как в устройстве',light:'светлая',dark:'тёмная'};
 let theme='auto';try{theme=localStorage.getItem('db-theme')||'auto'}catch(e){}
+if(EMB)theme=EMB.theme||'auto';
 function themeNow(){return theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):theme}
 function applyTheme(){
   if(theme==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',theme);
@@ -1369,7 +1421,13 @@ $('#theme').onclick=()=>{theme=THEMES[(THEMES.indexOf(theme)+1)%3];try{localStor
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(theme==='auto')applyTheme()});
 applyTheme();
 addEventListener('resize',()=>{if(!isPhone())document.body.style.overflow=''});
+// Команды прототипа: тема, переход по адресу страницы (#/t/таблица, #/d/@метод), подсветка метода на схеме
+if(EMB)addEventListener('message',e=>{if(e.source!==parent||!e.data||!e.data.tdx)return;const d=e.data;
+  if(d.theme){theme=d.theme;applyTheme()}
+  if(d.go){go(d.go,true)}
+  if(d.hl!=null)hlSet(d.hl)});
 load();
+if(EMB){const fixTop=()=>document.documentElement.style.setProperty('--top',document.querySelector('header').offsetHeight+'px');fixTop();addEventListener('resize',fixTop);toHost({ready:1})}
 </script>
 </body>
 </html>
