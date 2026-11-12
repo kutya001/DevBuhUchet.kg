@@ -63,7 +63,9 @@
 @media (max-width:420px){.kv>.sf-kv{grid-column:auto}}
 /* Страница контрагента по ссылке: блок в карточке и сама страница поверх программы */
 .cp-page .pg-link{color:var(--link);overflow-wrap:anywhere}
-.cp-page .pg-code{font-size:16px;letter-spacing:.06em}
+.cp-page .pg-code{font-size:16px;letter-spacing:.06em;all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:2px 8px;margin:-2px -8px;border-radius:var(--r-s);font-family:var(--mono,ui-monospace,monospace);font-weight:650}
+.cp-page .pg-code:hover{background:var(--hover)}.cp-page .pg-code:focus-visible{outline:2px solid var(--b-blue)}.cp-page .pg-code .ic{color:var(--faint)}
+.tf-log li{grid-template-columns:92px minmax(0,1fr) auto;align-items:start}
 .cp-page .kv>.pg-secs-row{grid-column:1/-1}
 .pg-secs{display:flex;flex-wrap:wrap;gap:4px 14px}.pg-secs .row{gap:6px;font-size:13px}
 .pg-pol{margin:-4px 0 6px 52px;display:flex;flex-direction:column;gap:2px}.pg-pol .check-row{padding:4px 0}
