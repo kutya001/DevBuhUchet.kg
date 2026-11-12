@@ -57,12 +57,15 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  return cols}
 const repRowClass=r=>r.overdue||r.payOverdue?'overdue':r.status==='Не требуется'?'muted':'';
 /* Доска отчётов: столбцы — статус сдачи (по умолчанию), ответственный, контрагент, вид отчёта, период, что сделать, орган, статус оплаты.
-   Перенос в столбец статуса — то же, что действие в меню отчёта */
+   Перенос в столбец статуса — то же, что действие в меню отчёта; перенос в столбец сотрудника меняет ответственного за отчёт (право «Назначать отчёты контрагентам», v87) */
 function repKanban(){return {def:'status',by:['status','resp','cp','type','period','act','organ','paystatus','ovk'],
   order:{status:['К сдаче','В работе','Требует исправления','Сдан','Не требуется','—'],paystatus:['Не оплачено','Оплачено частично','Оплачено','Не требуется']},
-  show:{status:['К сдаче','В работе','Сдан']},
+  show:{status:['К сдаче','В работе','Сдан'],resp:()=>can('assign')?EMP.filter(e=>e.active&&CPS.some(c=>c.resp===e.id&&!c.archived)).map(e=>e.short):[]},
   drop(r,key,v,label){const bad=m=>toast(m,'alert',true);
-    if(key!=='status')return bad('Перетаскиванием меняется только статус сдачи. Ответственный, срок и сумма — в меню отчёта');
+    if(key==='resp'){if(!can('assign'))return bad('Нужно право «Назначать отчёты контрагентам»');if(r.superseded)return bad('Прежняя версия отчёта не меняется');
+      const e=empByName(v);if(!e||!e.active)return bad('Выберите столбец работающего сотрудника');if(e.id===r.resp)return;
+      const o=r.resp;r.resp=e.id;log('r',r.id,`Ответственный: ${empName(o)||'—'} → ${e.short}`,r.cp);refreshAll();return toast(`Ответственный за отчёт: ${e.short}, задача перешла к нему`,'user')}
+    if(key!=='status')return bad('Перетаскиванием меняются статус сдачи и ответственный. Срок и сумма — в меню отчёта');
     const t=tR(r),st=t.payOnly?'—':r.status;if(r.superseded)return bad('Прежняя версия отчёта не меняется');if(t.payOnly)return bad('Это только оплата: отметьте её в меню «Отметить оплаченным»');
     if(!can('changeStatus'))return bad('Нет права менять статус');
     if(v==='В работе'&&st==='К сдаче')return setStatus(r,'В работе');
