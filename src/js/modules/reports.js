@@ -56,8 +56,22 @@ function reportCols(o={}){const tp=feat('taxpay');const cols=[
  {key:'regime',label:'Режим',type:'enum',w:150,val:r=>CPM[r.cp].regime||'',hide:true}];
  return cols}
 const repRowClass=r=>r.overdue||r.payOverdue?'overdue':r.status==='Не требуется'?'muted':'';
+/* Доска отчётов: столбцы — статус сдачи (по умолчанию), ответственный, контрагент, вид отчёта, период, что сделать, орган, статус оплаты.
+   Перенос в столбец статуса — то же, что действие в меню отчёта */
+function repKanban(){return {def:'status',by:['status','resp','cp','type','period','act','organ','paystatus','ovk'],
+  order:{status:['К сдаче','В работе','Требует исправления','Сдан','Не требуется','—'],paystatus:['Не оплачено','Оплачено частично','Оплачено','Не требуется']},
+  show:{status:['К сдаче','В работе','Сдан']},
+  drop(r,key,v,label){const bad=m=>toast(m,'alert',true);
+    if(key!=='status')return bad('Перетаскиванием меняется только статус сдачи. Ответственный, срок и сумма — в меню отчёта');
+    const t=tR(r),st=t.payOnly?'—':r.status;if(r.superseded)return bad('Прежняя версия отчёта не меняется');if(t.payOnly)return bad('Это только оплата: отметьте её в меню «Отметить оплаченным»');
+    if(!can('changeStatus'))return bad('Нет права менять статус');
+    if(v==='В работе'&&st==='К сдаче')return setStatus(r,'В работе');
+    if(v==='Сдан'&&OPEN.has(st)){const w=subPayWhy(r);if(w)return bad(w);return submitDlg([r])}
+    if(v==='Требует исправления'&&st==='Сдан')return setStatus(r,'Требует исправления');
+    if(v==='Не требуется'&&!repFin(r)&&r.status!=='Не требуется')return confirmDlg({title:'Отметить «Не требуется»?',text:'Отчёт не нужно сдавать за этот период. Напоминания по нему прекратятся.',ok:'Отметить',run:()=>setStatus(r,'Не требуется')});
+    bad(`Из «${st}» в «${label}» отчёт перевести нельзя${st==='Сдан'?': откат — в меню отчёта':''}`)}}}
 function repGrid(host,id,rows,extra={}){
-  return grid(host,Object.assign({id,cols:reportCols(extra),rows,title:'cp',noun:['отчёт','отчёта','отчётов'],rowClass:repRowClass,actions:reportActions,open:openReport,
+  return grid(host,Object.assign({id,kanban:repKanban(),cols:reportCols(extra),rows,title:'cp',noun:['отчёт','отчёта','отчётов'],rowClass:repRowClass,actions:reportActions,open:openReport,
     sort:{key:'due',dir:1},preset:S.preset,simulateLoad:extra.load,
     bulk:can('changeStatus')?[{label:'Отметить сданными',icon:'send',run:(rs,done)=>{const ok=rs.filter(r=>OPEN.has(r.status)&&!tR(r).payOnly);if(!ok.length){toast('Среди выбранных нет отчётов, которые можно сдать','alert',true);return}if(ok.length===1&&subPayWhy(ok[0])){toast(subPayWhy(ok[0]),'lock',true);return}submitDlg(ok,done)}}]:null,
     empty:{icon:'ok',title:extra.emptyTitle||'Отчётов нет',text:extra.emptyText||''}},extra.cfg||{}));

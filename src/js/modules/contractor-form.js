@@ -162,10 +162,20 @@ function addCpDlg(kind,pre){
 }
 
 /* ── Edit counterparty: реквизиты (тип обслуживания, отчёты, тариф и дата начала меняются своими действиями) ── */
+/* Дата начала обслуживания (у разового контрагента — дата первого обращения) исправляется в «Изменить контрагента» с причиной (v84).
+   Вместе с датой сдвигается начало первого периода обслуживания; начисления за обслуживание и месяцы показателей считаются от новой даты сами.
+   Уже созданные отчёты и записанные оплаты не меняются; позже первой оплаты обслуживания или первого сданного отчёта дату поставить нельзя */
+function cpStartWhy(c,d){if(!d)return 'Укажите дату';if(d===(c.start||''))return '';if(d>TODAY)return 'Дата не может быть позже сегодняшней';if(d<'2000-01-01')return 'Проверьте год';
+  const p0=(c.periods||[])[0];if(p0&&p0.to&&d.slice(0,7)>p0.to)return `Первый период обслуживания закончился в ${ymLabel(p0.to)}: дата начала должна быть не позже`;
+  const fp=FEEPAYS.filter(f=>f.cp===c.id&&!f.del&&f.month<d.slice(0,7)).sort((a,b)=>a.month<b.month?-1:1)[0];if(fp)return `Есть оплата обслуживания за ${ymLabel(fp.month)}: дата начала должна быть не позже этого месяца`;
+  const fr=REPORTS.filter(r=>r.cp===c.id&&r.subDate&&r.subDate<d).sort((a,b)=>a.subDate<b.subDate?-1:1)[0];if(fr)return `Отчёт «${T[fr.t].short} ${fr.plabel}» сдан ${fmtD(fr.subDate)}: дата начала должна быть не позже`;
+  return ''}
+function cpSetStart(c,d,why){const was=c.start;c.start=d;const p0=(c.periods||[])[0];if(p0&&(!was||p0.from===was.slice(0,7)))p0.from=d.slice(0,7);touch(c);
+  log('cp',c.id,`${c.kind==='oneoff'?'Дата первого обращения':'Дата начала обслуживания'}: ${was?fmtD(was):'—'} → ${fmtD(d)}. Причина: ${why}`,c.id)}
 function editCpDlg(c){
   const cm=String(c.contract||'').match(/№\s*(\S+)(?:\s+от\s+(\d\d)\.(\d\d)\.(\d{4}))?/);
   const before=new Set(c.assign.filter(a=>!a.to).map(a=>a.t));const reg=c.kind!=='oneoff';
-  const st={form:c.form,regime:c.regime||'',regime2:c.regime2||'',ben:[...(c.ben||[])],benD:JSON.parse(JSON.stringify(c.benDates||{})),bases:[...(c.bases||[])],size:c.size||'small',sel:new Set(before),forced:{},ugns:c.ugns||'',ugAdd:[],gked:c.gked||'',gked2:[...(c.gked2||[])],...sfInit(c),d:{name:c.name,inn:c.inn,ph:c.phone,head:c.head||'',contact:c.contact||'',note:c.note||'',cno:cm?cm[1]:'',cdate:cm&&cm[2]?`${cm[4]}-${cm[3]}-${cm[2]}`:'',feeDay:c.feeDay},reg:Object.assign({},c.reg||{})};
+  const st={form:c.form,regime:c.regime||'',regime2:c.regime2||'',ben:[...(c.ben||[])],benD:JSON.parse(JSON.stringify(c.benDates||{})),bases:[...(c.bases||[])],size:c.size||'small',sel:new Set(before),forced:{},ugns:c.ugns||'',ugAdd:[],gked:c.gked||'',gked2:[...(c.gked2||[])],...sfInit(c),d:{name:c.name,inn:c.inn,ph:c.phone,head:c.head||'',contact:c.contact||'',note:c.note||'',cno:cm?cm[1]:'',cdate:cm&&cm[2]?`${cm[4]}-${cm[3]}-${cm[2]}`:'',feeDay:c.feeDay,start:c.start||'',swhy:''},reg:Object.assign({},c.reg||{})};
   const feeOn=feat('fee')&&can('fee')&&c.kind!=='oneoff';
   openModal({form:true,size:'mid',render:m=>{const d=st.d;const bad=c.assign.filter(a=>!a.to&&st.sel.has(a.t)&&compatible(T[a.t],{regime:st.regime,regime2:st.regime2,form:st.form,assign:c.assign}));
     const fake=Object.assign({},c,{regime:st.regime,regime2:st.regime2,ben:st.ben,benDates:st.benD,bases:st.bases,size:st.size,form:st.form,gked:st.gked,gked2:st.gked2});
@@ -187,6 +197,7 @@ function editCpDlg(c){
     ${bad.length?`<div class="note warn full" style="grid-column:1/-1">${ic('alert')}<span>Назначенные отчёты не меняются сами. Не подходят к новому режиму или форме: ${bad.map(a=>esc(T[a.t].short)).join(', ')}. После сохранения уберите их на вкладке «Подбор отчётов».</span></div>`:''}
     ${fld('Руководитель',inp('ec-head',d.head),{id:'ec-head'})}${fld('Контактное лицо',inp('ec-contact',d.contact),{id:'ec-contact'})}
     ${fld('Номер договора',inp('ec-cno',d.cno,'placeholder="Например: 45/26"'),{id:'ec-cno'})}${fld('Дата договора',inp('ec-cdate',d.cdate,'type="date"'),{id:'ec-cdate'})}
+    ${fld(reg?'Дата начала обслуживания':'Дата первого обращения',inp('ec-start',d.start,'type="date"'),{id:'ec-start',hint:reg?'С этой даты ведётся учёт контрагента: первый период обслуживания, начисления за обслуживание и месяцы показателей':''})}${fld('Причина изменения даты',inp('ec-swhy',d.swhy,'placeholder="Например: внесли с ошибкой"'),{id:'ec-swhy',hint:'Обязательна, если дата начала меняется'})}
     ${feeOn?fld('День оплаты обслуживания',inp('ec-fday',d.feeDay,'type="number" min="1" max="28" class="inp tnum"'),{id:'ec-fday',hint:'Число месяца, до которого контрагент платит за обслуживание (1–28)'}):''}
     ${fld('Примечание',`<textarea class="inp" id="ec-note" style="min-height:60px">${esc(d.note)}</textarea>`,{full:true,id:'ec-note'})}
     <div class="fld full reg-h"><b>Регистрационные данные</b></div>
@@ -194,7 +205,7 @@ function editCpDlg(c){
     </div><div class="hint">Тип обслуживания, тариф, ответственный и периоды обслуживания меняются своими действиями в карточке.</div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ec-ok">Сохранить</button>',
     mount(el){bindPhone(el,'ec-ph');gkBind(el,'ec',st,()=>{snap();m.draw()});
-      const snap=()=>{st.d={name:val(el,'ec-name'),inn:val(el,'ec-inn'),ph:readPhone(el,'ec-ph').ph||st.d.ph,head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),cno:val(el,'ec-cno'),cdate:val(el,'ec-cdate'),feeDay:$('#ec-fday',el)?val(el,'ec-fday'):st.d.feeDay};st.reg=regRead(el,'ec')};
+      const snap=()=>{st.d={name:val(el,'ec-name'),inn:val(el,'ec-inn'),ph:readPhone(el,'ec-ph').ph||st.d.ph,head:val(el,'ec-head'),contact:val(el,'ec-contact'),note:val(el,'ec-note'),cno:val(el,'ec-cno'),cdate:val(el,'ec-cdate'),feeDay:$('#ec-fday',el)?val(el,'ec-fday'):st.d.feeDay,start:val(el,'ec-start'),swhy:val(el,'ec-swhy')};st.reg=regRead(el,'ec')};
       $('#ec-reg',el).onchange=e=>{snap();st.regime=e.target.value;if(st.regime2===st.regime||!st.regime)st.regime2='';m.draw();gkEnOk(Object.assign({},c,st),st,()=>m.draw())};if($('#ec-reg2',el))$('#ec-reg2',el).onchange=e=>{snap();st.regime2=e.target.value;m.draw()};
       $('#ec-form',el).onchange=e=>{snap();st.form=e.target.value;m.draw()};
       $('#ec-ugns',el).onchange=e=>{snap();const old=st.ugns;st.ugns=e.target.value;const add=ugAuto(st,st.ugns),drop=ugDrop(st,old,st.ugns);st.ugAdd=[...st.ugAdd.filter(n=>!drop.includes(n)),...add];st.ugDrop=[...(st.ugDrop||[]).filter(n=>!add.includes(n)),...drop];if(add.length||drop.length)toast(ugMsg(add,drop));m.draw()};
@@ -208,6 +219,7 @@ function editCpDlg(c){
           setErr(el,'ec-inn',!/^\d{14}$/.test(inn)?'ИНН — ровно 14 цифр':!/^[0-2]/.test(inn)?'ИНН в КР начинается с 0, 1 или 2':dup?`Такой ИНН уже есть: ${dup.name}${dup.archived?' (в архиве)':''}`:''),
           setErr(el,'ec-ph',ph.empty?'Введите номер телефона':!ph.ok?`Номер для этой страны — ${ph.need} цифр`:''),
           $('#ec-fday',el)?setErr(el,'ec-fday',fd>=1&&fd<=28?'':'Число от 1 до 28'):true,
+          setErr(el,'ec-start',cpStartWhy(c,val(el,'ec-start'))),setErr(el,'ec-swhy',val(el,'ec-start')!==(c.start||'')&&!val(el,'ec-swhy')?'Укажите причину: меняется дата начала':''),
           setErr(el,'ec-gk',st.gked?'':'Укажите основной вид деятельности (ГКЭД)'),setErr(el,'ec-reg',gkCheck(Object.assign({},c,st)).block[0]||''),regCheck(el,'ec')].every(Boolean);
         if(!ok){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
         if(!sfValid(el,'ec',fake,st)){const f=el.querySelector('.fld.bad');f&&f.scrollIntoView({block:'center',behavior:'smooth'});return}
@@ -220,8 +232,9 @@ function editCpDlg(c){
         const ch=Object.keys(nv).filter(k=>JSON.stringify(nv[k]??(k==='bases'?[]:k==='size'?'small':''))!==JSON.stringify(c[k]??(k==='bases'?[]:k==='size'?'small':'')));
         const sfCh=JSON.stringify(st.sf||{})!==JSON.stringify(c.sf||{})||(st.sfTouch&&(st.sfT||'')!==(c.sfT||''))||sfManBad(fake,st);
         // новое подтверждение права на режим (вопрос по ГКЭД) сохраняется и без других правок — например, после загрузки из Excel
-        const gkNew=st.gkEnOk&&!(c.gkOk&&c.gkOk.sig===st.gkEnOk);if(!ch.length&&!sfCh&&!gkNew){m.close();return toast('Изменений нет')}
-        const was=bad.length,ov=cpOvMap(c),ben0=c.ben||[],bases0=[...(c.bases||[])];Object.assign(c,nv);if(!c.benDates)delete c.benDates;if(!c.ugns)delete c.ugns;if(reg)sfApply(c,st);touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);
+        const ns=val(el,'ec-start'),sCh=ns!==(c.start||'');
+        const gkNew=st.gkEnOk&&!(c.gkOk&&c.gkOk.sig===st.gkEnOk);if(!ch.length&&!sfCh&&!gkNew&&!sCh){m.close();return toast('Изменений нет')}
+        const was=bad.length,ov=cpOvMap(c),ben0=c.ben||[],bases0=[...(c.bases||[])];Object.assign(c,nv);if(!c.benDates)delete c.benDates;if(!c.ugns)delete c.ugns;if(reg)sfApply(c,st);touch(c);if(ch.length)log('cp',c.id,'Изменено: '+ch.map(k=>L[k]).join(', '),c.id);if(sCh)cpSetStart(c,ns,val(el,'ec-swhy'));
         gkEnSave(c,st);st.ugAdd.filter(n=>c.ben.includes(n)&&!ben0.includes(n)).forEach(n=>log('cp',c.id,`Отмечен статус «${n}» по УГНС`,c.id));(st.ugDrop||[]).filter(n=>!c.ben.includes(n)&&ben0.includes(n)).forEach(n=>log('cp',c.id,`Снят статус «${n}» по УГНС`,c.id));const nd=cpRedue(c,ov);m.close();refreshAll();const pb=reg?pkBaseDiff(c,bases0):null;const miss=reg?pkAuto(c).filter(id=>!before.has(id)&&!pb.add.includes(id)):[];
         const ndT=nd?`. Сроки по статусу изменены у ${nd} ${plural(nd,'отчёта','отчётов','отчётов')}`:'';
         toast(miss.length?`Контрагент сохранён${ndT}. Обязательны, но не назначены: ${miss.map(id=>T[id].short).join(', ')} — добавьте на вкладке «Подбор отчётов»`:'Контрагент сохранён'+ndT,miss.length?'alert':undefined,!!miss.length);if(pb&&(pb.add.length||pb.rem.length))pkBaseDlg(c,pb);if(ch.includes('gked')||ch.includes('gked2')){const k=gkCheck(c);const n=k.regime.length+k.ben.length+k.types.length;if(n)setTimeout(()=>toast(`Виды деятельности изменились: проверьте режим, льготы и отчёты в карточке (замечаний: ${n})`,'alert',true),1400)}
