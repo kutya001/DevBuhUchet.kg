@@ -1,23 +1,25 @@
 'use strict';
 // Чат бота: общий вид сообщений и приём нажатий (поток Т, задача Т1; пакет заказчика 13.11.2026, одобрены все идеи списка «Идеи для Telegram-бота»)
 // Сообщение бота — не строка, а описание: заголовок, текст, таблицы (у таблицы с названием — раскрывающийся раздел), кнопки под сообщением.
-//   m: {h, sub, t, code, tables:[{title, open, head:[], rows:[[]], foot:[], num:[номера числовых столбцов]}], btns:[[{t, icon, act, arg, copy, copied, url, go, off}]], at, me, eph,
+//   m: {h, sub, t, plain, code, tables:[{title, open, n, head:[], rows:[[]], foot:[], num:[номера числовых столбцов]}], btns:[[{t, icon, act, arg, copy, copied, url, go, off}]], at, me, eph,
 //       ask:{act, arg, kind:'file'|'text', re, day, off} — бот ждёт ответ на это сообщение (задача Т2), file:{name, size} и re — файл и «в ответ на» в сообщении человека}
 // Что правит администратор платформы, а что задаёт продукт: тексты, подписи кнопок и скрытые ответы — шаблоны «Справочников платформы»; состав таблиц и место кнопок — продукт.
-// Запасной простой текст строится из того же описания (tgPlain), отдельно его никто не пишет. Его получает тот, кто включил «Сообщения простым текстом» в «Мой профиль»,
+// Запасной простой текст строится из того же описания (tgPlain), отдельно его никто не пишет. Число в строке таблицы идёт с названием своего столбца: «Нурлан Т. — Сдать 6 — Просроч. 2».
+// Исключение — утреннее напоминание (задача Т3): его простой текст — прежние строки шаблонов «Сегодня последний день сдачи…» (m.plain). n у таблицы — сколько записей всего, если показаны не все. Его получает тот, кто включил «Сообщения простым текстом» в «Мой профиль»,
 // и все пользователи, если администратор платформы выключил таблицы (Админка → «Телеграм» → «Бот платформы»). Кнопки под сообщением остаются в обоих видах: они работают в любом приложении Telegram.
 // В продукте бот переходит на простой текст и сам — когда Telegram не принял сообщение с таблицей: напоминание о сроке должно дойти всегда.
 const TG_BOT={rich:true};
 const tgIsPlain=u=>!TG_BOT.rich||!!(u&&u.tgPlain);
 const tgBtnT=(k,d)=>(typeof TPL==='object'&&TPL[k])||d;
-function tgPlain(m){const L=[];if(m.h)L.push(m.h);if(m.sub)L.push(m.sub);if(m.t)L.push(m.t);
-  (m.tables||[]).forEach(t=>{if(t.title)L.push(`${t.title} · ${t.rows.length}`);t.rows.forEach(r=>L.push('• '+r.filter(x=>x!==''&&x!=null).join(' — ')));if(t.foot)L.push(t.foot.filter(x=>x!==''&&x!=null).join(' — '))});
+function tgPlain(m){if(m.plain)return m.plain;const L=[];if(m.h)L.push(m.h);if(m.sub)L.push(m.sub);if(m.t)L.push(m.t);
+  (m.tables||[]).forEach(t=>{const nm=new Set(t.num||[]),cell=(x,i)=>nm.has(i)&&t.head&&t.head[i]?`${t.head[i]} ${x}`:x;if(t.title)L.push(`${t.title} · ${t.n??t.rows.length}`);
+    t.rows.forEach(r=>L.push('• '+r.map(cell).filter((x,i)=>r[i]!==''&&r[i]!=null).join(' — ')));if(t.foot)L.push(t.foot.filter(x=>x!==''&&x!=null).join(' — '))});
   return L.join('\n')}
 // Код подтверждения в тексте нажимается: в Telegram моноширинный текст копируется нажатием
 const tgcText=(s,code)=>{const h=esc(s);return code?h.split(esc(code)).join(`<button type="button" class="tgc-code" data-tgc-copy="${esc(code)}" title="Нажмите, чтобы скопировать">${esc(code)}</button>`):h};
 function tgcTable(t){const nm=new Set(t.num||[]),c=i=>nm.has(i)?' class="num"':'';
   const tb=`<table class="tgc-t">${t.head?`<thead><tr>${t.head.map((x,i)=>`<th${c(i)}>${esc(x)}</th>`).join('')}</tr></thead>`:''}<tbody>${t.rows.map(r=>`<tr>${r.map((x,i)=>`<td${c(i)}>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody>${t.foot?`<tfoot><tr>${t.foot.map((x,i)=>`<td${c(i)}>${esc(x)}</td>`).join('')}</tr></tfoot>`:''}</table>`;
-  return t.title?`<details${t.open?' open':''}><summary>${esc(t.title)} <span class="tgc-n">${t.rows.length}</span></summary>${tb}</details>`:tb}
+  return t.title?`<details${t.open?' open':''}><summary>${esc(t.title)} <span class="tgc-n">${t.n??t.rows.length}</span></summary>${tb}</details>`:tb}
 function tgcMsg(m,i,plain){
   if(m.eph)return `<div class="tgc-eph" role="status"><b>${ic('eyeoff','sm')}Видно только вам</b>${esc(m.eph)}</div>`;
   if(m.day)return `<span class="tgc-day">${esc(m.day)}</span>`;
