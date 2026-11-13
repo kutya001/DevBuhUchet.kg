@@ -20,7 +20,7 @@ function profileDlg(){
       if(q('#pf-kb'))q('#pf-kb').onclick=()=>{m.close();go('kb','level')};
       if(q('#pf-short'))q('#pf-short').onclick=()=>shortDlg(u,()=>m.draw());
       bindNotify(el,u,m);q('#pf-known').onclick=()=>tKnownReset(()=>m.draw());
-      q('#pf-theme').onchange=e=>{document.documentElement.setAttribute('data-theme',e.target.value);try{localStorage.setItem(BU_P+'theme',e.target.value)}catch(_){}paintTheme()};
+      q('#pf-theme').onchange=e=>setTheme(e.target.value,$('#theme'));
       if(q('#pf-untg'))q('#pf-untg').onclick=()=>{tgSvc(u,'Telegram отвязан');u.tgPrev=u.tg;u.tg=null;log('emp',u.id,'Telegram отвязан');m.draw();toast('Telegram отвязан')};
       if(q('#pf-tglink'))q('#pf-tglink').onclick=()=>copyText('https://t.me/buhuchet_bot?start=a7f3c91e','Ссылка скопирована',true);
       if(q('#pf-tgdemo'))q('#pf-tgdemo').onclick=()=>{u.tg=u.tgPrev||'@'+u.login;delete u.tgPrev;log('emp',u.id,'Telegram привязан');tgSvc(u,'Telegram привязан');m.draw();toast('Telegram привязан','tg')};
