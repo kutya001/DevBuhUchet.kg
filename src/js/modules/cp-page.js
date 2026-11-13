@@ -104,7 +104,7 @@ function pubClick(e){const x=e.target.closest('[data-pub-go],[data-pub-tg],[data
   if(d.pubTg){if(isMobile())pubFold(d.pubTg,!PUB.unf.has(d.pubTg));return}
   if(d.pubGo){pubGo(d.pubGo,d.pubFl);return}
   if(d.pubF!=null){PUB.f=PUB.f===d.pubF?'':d.pubF;pubDraw(true);return}
-  if(d.pubMode){PUB.mode=d.pubMode;pubDraw(true);return}
+  if(d.pubMode){PUB.mode=d.pubMode;PUB.rm=null;pubDraw(true);return}
   const flip=(set,k)=>{const on=!set.has(k);on?set.add(k):set.delete(k);x.parentElement.classList.toggle('open',on);x.setAttribute('aria-expanded',on)};
   if(d.pubRt)flip(PUB.rt,d.pubRt);else if(d.pubRm){if(!PUB.rm)PUB.rm=new Set($$('#pub .pub-grp.open [data-pub-rm]').map(b=>b.dataset.pubRm));flip(PUB.rm,d.pubRm)}else if(d.pubKi)flip(PUB.ki,d.pubKi)}
 // На телефоне разделы, кроме «Главного» и «Как оплатить», свёрнуты; на ПК всё раскрыто
@@ -210,9 +210,11 @@ function pubBody(c){const secs=pgSecs(c),has=k=>secs.includes(k),e=EM[c.resp],cy
         <div class="pub-r2"><span class="${lt?'red strong':''}">${lt?ic('alert','sm'):''}срок ${fmtD(r.due)}</span>${st==='Сдан'&&r.subDate?`<span>сдан ${fmtD(r.subDate)}</span>`:''}${t.sum?`<span>${r.sum!=null?`к уплате <b class="tnum">${pubM(r.sum)}</b>`:'<span class="faint">сумма ещё не рассчитана</span>'}</span>${tp&&r.sum>0?pubTp(pill(r.payStatus,PST),PGT('taxPay',r.payStatus)):''}`:''}</div>
         ${rf(r).length?`<div class="pub-files">${rf(r).map(n=>`<a href="#" class="pub-file" data-pub-file="${esc(n)}">${ic('download','sm')}${esc(n)}</a>`).join('')}</div>`:''}</div>`};
     let list;
-    if(PUB.mode==='due'){const ms=[...new Set(vis.map(r=>ym(r.due)))].sort(),op=PUB.rm||new Set([ms.find(m=>m>=ym(TODAY))||ms[ms.length-1]]);
-      list=ms.map(m=>{const rs=vis.filter(r=>ym(r.due)===m),l=rs.filter(r=>fk(r)==='late').length,o=op.has(m);
-        return `<div class="pub-grp${o?' open':''}"><button type="button" class="pub-gh" data-pub-rm="${m}" aria-expanded="${o}"><span class="pub-rt1"><b>${esc(ymLabel(m))}</b><span class="hint">${rs.length} ${plural(rs.length,'отчёт','отчёта','отчётов')}</span>${l?`<span class="red strong">${ic('alert','sm')}${plural(l,'просрочен','просрочено','просрочено')} ${l}</span>`:''}<span class="grow"></span>${ic('down','sm')}</span></button><div class="pub-gb pub-list">${rs.map(r=>row(r,true)).join('')}${pubMore(rs.length)}</div></div>`}).join('')}
+    // «По срокам» — группы по месяцу срока сдачи; «По месяцам» — по месяцу, за который отчёт (правило rmYm, общее с карточкой контрагента и сообщением «К оплате»): в шапке группы — сколько налогов к уплате за месяц
+    if(PUB.mode==='due'||PUB.mode==='month'){const bm=PUB.mode==='month',gk=bm?rmYm:r=>ym(r.due),now=bm?addMonths(ym(TODAY),-1):ym(TODAY);
+      const ms=[...new Set(vis.map(gk))].sort(),op=PUB.rm||new Set([ms.find(m=>m>=now)||ms[ms.length-1]]);
+      list=ms.map(m=>{const rs=vis.filter(r=>gk(r)===m),l=rs.filter(r=>fk(r)==='late').length,o=op.has(m),g=bm?rmGroup(m,rs.map(rmItem)):null;
+        return `<div class="pub-grp${o?' open':''}"><button type="button" class="pub-gh" data-pub-rm="${m}" aria-expanded="${o}"><span class="pub-rt1"><b>${esc(bm?rmTitle(m):ymLabel(m))}</b><span class="hint">${rs.length} ${plural(rs.length,'отчёт','отчёта','отчётов')}</span>${g&&g.sum>0?`<span class="hint pub-gsum">к уплате <b class="tnum">${pubM(g.sum)}</b>${tp&&g.left>0&&g.left<g.sum?`, осталось ${pubM(g.left)}`:tp&&g.left===0?', оплачено':''}</span>`:''}${l?`<span class="red strong">${ic('alert','sm')}${plural(l,'просрочен','просрочено','просрочено')} ${l}</span>`:''}<span class="grow"></span>${ic('down','sm')}</span></button><div class="pub-gb pub-list">${rs.map(r=>row(r,true)).join('')}${pubMore(rs.length)}</div></div>`}).join('')}
     else{const soon=addDays(TODAY,30),rk=id=>{const rs=yr.filter(r=>r.t===id);return rs.some(r=>fk(r)==='late')?0:rs.some(r=>fk(r)==='next'&&r.due<=soon)?1:2};
       const ts=[...new Set(vis.map(r=>r.t))].sort((a,b)=>rk(a)-rk(b)||RT.indexOf(T[a])-RT.indexOf(T[b]));
       list=`<div class="pub-list pub-rts">${ts.map(id=>{const t=T[id],rs=vis.filter(r=>r.t===id),ty=yr.filter(r=>r.t===id),n=ty.filter(isSub).length,l=ty.filter(r=>fk(r)==='late').length,nx=ty.find(r=>fk(r)==='next'),o=PUB.rt.has(id),nt=pubNote(t);
@@ -223,7 +225,7 @@ function pubBody(c){const secs=pgSecs(c),has=k=>secs.includes(k),e=EM[c.resp],cy
           <div class="pub-gb pub-list">${rs.map(r=>row(r,false)).join('')}${pubMore(rs.length)}</div></div>`}).join('')}${pubMore(ts.length)}</div>`}
     H.reports=pubSec('reports','file','Отчёты',`сдано ${cnt.sub} из ${yr.length}${cnt.late?` · ${cnt.late} ${plural(cnt.late,'просрочен','просрочено','просрочено')}`:''}`,
       `<div class="plates pub-pl">${pl('sub','check','green','Сдано')}${pl('next','clock','blue','Впереди')}${pl('late','alert',cnt.late?'red':'green','Просрочено')}</div>
-      <div class="pub-tools"><div class="chipsel" role="group" aria-label="Как показать отчёты">${[['type','По видам'],['due','По срокам']].map(([k,l])=>`<button type="button" data-pub-mode="${k}" class="${PUB.mode===k?'on':''}" aria-pressed="${PUB.mode===k}">${l}</button>`).join('')}</div>${f?`<button type="button" class="linkbtn" data-pub-f="${f}">${ic('x','sm')}Показать все</button>`:''}</div>
+      <div class="pub-tools"><div class="chipsel" role="group" aria-label="Как показать отчёты">${[['type','По видам'],['month','По месяцам'],['due','По срокам']].map(([k,l])=>`<button type="button" data-pub-mode="${k}" class="${PUB.mode===k?'on':''}" aria-pressed="${PUB.mode===k}">${l}</button>`).join('')}</div>${f?`<button type="button" class="linkbtn" data-pub-f="${f}">${ic('x','sm')}Показать все</button>`:''}</div>
       ${vis.length?list:`<span class="faint">${f?`Отчётов с отметкой «${{sub:'Сдано',next:'Впереди',late:'Просрочено'}[f]}» в ${y} году нет`:`Отчётов со сроком в ${y} году нет`}</span>`}`,
       {extra:sel('pub-y',ys.map(x=>[x,x+' год']),y,'aria-label="Год срока сдачи"')})}
   if(has('files')){const fs=pubFiles(c,has,fee),cats=PG_FCAT.filter(([k])=>fs.some(f=>f.cat===k)),ff=cats.some(([k])=>k===PUB.ff)?PUB.ff:'',vis=fs.filter(f=>!ff||f.cat===ff);PUB.fl=vis;

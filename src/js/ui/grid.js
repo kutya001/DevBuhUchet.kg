@@ -13,7 +13,7 @@ const COLL=new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
 function gst(cfg){let s=GS[cfg.id];if(!s){const sv=store.get('g5.'+cfg.id,{});s=GS[cfg.id]={view:sv.view||cfg.defView||null,density:sv.density||'normal',width:sv.width||'full',hidden:new Set(sv.hidden||defHidden(cfg)),order:sv.order||null,widths:sv.widths||{},kb:sv.kb||null,sort:sv.sort!==undefined?sv.sort:defSort(cfg),group:sv.group||(cfg.defGroup||[]).slice(),agg:sv.agg||{},closed:new Set(),filters:{},page:0,size:sv.size||25,sel:new Set()}}return s}
 /* Сортировка по умолчанию во всех списках — от новых к старым по «Создано» */
 /* Видимые по умолчанию столбцы по спискам (ТЗ, «Столбцы, видимые по умолчанию»); остальные — в меню «Столбцы» */
-const SHOW={'cp-rep':['type','act','period','due','status','sum','got','paid','resp'],'rep-':['cp','type','act','period','due','status','wait','sum','got','paid','resp'],
+const SHOW={'rep-months':['type','act','period','due','status','sum','paydue','paid','resp'],'cp-rep':['type','act','period','due','status','sum','got','paid','resp'],'rep-':['cp','type','act','period','due','status','wait','sum','got','paid','resp'],
  'cps-':['name','inn','regime','resp','over','svc'],'tasks-':['title','cp','exec','date','status'],'staff':['fio','role','phone','cps','over','active','kb'],
  'fin-journal':['date','cp','total','dist','adv','files'],'cp-fin':['date','cat','what','amount','acc'],'fin-svc':null,'fin-':['date','cp','cat','what','amount','acc'],
  'proj-':['name','cp','from','to','resps','status','paid'],'files':['name','cp','src','by','date'],'dict-types':['on','name','act','pays','organ','per','rule','file','rcpt','used'],
