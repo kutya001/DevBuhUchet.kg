@@ -100,7 +100,7 @@ function serviceDlg(s0,c0){const e=s0?Object.assign({},s0):{cp:c0?c0.id:'',name:
   const bRows=()=>bs.map((b,i)=>`<div class="bn-row" data-bi="${i}">${sel('sv-be'+i,[['','— сотрудник —'],...emps],b.emp,'data-be aria-label="Сотрудник"')}${inp('sv-ba'+i,b.amount,'inputmode="decimal" class="inp tnum" placeholder="Сумма, сом" data-ba aria-label="Сумма бонуса, сом"')}<button type="button" class="icon-btn sm" data-bx="${i}" title="Убрать" aria-label="Убрать бонус">${ic('x','sm')}</button></div>`).join('');
   const bRead=el=>$$('.bn-row',el).forEach((x,i)=>{bs[i].emp=$('[data-be]',x).value;bs[i].amount=$('[data-ba]',x).value});
   openModal({form:true,size:'mid',render:()=>({title:s0?'Изменить разовую услугу':'Разовая услуга',sub:c0||s0?esc(CPM[e.cp].name):'Оплачивается отдельно от ежемесячного обслуживания',body:`<div class="form">
-    ${c0||s0?'':fld('Контрагент',sel('sv-cp',[['','— выберите —'],...visCps(false,'projects').map(c=>[c.id,c.name+(c.kind==='oneoff'?' · разовый':'')])],e.cp),{req:true,full:true,id:'sv-cp'})}
+    ${c0||s0?'':fld('Контрагент',cpSel('sv-cp',visCps(false,'projects'),e.cp,{empty:'— выберите —',label:c=>c.name+(c.kind==='oneoff'?' · разовый':'')}),{req:true,full:true,id:'sv-cp'})}
     ${fld('Услуга',inp('sv-name',e.name,'placeholder="Например: проверка учёта за 2025 год"'),{req:true,full:true,id:'sv-name'})}
     ${fld('Дата',inp('sv-date',e.date,'type="date"'),{req:true,id:'sv-date'})}${fld('Стоимость, сом',inp('sv-sum',e.amount,'inputmode="decimal" class="inp tnum"'),{req:true,id:'sv-sum',hint:s0&&svcPaid(s0)?`Уже получено ${som(svcPaid(s0))}`:''})}
     ${fld('Исполнитель',sel('sv-resp',EMP.filter(x=>x.active).map(x=>[x.id,x.short]),e.resp),{id:'sv-resp'})}<div></div>
