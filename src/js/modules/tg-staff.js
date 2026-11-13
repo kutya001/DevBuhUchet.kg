@@ -116,6 +116,8 @@ function tgStaffList(u){const L=[{day:'Сегодня'}],list=rs=>rs.map(r=>`${t
   // «Напомнить» от руководителя: сотрудник видит своё просроченное списком
   if(feat('telegram')&&u.nudge&&u.nudge.day===TODAY&&tgOverOf(u.id).length)L.push(tgNudgeMsg(u,u.nudge.at||'09:00'));
   if(feat('tasks'))TASKS.filter(t=>t.exec===u.id&&t.status==='К выполнению').slice(0,5).forEach(t=>L.push(tgTaskMsg(t,(t._ca||'').slice(0,10)===TODAY?(t._ca||'').slice(11):'09:00')));
+  // Сообщения о безопасности с кнопкой «Это не я» (задача Т4): приходят всегда, их нельзя отключить
+  tgSecOf(u,u.tg).forEach(m=>L.push(m));
   return L}
 function tgStaffDlg(){const u=me(),L=tgStaffList(u);
   tgBotDlg(u,L,{live:true,title:'Прототип: чат с ботом',sub:L.length>1?'Утреннее напоминание и сводка недели — таблицами; отчёты, задачи и подтверждение сдачи — кнопками':'Сегодня бот ничего не прислал: срочных отчётов и новых задач нет',

@@ -56,18 +56,19 @@ function tgReply(u,chat,m,p){const k=m.ask,a=TG_ACTS[k.act],at=bishkekNow().hm,s
 function tgAskClose(m){m.ask.off=true;(m.btns||[]).forEach(row=>row.forEach(x=>{if(x.act==='askCancel')x.off=true}))}
 
 // Нажатие кнопки под сообщением. Общие проверки — до действия, одни для всех кнопок:
-//   чат привязан к учётной записи; учётная запись и организация не заблокированы; владелец не выключил «Действия из Telegram» (для кнопок, которые меняют данные);
+//   чат привязан к учётной записи (кроме кнопки «Это не я» под сообщением о безопасности, a.prev: она работает в том чате, куда пришло сообщение, даже отвязанном — tg-security.js);
+//   учётная запись и организация не заблокированы; владелец не выключил «Действия из Telegram» (для кнопок, которые меняют данные);
 //   у сотрудника есть право, запись — в его области «Свои / Все контрагенты»; запись не изменилась с момента отправки сообщения.
 // Отказ бот показывает скрытым ответом — его видит только нажавший, в переписке он не остаётся. Данные меняют только обратимые действия; деньги и удаление — только на сайте.
 // Каждое выполненное действие пишется в историю записи с пометкой «через Telegram» (tgLog).
 const TG_ACTS={};
-// def: {change — меняет данные (выключается владельцем), perm — право, scope(u,arg) — запись в области, stale(u,arg) — запись уже изменена, run(u,arg,m,b) → {eph, msg, done}}
+// def: {change — меняет данные (выключается владельцем), prev — работает и в отвязанном чате, perm — право, scope(u,arg) — запись в области, stale(u,arg) — запись уже изменена, run(u,arg,m,b) → {eph, msg, done}}
 function tgAct(id,def){TG_ACTS[id]=def}
 // «Отмена» под просьбой бота: бот перестаёт ждать ответ, запись не меняется
 tgAct('askCancel',{run:(u,arg,m)=>{if(!tgAskLive(m))return {eph:tplFill('tgActStale',{})};tgAskClose(m);return {done:'Отменено',eph:tplFill('tgActCancelled',{})}}});
 function tgRefusal(u,a,arg){
   if(!a)return tplFill('tgActStale',{});
-  if(!u||!u.tg)return tplFill('tgActNoLink',{});
+  if(!u||(!u.tg&&!a.prev))return tplFill('tgActNoLink',{});
   if(u.active===false)return tplFill('tgActNoRight',{});
   if(a.change&&u.id!=='admin'&&ORG.tgActions===false)return tplFill('tgActOff',{});
   if(a.perm&&!can(a.perm))return tplFill('tgActNoRight',{});
@@ -112,7 +113,8 @@ function tgTestMsg(){return {h:'Проверка бота',t:tplFill('tgTest',{}
 
 // Окно «Чат с ботом»: макет переписки. o: {title, sub, note, who}
 function tgBotDlg(u,list,o={}){const chat={who:o.who||'Buhuchet.kg',list,plain:tgIsPlain(u)};
-  openModal({size:'mid',live:true,render:m=>({title:o.title||'Прототип: чат с ботом',sub:o.sub||'Так сообщения бота выглядят в Telegram',
+  // После «Это не я» сеанс нажавшего завершён: когда окно переписки закроют, макет покажет страницу входа (tgSecLeave, tg-security.js)
+  openModal({size:'mid',live:true,onClose:()=>{tgSecLeave();if(o.onClose)o.onClose()},render:m=>({title:o.title||'Прототип: чат с ботом',sub:o.sub||'Так сообщения бота выглядят в Telegram',
     body:`<label class="check-row"><input type="checkbox" class="sw" id="tgc-plain" ${chat.plain?'checked':''}><span class="grow">Показать простым текстом<div class="hint">Запасной вид: без таблиц и разделов. Его получает тот, кто включил «Сообщения простым текстом» в «Мой профиль»${TG_BOT.rich?'':'; сейчас так получают все — таблицы выключены в Админке'}. Кнопки остаются.</div></span></label>${tgcHtml(chat)}<div class="note">${ic('info')}<span>${o.note||'Это макет: шрифты и форма кнопок в приложении Telegram немного другие. Тексты, подписи кнопок и скрытые ответы — Справочники платформы → «Шаблоны».'}</span></div>`,
     foot:'<button class="btn cta" data-close>Готово</button>',
     mount(el){$('#tgc-plain',el).onchange=e=>{chat.plain=e.target.checked;m.draw()};tgcBind(el,chat,()=>o.live?refreshAll():m.draw(),u)}})})}
