@@ -66,7 +66,7 @@ function openProject(p){if(!p)return;
       if(q('#pj-pay'))q('#pj-pay').onclick=()=>projPay(p);
       if(q('#pj-task'))q('#pj-task').onclick=()=>taskDlg(null,{cp:p.cp,proj:p.id,exec:p.lead});
       $$('[data-task]',el).forEach(x=>x.onclick=()=>openTask(TASKS.find(t=>t.id===x.dataset.task)));
-      bindFiles(el,'pj-f',p.files,f=>{log('p',p.id,'Прикреплены файлы: '+f.join(', '),p.cp);mm.draw()})}}}});
+      bindFiles(el,'pj-f',p.files,(f,note)=>{log('p',p.id,'Прикреплены файлы: '+f.join(', ')+fNoteLog(note),p.cp);mm.draw()})}}}});
 }
 function projectDlg(p0,c0){const e=p0?{name:p0.name,cp:p0.cp,from:p0.from,to:p0.to,status:p0.status,resps:[...p0.resps],lead:p0.lead,desc:p0.desc,plan:p0.plan??'',works:p0.works.map(w=>Object.assign({},w))}
     :{name:'',cp:c0?c0.id:'',from:TODAY,to:addDays(TODAY,60),status:'Планируется',resps:c0&&c0.resp?[c0.resp]:[S.me],lead:c0&&c0.resp||S.me,desc:'',plan:'',works:[]};

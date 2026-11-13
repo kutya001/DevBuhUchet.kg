@@ -8,6 +8,10 @@
 .li:hover{background:var(--row-hover)}
 .li .grow{flex:1;min-width:0}
 .li .t1{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-note{font-size:12px;color:var(--muted);font-style:italic;overflow-wrap:anywhere;white-space:normal;font-weight:400}
+textarea.f-note-i{min-height:58px}
+.at-l{max-height:190px;overflow:auto;margin-bottom:10px}.at-l .li:last-child{border-bottom:0}
+.fe-n{display:flex;align-items:center;gap:8px}.fe-n .inp{flex:1;min-width:0}
 .li .t2{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .datebox{width:42px;flex:none;text-align:center;border-radius:8px;background:var(--pane-alt);border:1px solid var(--border);padding:3px 0;line-height:1.1}
 .datebox b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
