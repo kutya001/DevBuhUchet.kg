@@ -50,13 +50,13 @@ select.inp{cursor:pointer}
 .pop.cps-pop{width:min(420px,calc(100vw - 16px));max-width:none;padding:8px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
 .cps-pop>.inp{flex:none}
 .cps-l{display:flex;flex-direction:column;overflow:auto;max-height:min(300px,45dvh);overscroll-behavior:contain}
-.cps-o{flex:none;align-items:baseline;justify-content:space-between}
+.mi.cps-o{flex:none;align-items:baseline;justify-content:space-between}
 .cps-o>.cps-t{min-width:0;overflow-wrap:anywhere}
 .cps-o.act{background:var(--row-hover)}.cps-o.on.act{background:var(--sel)}
 .cps-e{padding:12px 8px;color:var(--faint);font-size:13px;text-align:center}
 .cps-m{flex:none;padding:6px 10px 2px;color:var(--faint);font-size:11.5px}
 @media (max-width:480px){.cps-b>.cps-i{display:none}}
-@media (pointer:coarse){.cps-o{padding-top:10px;padding-bottom:10px}}
+@media (pointer:coarse){.mi.cps-o{padding-top:10px;padding-bottom:10px}}
 .inp[readonly]{background:var(--pane-alt)}
 .phone{display:flex;gap:6px}
 .phone select{width:118px;flex:none}

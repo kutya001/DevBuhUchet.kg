@@ -162,7 +162,7 @@ function pubFiles(c,has,fee){const out=[],hid=new Set(c.pgHide||[]),add=(cat,n,r
   if(feat('projects')){SERVICES.forEach(x=>{if(x.cp!==c.id||x.del)return;[...(x.files||[]),...(x.pays||[]).filter(y=>!y.del).flatMap(y=>y.files||[])].forEach(n=>add('prj',n,`Услуга «${x.name}»`,x.date))});
     PROJECTS.forEach(x=>{if(x.cp!==c.id||x.del)return;[...(x.files||[]),...(x.pays||[]).filter(y=>!y.del).flatMap(y=>y.files||[])].forEach(n=>add('prj',n,`Проект «${x.name}»`,x.from))})}
   if(fee)FEEPAYS.forEach(x=>{if(x.cp===c.id&&!x.del)(x.files||[]).forEach(n=>add('fee',n,`Оплата ${som(x.amount)} от ${fmtD(x.date)}`,x.date))});
-  FILES.forEach(f=>{if(f.cp===c.id)add('oth',f.name,f.note||'',f.at)});
+  FILES.forEach(f=>{if(f.cp===c.id)add('oth',f.name,'',f.at)});
   return out.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0)}
 const pubFIc=n=>/^(JPE?G|PNG|WEBP|GIF|HEIC|BMP)$/.test(fext(n))?'image':/^(XLSX?|CSV)$/.test(fext(n))?'table':/^(ZIP|RAR|7Z)$/.test(fext(n))?'folder':'file';
 const pubFView=n=>/^(PDF|JPE?G|PNG|WEBP|GIF|HEIC|BMP)$/.test(fext(n));

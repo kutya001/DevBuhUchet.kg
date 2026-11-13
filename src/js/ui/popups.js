@@ -8,7 +8,7 @@ function openPop(anchor,html,{pt,cls='',mount}={}){
   const W=innerWidth,H=innerHeight,w=el.offsetWidth,h=el.offsetHeight;let x,y;
   if(pt){x=pt.x;y=pt.y}else{const r=anchor.getBoundingClientRect();x=r.left;y=r.bottom+6;if(x+w>W-8)x=r.right-w;if(y+h>H-8)y=Math.max(8,r.top-h-6)}
   x=Math.max(8,Math.min(x,W-w-8));y=Math.max(8,Math.min(y,H-h-8));el.style.left=x+'px';el.style.top=y+'px';
-  POP=el;POP_ANCHOR=anchor;mount&&mount(el);swipeDown(el,()=>el,{can:()=>true,close:closePop});
+  POP=el;POP_ANCHOR=anchor;mount&&mount(el);swipeDown(el,()=>el.querySelector('.cps-l')||el,{can:()=>true,close:closePop});
   const f=el.querySelector('input:not([type=checkbox]),select');if(f&&!isMobile())f.focus();
   return el;
 }
