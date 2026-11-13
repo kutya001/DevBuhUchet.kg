@@ -1,7 +1,7 @@
 'use strict';
 // Чат бота: общий вид сообщений и приём нажатий (поток Т, задача Т1; пакет заказчика 13.11.2026, одобрены все идеи списка «Идеи для Telegram-бота»)
 // Сообщение бота — не строка, а описание: заголовок, текст, таблицы (у таблицы с названием — раскрывающийся раздел), кнопки под сообщением.
-//   m: {h, sub, t, plain, code, tables:[{title, open, n, head:[], rows:[[]], foot:[], num:[номера числовых столбцов]}], btns:[[{t, icon, act, arg, copy, copied, url, go, off}]], at, me, eph,
+//   m: {img:{name, src} — картинка над текстом (рассылка, задача Т6), h, sub, t, plain, code, tables:[{title, open, n, head:[], rows:[[]], foot:[], num:[номера числовых столбцов]}], btns:[[{t, icon, act, arg, copy, copied, url, go, off}]], at, me, eph,
 //       ask:{act, arg, kind:'file'|'text', re, day, off} — бот ждёт ответ на это сообщение (задача Т2), file:{name, size} и re — файл и «в ответ на» в сообщении человека}
 // Что правит администратор платформы, а что задаёт продукт: тексты, подписи кнопок и скрытые ответы — шаблоны «Справочников платформы»; состав таблиц и место кнопок — продукт.
 // Запасной простой текст строится из того же описания (tgPlain), отдельно его никто не пишет. Число в строке таблицы идёт с названием своего столбца: «Нурлан Т. — Сдать 6 — Просроч. 2».
@@ -27,7 +27,7 @@ function tgcMsg(m,i,plain){
   if(m.me)return `<div class="tgc-m me${m.re||m.file?' say':''}"><div class="tgc-b">${m.re?`<p class="tgc-re">${ic('chat','sm')}${esc(m.re)}</p>`:''}${m.file?`<p class="tgc-file">${ic('file','sm')}<span>${esc(m.file.name)}</span><span class="tgc-fs">${fmtSize(m.file.size)}</span></p>`:''}${m.t?`<p>${esc(m.t)}</p>`:''}${at}</div></div>`;
   const body=plain?`<p>${tgcText(tgPlain(m),m.code)}</p>`:`${m.h?`<p class="tgc-h">${esc(m.h)}</p>`:''}${m.sub?`<p class="tgc-sub">${esc(m.sub)}</p>`:''}${m.t?`<p>${tgcText(m.t,m.code)}</p>`:''}${(m.tables||[]).map(tgcTable).join('')}`;
   const kb=(m.btns||[]).length?`<div class="tgc-kb">${m.btns.map((r,ri)=>`<div class="tgc-row">${r.map((b,ci)=>`<button type="button" class="tgc-k" data-tgc="${i}:${ri}:${ci}" ${b.off?'disabled':''}>${b.icon?ic(b.icon,'sm'):b.copy?ic('copy','sm'):b.url?ic('link','sm'):''}<span>${esc(b.t)}</span></button>`).join('')}</div>`).join('')}</div>`:'';
-  return `<div class="tgc-m"><div class="tgc-b">${body}${tgAskLive(m)?`<p class="tgc-wait">${ic('hourglass','sm')}Бот ждёт ответ на это сообщение</p>`:''}${at}</div>${kb}</div>`}
+  return `<div class="tgc-m"><div class="tgc-b">${m.img?`<img class="tgc-img" src="${esc(m.img.src)}" alt="${esc(m.img.name||'Картинка')}">`:''}${body}${tgAskLive(m)?`<p class="tgc-wait">${ic('hourglass','sm')}Бот ждёт ответ на это сообщение</p>`:''}${at}</div>${kb}</div>`}
 // chat: {who, list, plain, menu — строка команд под перепиской (задача Т5, tg-menu.js)}
 function tgcHtml(chat){return `<div class="tgc" data-tgchat><div class="tgc-head"><span class="tgc-ava">B</span><b>${esc(chat.who||'Buhuchet.kg')}</b><span>бот</span></div>${chat.list.map((m,i)=>tgcMsg(m,i,chat.plain)).join('')||'<span class="tgc-empty">Сообщений нет</span>'}${tgcAskHtml(chat)}${chat.menu?tgcMenuHtml():''}</div>`}
 
