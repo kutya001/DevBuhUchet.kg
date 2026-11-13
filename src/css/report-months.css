@@ -22,6 +22,10 @@
 .rm-tbl .sum-st{align-items:flex-start}
 .rm-tbl tr.rm-late>td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .rm-tbl td.rm-act{width:36px;text-align:right;padding-right:4px}
+/* Блок «К оплате клиенту» под таблицей месяца (карточка контрагента) */
+.rm-pay{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;border:1px dashed var(--border);border-radius:10px;background:var(--bg-soft,transparent)}
+.rm-pay-t{display:inline-flex;align-items:center;gap:6px 8px;flex-wrap:wrap}.rm-pay-t>.ic{color:var(--b-purple,var(--muted))}
+.rm-pay-l{flex:1 1 100%;order:3;min-width:0}
 .rm-empty{display:flex;align-items:center;gap:8px;color:var(--muted)}
 .rm-hint{margin-top:10px}
 .rm-head{margin-bottom:10px}
@@ -34,4 +38,5 @@
   table.m-cards.rm-tbl>tbody>tr.rm-late{border-color:var(--red)}
   .rm-head h3{min-width:0;flex:1;font-size:15.5px}
   .rm-head .hint{display:none}
+  .rm-pay .grow{display:none}.rm-pay .btn{flex:1 1 auto;justify-content:center}
 }

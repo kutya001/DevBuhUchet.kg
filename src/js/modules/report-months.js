@@ -38,10 +38,10 @@ function rmRowHtml(x){const r=x.r,t=T[r.t],tp=feat('taxpay'),per=t.per!=='M'||(r
     <td>${x.pay?`<span class="${r.payOverdue?'red strong':''}">${fmtD(r.payDue)}</span>`:RM_NO}</td>
     ${tp?`<td>${x.pay&&r.sum>0?`<div class="sum-st"><span class="tnum">${fmtM(r.paid)}</span>${scaleMini0('pay',r.payStatus,r)}</div>`:x.pay?scaleMini0('pay',r.payStatus,r):RM_NO}</td>`:''}
     <td class="m-act rm-act"><button type="button" class="icon-btn sm" data-rm-menu="${r.id}" aria-label="Действия с отчётом" title="Действия">${ic('more')}</button></td></tr>`}
-function rmMonthHtml(g,open){const tp=feat('taxpay');
+function rmMonthHtml(g,open,c){const tp=feat('taxpay');
   return `<section class="box rm-m${g.late?' late':g.done?' done':''}${open?' open':''}" data-rm="${g.m}"><h3><button type="button" class="rm-tg" data-rm-tg="${g.m}" aria-expanded="${open}">${ic('down','sm')}<span class="rm-t">${rmTitle(g.m)}</span></button><span class="rm-sum">${rmSumHtml(g)}</span></h3>
     ${open?`<div class="tbl-wrap"><table class="mini m-cards rm-tbl"><thead><tr><th>Отчёт</th><th>Что сделать</th><th>Срок сдачи</th><th>Статус сдачи</th><th class="num">К уплате</th><th>Срок оплаты</th>${tp?'<th>Оплачено в бюджет</th>':''}<th></th></tr></thead>
-      <tbody>${g.items.map(rmRowHtml).join('')}${g.sum>0&&g.items.length>1?`<tr class="m-total"><td><b>Итого за месяц</b></td><td></td><td></td><td></td><td class="num"><b>${fmtM(g.sum)}</b></td><td></td>${tp?`<td><b>${fmtM(g.paid)}</b>${g.left>0?` <span class="faint">осталось ${fmtM(g.left)}</span>`:''}</td>`:''}<td></td></tr>`:''}</tbody></table></div>`:''}</section>`}
+      <tbody>${g.items.map(rmRowHtml).join('')}${g.sum>0&&g.items.length>1?`<tr class="m-total"><td><b>Итого за месяц</b></td><td></td><td></td><td></td><td class="num"><b>${fmtM(g.sum)}</b></td><td></td>${tp?`<td><b>${fmtM(g.paid)}</b>${g.left>0?` <span class="faint">осталось ${fmtM(g.left)}</span>`:''}</td>`:''}<td></td></tr>`:''}</tbody></table></div>${c?rmPayHtml(c,g):''}`:''}</section>`}
 
 /* Вкладка «Отчёты к сдаче» карточки контрагента: «По месяцам» (по умолчанию) или «Списком» — прежний общий список; выбор запоминает браузер */
 function rmCardHtml(c,st){const mode=store.get('cp.repmode','months')==='list'?'list':'months';st.rq=st.rq||'all';st.rmTg=st.rmTg||{};
@@ -52,7 +52,7 @@ function rmCardHtml(c,st){const mode=store.get('cp.repmode','months')==='list'?'
   const vis=(q==='all'?all:rmPlan(rs.filter(r=>actQ(r,q)))).filter(g=>q!=='all'||st.rmAll||!g.done);
   const bar=`<div class="row rm-bar">${sw}<div class="chipsel actq" role="group" aria-label="Что нужно сделать">${[['all','Все'],['sub','Сдать'],['pay','Уплатить']].map(([k,l])=>`<button type="button" data-rm-q="${k}" class="${q===k?'on':''}" aria-pressed="${q===k}">${l}<span class="n">${n(k)}</span></button>`).join('')}</div>
     <span class="grow"></span>${feat('taxpay')&&left>0?`<span class="muted rm-left">Осталось оплатить: <b class="tnum">${som(left)}</b></span>`:''}${closed&&q==='all'?`<label class="rm-all"><input type="checkbox" id="rm-all" ${st.rmAll?'checked':''}> Закрытые месяцы · ${closed}</label>`:''}</div>`;
-  const body=vis.length?vis.map(g=>rmMonthHtml(g,g.m in st.rmTg?st.rmTg[g.m]:!g.done)).join('')
+  const body=vis.length?vis.map(g=>rmMonthHtml(g,g.m in st.rmTg?st.rmTg[g.m]:!g.done,c)).join('')
     :`<div class="box rm-empty">${ic('ok')}<span>${!rs.length?'Отчётов у контрагента пока нет: назначьте их на вкладке «Подбор отчётов»':q==='sub'?'Все отчёты сданы':q==='pay'?'Неоплаченных налогов нет':'Всё сдано и оплачено. Прошлые месяцы — по галочке «Закрытые месяцы»'}</span></div>`;
   return `${bar}<div class="rm-list">${body}</div><div class="hint rm-hint">Месяц отчёта — месяц, которым заканчивается его период: квартальные и годовые отчёты стоят в последнем месяце периода. Нажмите на отчёт — откроется его карточка; «⋯» — действия: статус, сумма, оплата.</div>`}
 function rmCardMount(el,c,st,mm){const q=s=>el.querySelector(s);
@@ -63,7 +63,9 @@ function rmCardMount(el,c,st,mm){const q=s=>el.querySelector(s);
   if(q('#rm-all'))q('#rm-all').onchange=e=>{st.rmAll=e.target.checked;mm.draw()};
   // «⋯» — те же действия, что в меню отчёта общего списка; после действия карточка перерисовывается сама (refreshAll)
   $$('[data-rm-menu]',el).forEach(b=>b.onclick=e=>{e.stopPropagation();const r=REPORTS.find(x=>x.id===+b.dataset.rmMenu);if(r)menu(b,reportActions(r))});
-  $$('.rm-tbl [data-recv]',el).forEach(b=>b.onclick=e=>e.stopPropagation())}
+  $$('.rm-tbl [data-recv]',el).forEach(b=>b.onclick=e=>e.stopPropagation());
+  // Блок «К оплате клиенту» под таблицей месяца: «Скопировать для клиента» и «Отправить в Telegram» (cp-telegram.js)
+  rmPayMount(el,c)}
 
 /* Вкладка «По месяцам» модуля «Отчеты для сдачи»: один месяц по всем контрагентам. Общий список сгруппирован по контрагенту:
    у каждого видно, что сдать и что оплатить за месяц, суммы и сроки. По умолчанию — прошлый месяц: отчёты за него сдаются сейчас */

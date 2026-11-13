@@ -445,7 +445,9 @@
    "contacts",
    "tg"
   ],
-  "payFirst": true
+  "payFirst": true,
+  "tgCpDebt": true,
+  "tgCpPay": false
  },
  "roles": [
   {

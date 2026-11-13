@@ -70,6 +70,9 @@
 /* Telegram контрагента (К3, 13.11.2026): список запросов и подключений в блоке «Страница контрагента», раздел «Telegram» на странице */
 .pg-tg{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .pg-tg h4{margin:0;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pg-tg h4>.ic{color:var(--b-blue)}
+/* Таблица в сообщении клиенту: столбец после числового не прилипает к сумме */
+.tgc-t th.num+th,.tgc-t td.num+td{padding-left:14px}
+.pg-tg-debt{align-items:center;gap:8px 10px;flex-wrap:wrap}.pg-tg-debt>.check-row{flex:1 1 280px;margin:0}
 .pg-tg-tbl td{vertical-align:middle}.pg-tg-act{white-space:nowrap;text-align:right}.pg-tg-act .btn+.btn{margin-left:6px}
 .pub-tgp{margin:0;line-height:1.5}.pub-tgst{display:flex;gap:6px;flex-wrap:wrap}
 @media (max-width:767px){.pg-tg-act{white-space:normal;text-align:left;display:flex;gap:6px;flex-wrap:wrap}.pg-tg-act .btn+.btn{margin-left:0}}
