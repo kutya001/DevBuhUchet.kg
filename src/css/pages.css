@@ -67,6 +67,12 @@
 .cp-page .pg-code:hover{background:var(--hover)}.cp-page .pg-code:focus-visible{outline:2px solid var(--b-blue)}.cp-page .pg-code .ic{color:var(--faint)}
 .tf-log li{grid-template-columns:92px minmax(0,1fr) auto;align-items:start}
 .cp-page .kv>.pg-secs-row{grid-column:1/-1}
+/* Telegram контрагента (К3, 13.11.2026): список запросов и подключений в блоке «Страница контрагента», раздел «Telegram» на странице */
+.pg-tg{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.pg-tg h4{margin:0;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pg-tg h4>.ic{color:var(--b-blue)}
+.pg-tg-tbl td{vertical-align:middle}.pg-tg-act{white-space:nowrap;text-align:right}.pg-tg-act .btn+.btn{margin-left:6px}
+.pub-tgp{margin:0;line-height:1.5}.pub-tgst{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:767px){.pg-tg-act{white-space:normal;text-align:left;display:flex;gap:6px;flex-wrap:wrap}.pg-tg-act .btn+.btn{margin-left:0}}
 .pg-secs{display:flex;flex-wrap:wrap;gap:4px 14px}.pg-secs .row{gap:6px;font-size:13px}
 .pg-pol{margin:-4px 0 6px 52px;display:flex;flex-direction:column;gap:2px}.pg-pol .check-row{padding:4px 0}
 .pub{position:fixed;inset:0;z-index:85;background:var(--frame);display:flex;flex-direction:column;overflow:hidden}
@@ -187,7 +193,7 @@ body.pub-on .cover{z-index:88}body.pub-on .pop{z-index:89}
 @media (max-width:767px){.pub-proto span{display:none}.pub-bar{padding:8px 12px}.pub-title h1{font-size:20px}.pub-gate{margin-top:4vh;padding:22px 18px}.pg-pol{margin-left:0}
   .pub-page{padding:14px 12px calc(84px + env(safe-area-inset-bottom,0px));gap:14px}.pub-body{gap:10px}
   .pub-grid{display:flex;flex-direction:column;align-items:stretch;gap:10px}.pub-col{display:contents}
-  .pub-s[data-sec=main]{order:1}.pub-s[data-sec=pay]{order:2}.pub-s[data-sec=acc]{order:3}.pub-s[data-sec=reports]{order:4}.pub-s[data-sec=files]{order:5}.pub-s[data-sec=money]{order:6}.pub-s[data-sec=fee]{order:7}.pub-s[data-sec=kpi]{order:8}.pub-s[data-sec=contacts]{order:9}
+  .pub-s[data-sec=main]{order:1}.pub-s[data-sec=pay]{order:2}.pub-s[data-sec=acc]{order:3}.pub-s[data-sec=reports]{order:4}.pub-s[data-sec=files]{order:5}.pub-s[data-sec=money]{order:6}.pub-s[data-sec=fee]{order:7}.pub-s[data-sec=kpi]{order:8}.pub-s[data-sec=contacts]{order:9}.pub-s[data-sec=tg]{order:10}
   .pub-frow{padding:8px 10px;gap:8px}.pub-fq{max-width:none}
   .pub-s{padding:12px 14px}.pub-fd .pub-tg{cursor:pointer;min-height:28px}.pub-tg>.ic:last-child:not(:first-child){display:inline-block}
   .pub-fd:not(.fold) .pub-tg>.ic:last-child{transform:rotate(180deg)}
