@@ -379,6 +379,9 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
       old={tgTask:'Новая задача от {автор}: {задача}, срок {срок}.',tgRelinkCode:'{код} — код для привязки другого Telegram «{телеграм}» к учётной записи {логин}. Если это вы, отправьте этот код боту из нового Telegram. Никому не сообщайте и не пересылайте код — в Buhuchet.kg его никто не спрашивает. Код действует {минут} минут. Если это не вы, смените пароль — все сеансы завершатся.'};
     if(a){ks.forEach(k=>{if(a[k]==null&&rm[k]!=null)a[k]=rm[k]});Object.keys(old).forEach(k=>{if(a[k]===old[k]&&rm[k]){a[k]=rm[k];if(n&&rn[k])n[k]=rn[k]}})}
     if(n)ks.forEach(k=>{if(n[k]==null&&rn[k]!=null)n[k]=rn[k]})}
+  // Поток Т, задача Т3 (пакет заказчика 13.11.2026): шаблоны таблиц бота — утреннее напоминание, сводка недели руководителю, долги за обслуживание, «Напомнить»
+  if(!db.meta.tgT3){db.meta.tgT3=1;const a=db.ref.messageTemplates,n=db.ref.templateNotes,rm=r.messageTemplates||{},rn=r.templateNotes||{},ks=['tgMornHead', 'tgMornSub', 'tgSecOver', 'tgSecToday', 'tgSecBefore', 'tgSecPay', 'tgWeekHead', 'tgWeekSub', 'tgSecDebt', 'tgBtnNudge', 'tgBtnFeeCopy', 'tgNudge', 'tgActNudgeOk', 'tgActNudgeWait', 'tgActNudgeNoTg'];
+    if(a)ks.forEach(k=>{if(a[k]==null&&rm[k]!=null)a[k]=rm[k]});if(n)ks.forEach(k=>{if(n[k]==null&&rn[k]!=null)n[k]=rn[k]})}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
