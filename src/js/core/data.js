@@ -403,6 +403,11 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
   // Поток Т, задача Т9 (пакет заказчика 13.11.2026, идея 5): виджет «Мои отчёты на неделю»
   if(!db.meta.tgT9){db.meta.tgT9=1;const a=db.ref.messageTemplates,n=db.ref.templateNotes,rm=r.messageTemplates||{},rn=r.templateNotes||{},ks=['tgCmdWidget','tgWgCaption','tgWgHead','tgWgUpd','tgWgOver','tgWgNone','tgWgMore','tgWgDone','tgWgFile','tgWgOld','tgBtnWgRefresh'];
     if(a)ks.forEach(k=>{if(a[k]==null&&rm[k]!=null)a[k]=rm[k]});if(n)ks.forEach(k=>{if(n[k]==null&&rn[k]!=null)n[k]=rn[k]})}
+  // Справочник «БИК банков» (решение заказчика 14.11.2026): у данных, сохранённых раньше, справочник и «Код банка в БИК» у провайдеров берутся из refDB.json, вкладка — в группе «Органы и банки»
+  if(!db.meta.bik1){db.meta.bik1=1;const dd=db.ref.dictionaries,rd=r.dictionaries||{};if(dd&&rd.bik&&!dd.bik)dd.bik=structuredClone(rd.bik);
+    if(dd&&dd.banks&&rd.banks)dd.banks.items.forEach(x=>{const f=rd.banks.items.find(y=>y.code===x.code);if(f&&f.bikCode&&x.bikCode==null)x.bikCode=f.bikCode});
+    const g=(db.ref.dictGroups||[]).find(x=>x.group==='Органы и банки'),fg=(r.dictGroups||[]).find(x=>x.group==='Органы и банки'),ft=fg&&fg.tabs.find(x=>x.tab==='БИК банков');
+    if(g&&ft&&!g.tabs.some(x=>x.tab==='БИК банков')){const i=g.tabs.findIndex(x=>x.tab==='Банки');g.tabs.splice(i<0?g.tabs.length:i+1,0,structuredClone(ft))}}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
