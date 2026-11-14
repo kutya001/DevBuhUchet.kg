@@ -420,6 +420,8 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
   // Блок «Telegram-уведомления» (v111, пакет 14.11.2026, блок 3): путь к общему чату в шаблоне «ссылка устарела» — если администратор не менял текст
   if(!db.meta.tgN1){db.meta.tgN1=1;const a=db.ref.messageTemplates,rm=r.messageTemplates||{};if(a&&a.tgGrpLinkBad==='Ссылка для подключения группы устарела или уже использована. Владелец организации может создать новую: «Моя организация» → «Настройки» → «Общий чат фирмы в Telegram».'&&rm.tgGrpLinkBad)a.tgGrpLinkBad=rm.tgGrpLinkBad;
     const n=db.ref.templateNotes,rn=r.templateNotes||{};if(n&&rn.tgActOff&&n.tgActOff&&!n.tgActOff.includes('Telegram-уведомления'))n.tgActOff=rn.tgActOff}
+  // v111 (исправление): поле «Еженедельная сводка, понедельник» (st-dg) заменили «Час напоминаний» и «День сводки» — и в статье «Модуль «Моя организация»»
+  if(!db.meta.tgN2){db.meta.tgN2=1;const u=db.ref.kbUi;if(u){if(u.fields)delete u.fields['st-dg'];const a=(u.artForms||[]).find(x=>x.mod==='org'&&Array.isArray(x.fields)&&x.fields.includes('st-dg'));if(a)a.fields.splice(a.fields.indexOf('st-dg'),1,...['tgn-at','tgn-wd'].filter(k=>!a.fields.includes(k)))}}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
