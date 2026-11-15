@@ -25,6 +25,8 @@
 ```
 index.html            каркас: разметка оболочки и подключение файлов из src по порядку
 build.py              сборка однофайловой версии → dist/prototype.html и демо-версии → dist/demo.html
+check.py              проверка версии перед push в main: шаблоны и TPL_VARS, ссылки новостей, пределы продукта, номер версии
+CLAUDE.md             правила работы с прототипом; выпуск версии — .claude/skills/prototype-release
 dist/prototype.html   собранный файл (не править руками)
 dist/demo.html        демо-версия для сайта buhuchet.kg/demo: тот же файл с признаком BU_DEMO (не править руками)
 data/                 данные: demoDB.json, TemDB.json (пустой шаблон), refDB.json, gkedDB.json (ГКЭД 2022)
