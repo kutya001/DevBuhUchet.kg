@@ -1,7 +1,7 @@
 {
  "meta": {
   "title": "База данных Buhuchet.kg",
-  "schemaVersion": 72,
+  "schemaVersion": 73,
   "updated": "2026-11-16",
   "sources": [
    {
@@ -10466,12 +10466,13 @@
    "rls": "Включена. Политика platform_reference_read: роль приложения только читает (SELECT для всех строк). Пишут команда загрузки pnpm db:seed и функция администратора платформы app.admin_set_reference (только разделы taxes, propertyRates, gkedGroups — 0068; kbSteps, kbArticles, kbLevels, kbShows — 0069). Раздел telegramBot («Сообщения с таблицами» бота платформы) пишет app.admin_set_telegram_rich (0122). Ключ topics («Темы в чате с ботом», 0142) из раздела telegramBot убран миграцией 0147 вместе с app.admin_set_telegram_topics (решение заказчика 14.11.2026).",
    "issue": "этап 0 (сделано), #20 (сделано: разделы разложены по таблицам)",
    "source": "packages/db/src/schema/platform.ts",
-   "migration": "0001_foundation_tables, 0051_admin_platform_dicts_more, 0062_admin_platform_dicts_system, 0068_admin_gked, 0069_admin_kb, 0122_telegram_bot_functions (раздел telegramBot)",
+   "migration": "0001_foundation_tables, 0051_admin_platform_dicts_more, 0062_admin_platform_dicts_system, 0068_admin_gked, 0069_admin_kb, 0122_telegram_bot_functions (раздел telegramBot), 0156_cp_help_reference",
    "logic": [
     "Загрузка идёт командой pnpm db:seed из spec/data/refDB.json: без флага --update только добавляет недостающие разделы, с флагом — обновляет изменившиеся.",
     "Сюда не копируются reportTypes, holidays, workingSaturdays, enRates, localization, permissions, roleTemplates, а из dictionaries — organs, regimes, bases, ugns, benefits, forms, reasons, banks, cats, а также phoneCodes, messageTemplates и templateNotes (0062, таблица message_templates): у них свои таблицы; db:seed --update удаляет их старые копии.",
     "Остаются здесь: налоги, база знаний, опросник, группы ГКЭД и др.",
-    "Разделы «Налоги», «Ставки налога на имущество» и «Группы ГКЭД» (#93), а также «База знаний (содержимое)» — шаги уроков kbSteps, статьи kbArticles, уровни kbLevels, сценарии показов kbShows (#95, 0069, docs/decisions.md п. Д-11 продукта) — администратор правит в Админке целиком (app.admin_set_reference): новая версия той, что он видел, source = admin, «Кто поправил» — он."
+    "Разделы «Налоги», «Ставки налога на имущество» и «Группы ГКЭД» (#93), а также «База знаний (содержимое)» — шаги уроков kbSteps, статьи kbArticles, уровни kbLevels, сценарии показов kbShows (#95, 0069, docs/decisions.md п. Д-11 продукта) — администратор правит в Админке целиком (app.admin_set_reference): новая версия той, что он видел, source = admin, «Кто поправил» — он.",
+    "Раздел cpHelp (0156): тексты «Добро пожаловать», облачка обзора, частые вопросы «Помощи», «Словарик» и подсказки в окнах страницы контрагента; наполнение кладёт его из refDB.json kbUi.cpHelp, правит администратор платформы (app.admin_set_reference)."
    ],
    "columns": [
     {
@@ -16226,9 +16227,9 @@
   {
    "name": "app.admin_set_reference(key, payload, checksum, version)",
    "ru": "Сохранить раздел справочника платформы",
-   "migration": "0068_admin_gked, 0069_admin_kb",
+   "migration": "0068_admin_gked, 0069_admin_kb, 0156_cp_help_reference",
    "definer": true,
-   "desc": "Только разделы taxes, propertyRates, gkedGroups (0068) и kbSteps, kbArticles, kbLevels, kbShows (0069) в platform_reference: раздел целиком той версии, что видел администратор; версия +1, source = admin, «Кто поправил» — администратор (db:seed --update такой раздел не затирает). Отвечает новой версией; пусто — версия устарела, раздела нет или не администратор."
+   "desc": "Только разделы taxes, propertyRates, gkedGroups (0068) и kbSteps, kbArticles, kbLevels, kbShows (0069) в platform_reference: раздел целиком той версии, что видел администратор; версия +1, source = admin, «Кто поправил» — администратор (db:seed --update такой раздел не затирает). Отвечает новой версией; пусто — версия устарела, раздела нет или не администратор. 0156: в списке разделов ещё cpHelp — подсказки и обучение на странице контрагента (поток К, прототип v120; Админка → «База знаний (содержимое)» → «Страница контрагента»)."
   },
   {
    "name": "app.admin_mark_gns(codes)",
