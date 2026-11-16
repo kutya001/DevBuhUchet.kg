@@ -291,7 +291,7 @@ function inDlg(c0,edit,pre){
           if(Math.abs(tot-t0)>0.001)ch.push(`общая сумма ${fmtM(t0)} → ${fmtM(tot)} сом`);if(st.date!==edit.date)ch.push(`дата ${fmtD(edit.date)} → ${fmtD(st.date)}`);if(d0!==d1)ch.push(`детализация «${d0}» → «${d1}»`);if(st.acc!==edit.holder)ch.push(`счёт: ${accName(edit.holder)} → ${accName(st.acc)}`);
           if(!setErr(el,'in-why',ch.length&&!st.why.trim()?'Укажите причину: меняются '+ch.map(s=>s.split(/[ :]/)[0]==='общая'?'сумма':s.split(/[ :]/)[0]).join(', '):''))return}
         // Чек из «Отправленных файлов» принимается здесь, одним действием с деньгами; его уже принял или отклонил другой — поступление без него
-        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`поступлению от ${fmtD(st.date)}`,'поступление');
+        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`поступлению от ${fmtD(st.date)}`,'поступление сохранено');
         const files=[...(rc.file?[rc.file]:[]),...[...$('#in-f',el).files].map(x=>x.name)];const holder=c.paysTo==='org'?'org':c.resp;
         const note=alloc.length?'За '+alloc.map(x=>T[REPORTS.find(y=>y.id===x.r).t].short).join(', '):feeAlloc.length?'За обслуживание':'Аванс';
         let op=edit;

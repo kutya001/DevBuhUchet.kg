@@ -183,7 +183,7 @@ function feePayDlg(c,edit,pre){if(!c)return;const own={};if(edit)fpAlloc(edit).f
         if(!setErr(el,'fp-sum',isNaN(t)||t<=0?'Введите сумму больше нуля':bad?'В строке месяца сумма больше долга за этот месяц':d>t+0.001?`Распределено больше суммы на ${som(d-t)}`:''))return;
         if(!setErr(el,'fp-date',!st.date?'Укажите дату':st.date>TODAY?'Дата не может быть позже сегодняшней':''))return;
         // Чек из «Отправленных файлов» принимается здесь, одним действием с оплатой (16.11, блок 1); его уже принял или отклонил другой — оплата без него
-        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`оплате за обслуживание от ${fmtD(st.date)}`,'оплата');
+        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`оплате за обслуживание от ${fmtD(st.date)}`,'оплата сохранена');
         const alloc=Object.entries(st.rows).filter(([,v])=>v>0).sort((a,b)=>a[0]<b[0]?-1:1).map(([m,a])=>({m,a})),files=[...(rc.file?[rc.file]:[]),...[...$('#fp-f',el).files].map(x=>x.name)];files.forEach(n=>FUP.add(n));
         const txt=al=>(al.length?al.map(x=>`${ymLabel(x.m)} — ${fmtM(x.a,false)}`).join(', '):'')+(t-al.reduce((a,x)=>a+x.a,0)>0.001?`${al.length?', ':''}аванс — ${fmtM(t-al.reduce((a,x)=>a+x.a,0),false)}`:'');
         if(edit){const al0=fpAlloc(edit),ch=[];if(Math.abs(t-edit.amount)>0.001)ch.push(`сумма ${fmtM(edit.amount)} → ${fmtM(t)} сом`);if(st.date!==edit.date)ch.push(`дата ${fmtD(edit.date)} → ${fmtD(st.date)}`);

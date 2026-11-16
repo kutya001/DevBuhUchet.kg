@@ -8908,7 +8908,7 @@ function inDlg(c0,edit,pre){
           if(Math.abs(tot-t0)>0.001)ch.push(`общая сумма ${fmtM(t0)} → ${fmtM(tot)} сом`);if(st.date!==edit.date)ch.push(`дата ${fmtD(edit.date)} → ${fmtD(st.date)}`);if(d0!==d1)ch.push(`детализация «${d0}» → «${d1}»`);if(st.acc!==edit.holder)ch.push(`счёт: ${accName(edit.holder)} → ${accName(st.acc)}`);
           if(!setErr(el,'in-why',ch.length&&!st.why.trim()?'Укажите причину: меняются '+ch.map(s=>s.split(/[ :]/)[0]==='общая'?'сумма':s.split(/[ :]/)[0]).join(', '):''))return}
         // Чек из «Отправленных файлов» принимается здесь, одним действием с деньгами; его уже принял или отклонил другой — поступление без него
-        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`поступлению от ${fmtD(st.date)}`,'поступление');
+        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`поступлению от ${fmtD(st.date)}`,'поступление сохранено');
         const files=[...(rc.file?[rc.file]:[]),...[...$('#in-f',el).files].map(x=>x.name)];const holder=c.paysTo==='org'?'org':c.resp;
         const note=alloc.length?'За '+alloc.map(x=>T[REPORTS.find(y=>y.id===x.r).t].short).join(', '):feeAlloc.length?'За обслуживание':'Аванс';
         let op=edit;
@@ -9111,7 +9111,7 @@ function feePayDlg(c,edit,pre){if(!c)return;const own={};if(edit)fpAlloc(edit).f
         if(!setErr(el,'fp-sum',isNaN(t)||t<=0?'Введите сумму больше нуля':bad?'В строке месяца сумма больше долга за этот месяц':d>t+0.001?`Распределено больше суммы на ${som(d-t)}`:''))return;
         if(!setErr(el,'fp-date',!st.date?'Укажите дату':st.date>TODAY?'Дата не может быть позже сегодняшней':''))return;
         // Чек из «Отправленных файлов» принимается здесь, одним действием с оплатой (16.11, блок 1); его уже принял или отклонил другой — оплата без него
-        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`оплате за обслуживание от ${fmtD(st.date)}`,'оплата');
+        const rc=edit?{file:null,warn:''}:pgRcptSave(pre,!!st.rcpt,`оплате за обслуживание от ${fmtD(st.date)}`,'оплата сохранена');
         const alloc=Object.entries(st.rows).filter(([,v])=>v>0).sort((a,b)=>a[0]<b[0]?-1:1).map(([m,a])=>({m,a})),files=[...(rc.file?[rc.file]:[]),...[...$('#fp-f',el).files].map(x=>x.name)];files.forEach(n=>FUP.add(n));
         const txt=al=>(al.length?al.map(x=>`${ymLabel(x.m)} — ${fmtM(x.a,false)}`).join(', '):'')+(t-al.reduce((a,x)=>a+x.a,0)>0.001?`${al.length?', ':''}аванс — ${fmtM(t-al.reduce((a,x)=>a+x.a,0),false)}`:'');
         if(edit){const al0=fpAlloc(edit),ch=[];if(Math.abs(t-edit.amount)>0.001)ch.push(`сумма ${fmtM(edit.amount)} → ${fmtM(t)} сом`);if(st.date!==edit.date)ch.push(`дата ${fmtD(edit.date)} → ${fmtD(st.date)}`);
@@ -9731,9 +9731,9 @@ function pgRcptMoney(c,x,pl){const p=x.pay,from=x.src==='page'?'со стран�
   if(p.kind==='fee')return feePayDlg(c,null,{...pre,sum:p.sum,note:`По чеку ${from}${p.m?' за '+ymLabel(p.m).toLowerCase():''}`});
   inDlg(c,null,{...pre,list:pl.list,total:p.sum,note:`${p.m?`Деньги за ${rmMonthTxt(p.m)}`:'Деньги на налоги'} — по чеку ${from}`})}
 // «Сохранить» в окне денег с чеком: принять чек одним действием с деньгами. keep — чек остался в поле «Файлы» (не «Убрать»): прикрепить к записи «to».
-// Чек уже принял или отклонил другой сотрудник, пока окно было открыто, — деньги сохраняются без него. Возвращает {file: имя для записи денег или null, warn}
+// Чек уже принял или отклонил другой сотрудник, пока окно было открыто, — деньги сохраняются без него (what — «поступление сохранено» или «оплата сохранена»). Возвращает {file: имя для записи денег или null, warn}
 function pgRcptSave(pre,keep,to,what){const x=pre&&pre.sent;if(!x)return {file:keep?pre&&pre.file||null:null,warn:''};
-  if(x.st!=='new')return {file:null,warn:`Чек ${x.st==='ok'?'уже принял':'отклонил'} ${whoName(x.dBy)} — ${what} сохранено без него`};
+  if(x.st!=='new')return {file:null,warn:`Чек ${x.st==='ok'?'уже принял':'отклонил'} ${whoName(x.dBy)} — ${what} без него`};
   const n=sntAcceptDo(x,keep?to:null);return {file:keep?n:null,warn:''}}
 // Принятый чек в поле «Файлы» окна денег (v119): строка с именем и «Убрать» — тогда чек не прикрепляется (в файлах контрагента он остаётся)
 // После «Убрать» (16.11, блок 1, пункт 4) — строка «не прикрепится» и «Вернуть»: при сохранении чек принимается только в файлы контрагента, «Отменить» — чек остаётся «Новый»
