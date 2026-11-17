@@ -45,6 +45,7 @@
   .bn .badge{position:absolute;top:2px;right:8px;font-size:9.5px;line-height:15px;min-width:16px;padding:0 4px}
   .fab{display:grid;position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;place-items:center;background:var(--accent);color:var(--on-accent);border:0;box-shadow:var(--sh-cta),var(--shadow-l);z-index:20;cursor:pointer}
   .fab .ic{width:24px;height:24px;stroke-width:2.2}
+  .fab{transition:transform var(--t-base,.18s) var(--ease-out,ease-out),opacity var(--t-base,.18s)}.fab.away{transform:translateY(96px);opacity:0;pointer-events:none}
   .app.kb .bnav,.app.kb .fab,body.kb .fab,body.kb .bnav{display:none}
   .sheet{display:flex;flex-direction:column;gap:6px;position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:85dvh;overflow:auto;background:var(--pane);border-radius:var(--r-xl) var(--r-xl) 0 0;border:1px solid var(--border-strong);border-bottom:0;box-shadow:var(--shadow-l);padding:4px 16px calc(16px + env(safe-area-inset-bottom,0px));transform:translateY(110%);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
   .sheet.open{transform:none}
@@ -53,13 +54,14 @@
   .gscroll{max-height:none}
   .plates{grid-template-columns:repeat(2,minmax(0,1fr))}
   /* Плашки модуля на телефоне — одна строка: число и подпись, без значка и приписки; красное число — только просрочка (17.11.2026, ТЗ п. 9) */
-  .page .plates:not(.static),.page.nostats .plates:not(.static){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-  .page .plates.pl-all:not(.static){grid-template-columns:repeat(3,minmax(0,1fr))}
+  .page .plates:not(.static),.page.nostats .plates:not(.static){display:flex;flex-wrap:nowrap;gap:6px}
+  .page .plates.pl-all:not(.static){flex-wrap:wrap}.page .plates.pl-all:not(.static) .plate{flex-basis:30%}
+  .page .plates:not(.static) .plate{flex:1 1 0;min-width:min-content}
   .page .plates:not(.static):not(.pl-all) .plate:nth-child(n+4){display:none}
-  .page .plates:not(.static) .plate{padding:8px 10px;gap:2px;flex-direction:column-reverse;justify-content:flex-end;border-radius:var(--r-m)}
+  .page .plates:not(.static) .plate{padding:7px 9px;gap:1px;flex-direction:column-reverse;justify-content:flex-end;border-radius:var(--r-m)}
   .page .plates:not(.static) .pl-dot,.page .plates:not(.static) .pl-sub{display:none}
-  .page .plates:not(.static) .pl-top{font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .page .plates:not(.static) .pl-val{font-size:19px}.page .plates:not(.static) .pl-val small{font-size:11px}
+  .page .plates:not(.static) .pl-top{font-size:11.5px;line-height:1.25;display:block}
+  .page .plates:not(.static) .pl-val{font-size:18px}.page .plates:not(.static) .pl-val small{font-size:11px}
   .page .plates:not(.static) .plate:has(.pl-dot.red) .pl-val{color:var(--red)}
   .pl-more{align-self:flex-start;margin-top:-6px;font-size:13px;min-height:32px}
   .pl-val{font-size:21px}
