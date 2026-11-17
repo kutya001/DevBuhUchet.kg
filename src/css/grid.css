@@ -86,7 +86,7 @@ table.gt{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:
 .scf-s.back{cursor:pointer;border-style:dashed;border-color:color-mix(in srgb,var(--orange) 45%,transparent)}.scf-s.back:hover{background:var(--orange-bg)}
 .scf-none small{color:var(--faint);font-size:11px}
 .scf-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
-.scf-t{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.scf-t{font-size:12.5px;font-weight:650;color:var(--muted)}
 .scf{--sc:var(--muted);--scb:var(--btn);display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;padding:2px}
 .scf-s{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;background:none;padding:5px 9px 5px 5px;border-radius:999px;font:inherit;font-size:13px;color:var(--faint);flex:none;cursor:default}
 .scf-s .n{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:700;border:1.5px solid var(--border-strong);background:var(--pane);font-variant-numeric:tabular-nums}
@@ -112,7 +112,7 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .gt-ic{position:relative}
 .gt-ic.on{color:var(--text)}
 .gt-n{position:absolute;top:-4px;right:-4px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:9.5px;font-weight:700;line-height:15px;text-align:center}
-.stat-btn.on{color:var(--text);background:var(--btn);box-shadow:var(--sh-btn)}
+.stat-btn.on{color:var(--text);background:var(--btn);box-shadow:inset 0 0 0 1px var(--border-strong)}
 .gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
 .gcard{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-l);padding:11px 12px 12px 14px;display:flex;flex-direction:column;gap:9px;cursor:pointer;min-width:0;transition:box-shadow .15s}
 .gcard:hover{box-shadow:var(--shadow-s)}
@@ -130,7 +130,7 @@ table.sh{table-layout:fixed;width:100%}table.sh td{white-space:normal;vertical-a
 .aud b{color:var(--muted);font-weight:600}
 .sheet-mods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
 .sheet-mods button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;padding:10px 10px;border-radius:var(--r-m);background:var(--pane-alt);border:1px solid var(--border);font-weight:600;font-size:13px;color:var(--muted)}
-.sheet-mods button.on{background:var(--raised);color:var(--text);box-shadow:var(--sh-btn)}
+.sheet-mods button.on{background:var(--raised);color:var(--text);box-shadow:inset 0 0 0 1px var(--border-strong)}
 .sheet-mods button:focus-visible{outline:2px solid var(--b-blue)}
 .state{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:42px 16px;border:1px dashed var(--border-strong);border-radius:var(--r-l);color:var(--muted);background:var(--pane-alt)}
 .state .ic{color:var(--faint)}

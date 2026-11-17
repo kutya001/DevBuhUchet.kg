@@ -1,10 +1,10 @@
 /* Кнопки, поля, метки, вкладки, плитки */
 /* ── Buttons ── */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;min-height:33px;border:0;border-radius:var(--r-m);background:var(--btn);color:var(--text);box-shadow:var(--sh-btn);cursor:pointer;font-weight:550;font-size:13px;white-space:nowrap;transition:background .15s,box-shadow .15s;text-decoration:none;line-height:1.2}
-.btn:hover{background:var(--btn-hover);box-shadow:var(--sh-btn-h)}
-.btn:active{box-shadow:var(--sh-btn-a)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;min-height:33px;border:0;border-radius:var(--r-m);background:var(--btn);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);cursor:pointer;font-weight:550;font-size:13px;white-space:nowrap;transition:background .15s,box-shadow .15s;text-decoration:none;line-height:1.2}
+.btn:hover{background:var(--btn-hover);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.btn:active{box-shadow:inset 0 0 0 1px var(--border-strong);background:var(--row-hover)}
 .btn.cta{background:var(--accent);color:var(--on-accent);box-shadow:var(--sh-cta)}
-.btn.cta:hover{background:var(--accent-hover)}
+.btn.cta:hover{background:var(--accent-hover);box-shadow:var(--sh-cta)}
 .btn.cta:active{box-shadow:var(--sh-btn-a)}
 /* Подпись внутри кнопки берёт цвет и размер кнопки: класс .lbl у полей формы приглушённый, на кнопке он сливался с фоном */
 .btn .lbl,.btn .bl,.tab .lbl,.fab .lbl{color:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit}
@@ -13,15 +13,15 @@
 .btn.ghost{background:transparent;box-shadow:none;color:var(--muted)}
 .btn.ghost:hover{background:var(--row-hover);color:var(--text)}
 .btn.sm{min-height:29px;padding:4px 10px;font-size:12.5px}
-.btn[disabled],.btn.dis{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn[disabled],.btn.dis{opacity:.5;cursor:not-allowed;box-shadow:inset 0 0 0 1px var(--border)}
 .icon-btn{width:33px;height:33px;display:inline-grid;place-items:center;border:0;border-radius:var(--r-m);background:transparent;color:var(--muted);cursor:pointer;flex:none}
 .icon-btn:hover{background:var(--row-hover);color:var(--text)}
 .icon-btn.sm{width:27px;height:27px}
-.icon-btn.raised{background:var(--btn);box-shadow:var(--sh-btn)}
+.icon-btn.raised{background:var(--btn);box-shadow:inset 0 0 0 1px var(--border)}
 .linkbtn{border:0;background:none;padding:0;color:var(--link);cursor:pointer;font-weight:550;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .seg{display:inline-flex;padding:3px;border-radius:var(--r-m);background:var(--pane-alt);border:1px solid var(--border);gap:2px}
 .seg button{border:0;background:none;padding:4px 10px;border-radius:6px;font-size:12.5px;font-weight:550;color:var(--muted);cursor:pointer;display:inline-flex;gap:6px;align-items:center;min-height:26px}
-.seg button.on{background:var(--raised);color:var(--text);box-shadow:var(--sh-btn)}
+.seg button.on{background:var(--raised);color:var(--text);box-shadow:inset 0 0 0 1px var(--border-strong)}
 
 /* ── Inputs ── */
 .inp{width:100%;min-height:35px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--field);color:var(--text);font-size:13.5px;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.04);transition:border-color .15s,box-shadow .15s}
@@ -71,12 +71,12 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .fld.full{grid-column:1/-1}
 .fld>label,.lbl{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.01em}
 .req::after{content:' *';color:var(--red)}
-.hint{font-size:11.5px;color:var(--faint);line-height:1.4}
+.hint{font-size:12px;color:var(--muted);line-height:1.4}
 .err{font-size:12px;color:var(--red);display:flex;gap:5px;align-items:flex-start}
 .fld.bad .inp{border-color:var(--red)}
 .chipsel{display:flex;flex-wrap:wrap;gap:6px}
 .chipsel button{border:1px solid var(--border);background:var(--raised);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:550;color:var(--muted);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
-.chipsel button.on{background:var(--accent);border-color:transparent;color:var(--on-accent);box-shadow:var(--sh-cta)}
+.chipsel button.on{background:var(--accent);border-color:transparent;color:var(--on-accent)}
 .chipsel button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}
 .check-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
 .check-row:last-child{border-bottom:0}
@@ -121,9 +121,9 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .tabs>:first-child{margin-left:auto}.tabs>:last-child{margin-right:auto}.tabs>.tab-ghost:first-child+*{margin-left:auto}
 .tab{flex:none;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:var(--pane-alt);font-weight:550;font-size:13px;cursor:pointer;text-decoration:none;transition:background .2s,color .2s,transform .2s}
 .tab:hover{background:var(--raised);color:var(--text);transform:translateY(-1px)}
-.tab.on{background:var(--raised);color:var(--text);border-color:transparent;box-shadow:var(--sh-btn);animation:pop .25s ease-out}
+.tab.on{background:var(--raised);color:var(--text);border-color:transparent;box-shadow:inset 0 0 0 1px var(--border);animation:pop .25s ease-out}
 .tab .ic{width:15px;height:15px}
-.tabs.compact .tab .lbl{display:none}
+.tabs.compact .tab:not(.on) .lbl{display:none}
 .tabs.compact .tab{padding:7px 11px}
 .tabs.sm .tab{padding:5px 11px;font-size:12.5px}
 

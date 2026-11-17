@@ -20,7 +20,7 @@ function profileDlg(){
       if(q('#pf-kb'))q('#pf-kb').onclick=()=>{m.close();go('kb','level')};
       if(q('#pf-short'))q('#pf-short').onclick=()=>shortDlg(u,()=>m.draw());
       bindNotify(el,u,m);q('#pf-known').onclick=()=>tKnownReset(()=>m.draw());
-      q('#pf-theme').onchange=e=>setTheme(e.target.value,$('#theme'));
+      q('#pf-theme').onchange=e=>{ckHit('theme');setTheme(e.target.value,$('#theme'))};
       if(q('#pf-untg'))q('#pf-untg').onclick=()=>{tgSecSend(u,'unlink');u.tgPrev=u.tg;u.tg=null;log('emp',u.id,'Telegram отвязан');m.draw();toast('Telegram отвязан')};
       // Поток Т (13.11.2026): «Проверить бота» — сообщение с таблицей и кнопкой; «Сообщения простым текстом» — запасной вид для старого приложения Telegram
       if(q('#pf-tgchat'))q('#pf-tgchat').onclick=tgStaffDlg;
