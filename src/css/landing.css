@@ -716,3 +716,6 @@ body.demo-on .app{height:calc(100% - var(--demo-h,46px));margin-top:var(--demo-h
   .demo-strip .ds-r{flex:1 1 100%;margin-left:0}
   .demo-strip .ds-r .btn{flex:1;justify-content:center}
 }
+
+/* Телефон: линия Бернулли тоньше и только в поле страницы, не на тексте и полях (17.11.2026) */
+@media (max-width:767px){.lp-p1{stroke-width:1.6}.lp-p0{stroke-width:1}.lp-knots circle{r:2}}

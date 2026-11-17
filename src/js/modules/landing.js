@@ -80,7 +80,7 @@ function landDraw(){const el=$('#land');if(!el||!LAND.open)return;const D=landDe
     <figure class="lp-hero-pic rv"><div role="img" aria-label="Экран «Отчеты для сдачи»">${lshDesk(Dh,true)}</div><figcaption class="lp-hero-num">${LE('land.stats.line',{отчётов:nl(N.types),режимам:rl(N.regimes)})}</figcaption></figure></div></section>`;
   const sec=(id,cls,title,body,sub)=>`<section class="lp-sec ${cls}" id="lp-${id}"><div class="lp-wrap"><h2 class="rv">${title}</h2>${sub?`<p class="lp-sub rv">${sub}</p>`:''}${body}</div></section>`;
   // 2. Как это выглядит: подпись до 9 слов + снимок; на телефоне друг под другом, на компьютере в шахматном порядке
-  const shots=[lshDesk(D),lshBot(D),lshMoney(D),lshClient(D)];
+  const shots=[lshPhone(Dh),lshBot(D),lshMoney(D),lshClient(D)];
   const shot=sec('shots','lp-shots2',LE('land.shots.title'),`<div class="lp-figs">${shots.map((h,i)=>`<figure class="lp-fig rv"><figcaption>${LE(`land.shots.${i+1}.t`)}</figcaption><div class="lp-shot" role="img" aria-label="${LE(`land.shots.${i+1}.t`)}">${h}</div></figure>`).join('')}</div><div class="lp-shots-cta rv"><button type="button" class="btn lp-lg" data-lp-demo>${LE('land.btn.demo')}</button>${vlink()}</div>`);
   // 3. Что ещё есть — простой список по одной строке
   const extra=sec('extra','lp-extra alt',LE('land.extra.title'),`<ul class="lp-list rv">${[1,2,3,4,5,6,7,8].map(n=>LT(`land.extra.${n}`)).filter(Boolean).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`);
@@ -266,7 +266,7 @@ function landPathCalc(el){const page=$('#land-page',el),svg=$('#lp-path',el),w=$
   const pr=page.getBoundingClientRect(),st=page.scrollTop,W=page.clientWidth,H=page.scrollHeight,Y=r=>r.top-pr.top+st,X=r=>r.left-pr.left;
   svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.height=H+'px';
   // поле страницы слева и справа от содержимого: на широком экране спираль крупная, на телефоне — маленькая, у самого края
-  const cl=X(w.getBoundingClientRect())+parseFloat(getComputedStyle(w).paddingLeft),wide=cl>=96,R=wide?Math.min(44,Math.round((cl-14)/2.7)):Math.max(6,Math.min(9,Math.round(cl/2-1))),lx=wide?Math.round(cl-12-R):Math.max(R+3,Math.round(cl/2));
+  const cl=X(w.getBoundingClientRect())+parseFloat(getComputedStyle(w).paddingLeft),wide=cl>=96,R=wide?Math.min(44,Math.round((cl-14)/2.7)):Math.max(3,Math.min(9,Math.round(cl/2-4))),lx=wide?Math.round(cl-12-R):Math.round(cl/2);
   const cr=cue.getBoundingClientRect(),x0=X(cr)+cr.width/2,y0=Y(cr)+cr.height+4,f=v=>v.toFixed(1);
   const secs=['shots','extra','start','faq','emb','lead'].map(id=>$('#lp-'+id,el)).filter(Boolean).map((s,i)=>{const r=s.getBoundingClientRect(),cs=getComputedStyle(s),top=Y(r),pt=parseFloat(cs.paddingTop)||0,pb=parseFloat(cs.paddingBottom)||0,left=i%2===0;
     return {top,bot:top+r.height,pb,k:lpSpiral(left?lx:W-lx,top+Math.min(pt*.5,34)+R*.25,R,left?1:-1),c:[left?lx:W-lx,top+Math.min(pt*.5,34)+R*.25]}});
@@ -295,9 +295,9 @@ function landPathCalc(el){const page=$('#land-page',el),svg=$('#lp-path',el),w=$
   for(let i=A.length-1;i>0;i--)A[i].y=Math.min(A[i].y,i===A.length-1?tmax:A[i+1].y-1);
   A[0].y=Math.min(Math.max(A[0].y,page.clientHeight*.62+1),A[1].y-40); // в самом верху линия ещё не нарисована — она начинается с первой прокрутки
   const cur=LAND.P&&LAND.P.cur!=null?Math.min(LAND.P.cur,L):null;
-  LAND.P={L,step,n,xs,ys,A,fg:p1,sun:$('.lp-psun',svg),knots,cur};landTick(el)}
+  LAND.P={L,step,n,xs,ys,A,fg:p1,sun:$('.lp-psun',svg),knots,cur,sm:!wide};landTick(el)}
 // Кончик линии: len — докуда нарисована. С анимацией он не прыгает за прокруткой, а плавно догоняет её
-function landLineSet(len){const P=LAND.P;if(!P)return;P.cur=len;const i=Math.min(P.n-1,Math.max(0,Math.round(len/P.step)));P.sun.setAttribute('transform',`translate(${P.xs[i].toFixed(1)} ${P.ys[i].toFixed(1)})`);
+function landLineSet(len){const P=LAND.P;if(!P)return;P.cur=len;const i=Math.min(P.n-1,Math.max(0,Math.round(len/P.step)));P.sun.setAttribute('transform',`translate(${P.xs[i].toFixed(1)} ${P.ys[i].toFixed(1)})${P.sm?' scale(.45)':''}`);
   P.fg.style.strokeDashoffset=len>0?(P.L-len).toFixed(1):P.L+20;P.knots.forEach(k=>k.el.classList.toggle('on',len>=k.len-1))}
 function landLineRun(){LAND.lraf=0;const P=LAND.P;if(!P||P.to==null)return;const c=P.cur==null?P.to:P.cur,dl=P.to-c;if(Math.abs(dl)<.6){landLineSet(P.to);return}landLineSet(c+dl*.16);LAND.lraf=requestAnimationFrame(landLineRun)}
 function landTick(el){const page=$('#land-page',el);if(!page)return;const st=page.scrollTop,vh=page.clientHeight,H=page.scrollHeight,anim=page.classList.contains('lp-anim');
