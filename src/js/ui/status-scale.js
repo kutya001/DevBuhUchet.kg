@@ -52,7 +52,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 function dueBit(d,ov,note,pre='до'){if(!d)return '';const n=diffDays(d,TODAY);
   return `${ic('calendar','sm')}<span>${pre} ${fmtD(d)}</span>${ov?`<b class="red">просрочен на ${-n} дн.</b>`:n>=0&&n<=14?`<span class="faint">${n===0?'сегодня':`осталось ${n} дн.`}</span>`:''}${note?`<small class="faint">${note}</small>`:''}`}
 // Свёрнутый блок формы «Дополнительно»: редкие поля под одной строкой, раскрывается по нажатию
-const fMore=(html,t='Дополнительно')=>html?`<details class="fmore full"><summary>${t}</summary><div class="form">${html}</div></details>`:'';
+const fMore=(html,t='Дополнительно',o={})=>html?`<details class="fmore full" ${o.id?`id="${o.id}"`:''} ${o.open?'open':''}><summary>${t}${o.n?` <span class="faint">· заполнено ${o.n}</span>`:''}</summary><div class="form">${html}</div></details>`:'';
 function scaleMini(k,st,o){const h=scaleMini0(k,st,o);const e=o&&stSince(k,o);return e?`<span class="scm-w" title="Установлен ${fmtDT(e.at)}${e.who?', '+esc(whoName(e.who)):''}">${h}<small>${fmtDT(e.at)}</small></span>`:h}
 function scaleMini0(k,st,o){const D=SCALES[k];if(!st)return '<span class="faint">—</span>';if((D.none||[]).includes(st))return `<span class="scm none" title="${esc(st)}: шкала не ведётся">${ic('ban','sm')}${esc(st)}</span>`;
   const {i,side,n,steps}=scPos(k,st,o);if(i<0)return pill(st,D.map());const mk=k==='rep'&&o&&o.status===st?repMark(o):'';const mi=mk&&(ST[mk]||[])[1];
