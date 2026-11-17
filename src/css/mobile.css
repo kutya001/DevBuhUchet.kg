@@ -63,3 +63,20 @@
 }
 /* Уведомления на телефоне закрываются свайпом влево или вправо, крестик не показывается */
 @media (max-width:767px){.toast-x{display:none}.toasts{bottom:calc(var(--bnav-h,84px) + env(safe-area-inset-bottom,0px))}}
+
+/* Телефон (решение заказчика 17.11.2026, «Меньше текста, понятнее, плавнее», п. 3): всё нажимаемое не ниже 44 px, любое меню — лист снизу */
+@media (max-width:767px){
+  .btn,.inp,select.inp,.tab,.chip,.seg>button{min-height:44px}
+  .icon-btn{width:44px;height:44px}
+  .icon-btn.sm{width:40px;height:40px}
+  .icon-btn.sm.tipi{width:24px;height:24px}
+  .pop:not(.bell-pop){left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:none;min-width:0;max-height:80dvh;border-radius:var(--r-xl) var(--r-xl) 0 0;border-bottom:0;
+    padding:18px 8px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 0 0 100vmax var(--cover),var(--shadow-l);animation:sheet-in var(--t-slow) var(--ease-out) both}
+  .pop:not(.bell-pop)::before{content:'';position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:var(--border-strong)}
+  .pop.out:not(.bell-pop){animation:sheet-out var(--t-exit) var(--ease-in) forwards}
+  .pop .mi{min-height:48px;align-items:center;font-size:14px;padding:8px 12px}
+  .pop .mi .ic{margin-top:0}
+  .tip-t{font-size:15px;max-width:none;padding:6px 10px 10px}
+  .sheet-cover{animation:fade var(--t-slow) var(--ease-out) both}
+  .sheet-cover.out{animation:fade-out var(--t-exit) var(--ease-in) forwards;pointer-events:none}
+}

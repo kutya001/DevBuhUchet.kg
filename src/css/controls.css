@@ -113,7 +113,7 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 .tabs.tight2 .tab .ic{display:none}
 .mtitle{position:relative;display:flex;align-items:center;gap:4px}
 .mtitle h1{margin:0;font-size:23px;font-weight:720;letter-spacing:-.02em;text-wrap:balance}
-.mtitle .tip{position:absolute;left:0;top:calc(100% + 6px);z-index:20;width:min(420px,80vw);background:var(--raised);border:1px solid var(--border-strong);border-radius:var(--r-m);box-shadow:var(--shadow-l);padding:10px 12px;font-size:13px;color:var(--muted);display:none;animation:slideUp .25s forwards;line-height:1.5}
+.mtitle .tip{position:absolute;left:0;top:calc(100% + 6px);z-index:20;width:min(420px,80vw);background:var(--raised);border:1px solid var(--border-strong);border-radius:var(--r-m);box-shadow:var(--shadow-l);padding:10px 12px;font-size:13px;color:var(--muted);display:none;animation:slideUp var(--t-base) var(--ease-out) both;line-height:1.5}
 .mtitle:hover .tip,.mtitle.tip-open .tip{display:block}
 .mhead .grow{flex:1}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none;margin:-2px 0 2px}
@@ -170,3 +170,9 @@ input[type=checkbox]:not(.sw){accent-color:var(--accent);width:16px;height:16px;
 /* Отдельная кнопка рядом с «+ Добавить» (например, «Из свидетельства и выписки») и метка «Бета» */
 .add-x{margin-right:8px}.add-x .beta-p{margin-left:2px}.add-x.slim .lbl{display:none}
 .pill.beta-p{font-weight:700;letter-spacing:.02em;vertical-align:middle}
+
+/* Отклик на нажатие и наведение — одинаковый у всего нажимаемого (плавность, 17.11.2026) */
+.btn{transition:background-color var(--t-fast),box-shadow var(--t-fast),transform var(--t-fast) var(--ease-out)}
+.btn:active:not(:disabled){transform:scale(.98)}
+.icon-btn,.mi,.bn,.chip{transition:background-color var(--t-fast),color var(--t-fast)}
+#page.pg-in{animation:fade var(--t-base) var(--ease-out)}

@@ -1,6 +1,7 @@
 /* Поповеры, меню, окна, уведомления */
 /* ── Popovers, menus, modals, toasts ── */
-.pop{position:fixed;z-index:70;background:var(--raised);border:1px solid var(--border-strong);border-radius:var(--r-l);box-shadow:var(--shadow-l);padding:6px;min-width:210px;max-width:min(360px,calc(100vw - 24px));max-height:min(460px,calc(100dvh - 24px));overflow:auto;animation:slideUp .25s forwards}
+.pop{position:fixed;z-index:70;background:var(--raised);border:1px solid var(--border-strong);border-radius:var(--r-l);box-shadow:var(--shadow-l);padding:6px;min-width:210px;max-width:min(360px,calc(100vw - 24px));max-height:min(460px,calc(100dvh - 24px));overflow:auto;animation:slideUp var(--t-base) var(--ease-out) both}
+.pop.out{animation:fade-out var(--t-exit) var(--ease-in) forwards;pointer-events:none}
 .pop.pad{padding:12px;display:flex;flex-direction:column;gap:10px}
 .pop h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:650}
 .mi{display:flex;align-items:flex-start;gap:10px;width:100%;padding:7px 10px;border:0;background:none;color:var(--text);font-size:13px;border-radius:var(--r-s);cursor:pointer;text-align:left;line-height:1.35}
@@ -16,8 +17,13 @@
 .fl-list label:hover{background:var(--row-hover)}
 .fl-list label .n{margin-left:auto;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
 .pop-actions{display:flex;gap:6px;justify-content:flex-end}
-.cover{position:fixed;inset:0;z-index:50;background:var(--cover);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px 16px;animation:fade .2s}
-.modal{background:var(--pane);border:1px solid var(--border-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-l);width:min(580px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;animation:slideUp .25s forwards;min-width:0}
+.cover{position:fixed;inset:0;z-index:50;background:var(--cover);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px 16px;animation:fade var(--t-slow) var(--ease-out) both}
+/* Окно уходит так же мягко, как пришло: фон гаснет, окно опускается на 8 px (на телефоне — уезжает вниз) */
+.cover.out{animation:fade-out var(--t-exit) var(--ease-in) forwards;pointer-events:none}
+.cover.out>.modal{animation:m-out var(--t-exit) var(--ease-in) forwards}
+/* Окно подтверждения опасного действия — без сдвига, быстро */
+.modal.cfm{animation:fade var(--t-fast) var(--ease-out) both}
+.modal{background:var(--pane);border:1px solid var(--border-strong);border-radius:var(--r-xl);box-shadow:var(--shadow-l);width:min(580px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;animation:slideUp var(--t-slow) var(--ease-out) both;min-width:0}
 .modal.wide{width:min(1100px,100%);height:min(860px,calc(100dvh - 48px))}
 .modal.mid{width:min(780px,100%)}
 .mh{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 10px 22px}
@@ -97,7 +103,10 @@
 .kmlist td{padding:4px 2px}.kmlist .kin{width:120px}
 .kv-ed .form{margin-top:8px}
 .fe-note{align-items:center}
-.tipi{width:22px;height:22px;vertical-align:middle;margin-left:2px;color:var(--faint)}
+.tipi{width:22px;height:22px;vertical-align:middle;margin-left:2px;color:var(--muted);position:relative}
+/* «?» маленький, но нажимается пальцем: область нажатия 44 px */
+.tipi::after{content:'';position:absolute;inset:-11px}
+.tip-t{padding:6px 8px;font-size:13.5px;line-height:1.5;max-width:320px;color:var(--text)}
 .chk h3{display:flex;align-items:center;gap:10px}
 .chk-n{font-size:12.5px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}
 .chk-bar{height:6px;margin:2px 0 10px}

@@ -22,7 +22,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v130 · 17.11.2026';
+const PROTO_VER='v131 · 17.11.2026';
 // В демо-режиме — только «Войти как» (без администратора платформы) и «Очистить рабочие данные»
 function demoBox(){if(DEMO.on)return `<div class="demo"><div class="row" style="gap:6px"><b>${LE('land.demo.box')}</b></div><label for="demo-user">Войти как:</label>${sel('demo-user',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),S.me)}<div class="demo-db"><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button></div><span>${LE('land.demo.box.sub')}</span></div>`;
   return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button><button type="button" class="linkbtn" data-db="gked">Экспорт gkedDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
@@ -40,13 +40,16 @@ function renderSheet(){
   ${DEMO.on?'':`<button class="orgbtn" data-sh="out"><span class="av">${ic('logout','sm')}</span><span><div class="o-n">Выйти из аккаунта</div></span></button>`}${demoBox().replace('id="demo-user"','id="demo-user-m"').replace('for="demo-user"','for="demo-user-m"').replace('id="demo-data-x"','id="demo-data-m"')}`;
 }
 // «Назад» закрывает панель «Другие модули» (см. ovOpen в popups.js)
-function openSheet(){renderSheet();$('#sheet').classList.add('open');$('#sheet-cover').hidden=false;ovOpen()}
-function closeSheet(pop){const was=$('#sheet').classList.contains('open');$('#sheet').classList.remove('open');$('#sheet-cover').hidden=true;if(was&&!pop)ovClosed()}
+let SHEET_T=0;
+function openSheet(){renderSheet();clearTimeout(SHEET_T);$('#sheet').classList.add('open');const c=$('#sheet-cover');c.classList.remove('out');c.hidden=false;ovOpen()}
+function closeSheet(pop){const was=$('#sheet').classList.contains('open');$('#sheet').classList.remove('open');const c=$('#sheet-cover');if(was&&!RMQ()){c.classList.add('out');clearTimeout(SHEET_T);SHEET_T=setTimeout(()=>{c.hidden=true;c.classList.remove('out')},T_EXIT)}else c.hidden=true;if(was&&!pop)ovClosed()}
 
 function renderPage(fresh){
   const m=curMod();const tabs=modTabs(m);const page=$('#page');const pane=$('#pane');
   const keep=fresh?0:pane.scrollTop;
   ACTIVE=[];closePop();
+  // Смена модуля или вкладки: содержимое проявляется за --t-base (плавность, 17.11.2026)
+  if(fresh){page.classList.remove('pg-in');void page.offsetWidth;page.classList.add('pg-in')}
   // Все способы добавления — пункты меню «+ Добавить» (на ПК и телефоне); btn:true — отдельная кнопка на ПК (сейчас не используется)
   const all=m.add?m.add().filter(Boolean):[];const btns=isMobile()?[]:all.filter(a=>a.btn),adds=isMobile()?all:all.filter(a=>!a.btn);
   page.innerHTML=`<div class="tabrow"><span class="tr-l"></span>
