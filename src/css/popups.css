@@ -103,9 +103,9 @@
 .kmlist td{padding:4px 2px}.kmlist .kin{width:120px}
 .kv-ed .form{margin-top:8px}
 .fe-note{align-items:center}
-.tipi{width:22px;height:22px;vertical-align:middle;margin-left:2px;color:var(--muted);position:relative}
+.tipi,.tipi-a{width:22px;height:22px;vertical-align:middle;margin-left:2px;color:var(--muted);position:relative}
 /* «?» маленький, но нажимается пальцем: область нажатия 44 px */
-.tipi::after{content:'';position:absolute;inset:-11px}
+.tipi::after,.tipi-a::after{content:'';position:absolute;inset:-11px}
 .tip-t{padding:6px 8px;font-size:13.5px;line-height:1.5;max-width:320px;color:var(--text)}
 .chk h3{display:flex;align-items:center;gap:10px}
 .chk-n{font-size:12.5px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}

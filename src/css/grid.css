@@ -80,6 +80,10 @@ table.gt{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:
 .scm .scm-l{overflow:hidden;text-overflow:ellipsis}
 .scm.none{color:var(--faint);font-weight:500;gap:4px}
 .sc-gray{--sc:var(--label);--scb:var(--btn);--scn:var(--gray-btn)}.sc-blue{--sc:var(--blue);--scb:var(--blue-bg);--scn:var(--blue-btn)}.sc-yellow{--sc:var(--yellow);--scb:var(--yellow-bg);--scn:var(--yellow-btn)}.sc-green{--sc:var(--green);--scb:var(--green-bg);--scn:var(--green-btn)}.sc-orange{--sc:var(--orange);--scb:var(--orange-bg);--scn:var(--orange-btn)}.sc-red{--sc:var(--red);--scb:var(--red-bg);--scn:var(--red-btn)}.sc-purple{--sc:var(--purple);--scb:var(--purple-bg);--scn:var(--purple-btn)}.sc-faint{--sc:var(--faint);--scb:var(--btn);--scn:var(--faint-btn)}
+.gt-m{gap:5px;padding:4px 10px}.gt-m .gt-n{min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:10.5px;line-height:16px;text-align:center}
+.gt-m.on{box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text)}
+/* В строке списка состояние — словом и цветом; номер шага и время смены — в карточке записи (17.11.2026, ТЗ п. 9) */
+.grid .scm>b{display:none}.grid .scm .scm-l{color:var(--sc)}.grid .scm-w small{display:none}
 .scm-w{display:inline-flex;flex-direction:column;gap:1px;max-width:100%;line-height:1.2;vertical-align:middle}.scm-w small{font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums;padding-left:1px}
 .scf-at{font-size:10.5px;color:var(--faint);font-weight:500;font-variant-numeric:tabular-nums;margin-top:1px}
 .scf-bk{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--orange);font-weight:600;margin-top:1px}.scf-bk .ic{width:11px;height:11px}

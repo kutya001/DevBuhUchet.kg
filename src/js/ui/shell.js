@@ -22,7 +22,7 @@ function renderSide(){
   h+=demoBox()+`</div>`;
   $('#side').innerHTML=h;
 }
-const PROTO_VER='v138 · 17.11.2026';
+const PROTO_VER='v139 · 17.11.2026';
 // В демо-режиме — только «Войти как» (без администратора платформы) и «Очистить рабочие данные»
 function demoBox(){if(DEMO.on)return `<div class="demo"><div class="row" style="gap:6px"><b>${LE('land.demo.box')}</b></div><label for="demo-user">Войти как:</label>${sel('demo-user',EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),S.me)}<div class="demo-db"><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button></div><span>${LE('land.demo.box.sub')}</span></div>`;
   return `<div class="demo"><div class="row" style="gap:6px"><b>Прототип ${PROTO_VER}</b></div><label>Данные:</label>${sel('demo-data-x',[['demo','Демо-данные'],['empty','Пустая организация']],DATA_MODE,'data-demo-data aria-label="Данные макета"')}<label for="demo-user">Войти как:</label>${sel('demo-user',[...EMP.filter(e=>e.active).map(e=>[e.id,`${e.short} — ${ROLES.find(r=>r.id===e.role).name}`]),['admin','Администратор платформы']],S.me)}<button type="button" class="linkbtn" data-demo-fail style="align-self:flex-start">Показать ошибку загрузки списка</button><label>Данные прототипа:</label><div class="demo-db"><button type="button" class="linkbtn" data-db="export">Экспорт TemDB.json</button><button type="button" class="linkbtn" data-db="load">Загрузить TemDB.json</button><button type="button" class="linkbtn" data-db="clear">Очистить рабочие данные</button><button type="button" class="linkbtn" data-db="ref">Экспорт refDB.json</button><button type="button" class="linkbtn" data-db="gked">Экспорт gkedDB.json</button></div><span>${DATA_MODE==='empty'?'Организация как сразу после регистрации.':'Демо-данные из demoDB.json.'} Все изменения сохраняются в этом браузере (TemDB). Файлы данных: ${DBSRC.demo.from}.</span></div>`}
@@ -59,7 +59,8 @@ function renderPage(fresh){
   const ab=$('#add-btn');if(ab)ab.onclick=()=>runAdd(ab);
   const fab=$('#fab');fab.hidden=!adds.length;fab.innerHTML=ic('plus');fab.onclick=()=>runAdd(fab);
   m.render($('#mbody'),S.tab,fresh);
-  {const sb=$('#stat-btn');const has=!!$('#mbody .plates');sb.hidden=!has;const k='stats.'+m.id;const off=()=>store.get(k,'off')==='off';const ap=()=>{page.classList.toggle('nostats',off());sb.classList.toggle('on',!off());sb.setAttribute('aria-pressed',String(!off()));sb.title=off()?'Показать статистику':'Скрыть статистику'};ap();sb.onclick=()=>{store.set(k,off()?'on':'off');ap();fitTabs();ckHit('stats')}}
+  plMob(m);
+  {const sb=$('#stat-btn');const has=!!$('#mbody .plates');sb.hidden=!has||isMobile();const k='stats.'+m.id;const off=()=>store.get(k,'off')==='off';const ap=()=>{page.classList.toggle('nostats',off());sb.classList.toggle('on',!off());sb.setAttribute('aria-pressed',String(!off()));sb.title=off()?'Показать статистику':'Скрыть статистику'};ap();sb.onclick=()=>{store.set(k,off()?'on':'off');ap();fitTabs();ckHit('stats')}}
   S.preset=null;
   fitTabs();
   pane.scrollTop=keep;ckVisit();
@@ -75,6 +76,12 @@ function modHelpPop(ti,m,adds){const v=typeof vidOfMod==='function'?vidOfMod(m.i
     <div class="mh-l"><button type="button" class="btn sm" data-mh="scr">${ic('play','sm')}Показать на экране</button>${v.length?`<button type="button" class="btn sm" data-mh="vid">${ic('film','sm')}Видео</button>`:''}<button type="button" class="btn sm" data-mh="kb">${ic('book','sm')}Вся инструкция</button></div>`,
     {cls:'pad mh-pop',mount(el){el.onclick=e=>{const b=e.target.closest('[data-mh],[data-mha]');if(!b)return;closePop();
       if(b.dataset.mha!=null)return acts[+b.dataset.mha].run();const k=b.dataset.mh;if(k==='scr')tourScreen();else if(k==='vid')vidOpen(v[0].id);else kbHelp()}}})}
+// Телефон: плашки модуля — одной строкой из трёх чисел; «Ещё N» раскрывает остальные (выбор запоминается на сеанс)
+const PL_ALL=new Set();
+function plMob(m){if(!isMobile())return;const pl=$('#mbody .plates:not(.static)');if(!pl)return;const n=pl.querySelectorAll('.plate').length;if(n<=4){pl.classList.add('pl-all');return}
+  const k=m.id+'.'+S.tab,on=()=>PL_ALL.has(k);pl.classList.toggle('pl-all',on());const b=document.createElement('button');b.type='button';b.className='linkbtn pl-more';
+  const paint=()=>{b.textContent=on()?'Свернуть':`Ещё ${n-3}`;b.setAttribute('aria-expanded',String(on()))};paint();pl.after(b);
+  b.onclick=()=>{on()?PL_ALL.delete(k):PL_ALL.add(k);pl.classList.toggle('pl-all',on());paint()}}
 function fitTabs(){const t=$('#tabs');if(!t)return;const ab=$('#add-btn');const ax=$$('.add-x');const over=()=>t.scrollWidth>t.clientWidth+2;t.classList.remove('compact','tight','tight2');if(ab)ab.classList.remove('slim');ax.forEach(x=>x.classList.remove('slim'));
   if(isMobile()){if(ab&&over())ab.classList.add('slim');if(over())t.classList.add('compact')}else{if(over())ax.forEach(x=>x.classList.add('slim'));if(over())t.classList.add('tight');if(over())t.classList.add('tight2')}
   // центрируем активную вкладку только по горизонтали: scrollIntoView прокрутил бы и страницу
