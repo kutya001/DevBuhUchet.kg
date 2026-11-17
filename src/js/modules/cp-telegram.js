@@ -302,9 +302,9 @@ function pgFeeTgDlg(c){const w=pgFeeTgWhy(c);if(w){toast(w,'lock',true);return}c
   const txt=tplFill('tgCpFeeRemind',{контрагент:c.name,месяц:f.ms.map(ymLabel).join(', ')||ymLabel(ym(TODAY)),сумма:som(c.feeDebt),срок:fmtD(f.due)});
   openModal({form:true,size:'mid',render:m=>({title:'Напомнить в Telegram',sub:`${esc(c.name)} · долг за обслуживание ${som(c.feeDebt)}`,
     body:`<div class="box flat"><h3>Получатели · ${to.length}</h3><div class="row" style="flex-wrap:wrap;gap:6px">${to.map(x=>`<span class="pill sm blue">${ic('tg')}${esc(x.name)}</span>`).join('')}</div>${off?`<span class="hint">Не получат: ${off} — выключили напоминания кнопкой «Не напоминать».</span>`:''}</div>
-      ${fld('Текст сообщения',`<textarea class="inp" id="ft-text" maxlength="1000" style="min-height:110px">${esc(txt)}</textarea>`,{full:true,id:'ft-text',hint:'Шаблон ведёт администратор платформы. Здесь текст можно поправить перед отправкой.'})}
+      ${fld('Текст сообщения',`<textarea class="inp" id="ft-text" maxlength="1000" style="min-height:110px">${esc(txt)}</textarea>`,{full:true,id:'ft-text',hint:'Текст можно поправить'})}
       <div class="box flat"><h3>Реквизиты для перевода — в конце сообщения</h3><div style="white-space:pre-wrap">${esc(pgRqText(c,fa))}</div><span class="hint">Под сообщением — кнопки «${esc(pgRqBtn(fa).t)}» и «${esc(tgBtnT('tgBtnCpPaid','Оплатил'))}».</span></div>
-      <div class="note">${ic('info')}<span>Напомнить в Telegram можно не чаще раза в сутки. Отправка записывается в историю контрагента и в журнал «Телеграм» с типом «${PG_TG_MSG}».</span></div>`,
+      <div class="note">${ic('info')}<span>Не чаще раза в сутки</span></div>`,
     foot:`<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="ft-go">${ic('send','sm')}Отправить</button>`,
     mount(el){$('#ft-go',el).onclick=()=>{const t=$('#ft-text',el).value.trim();if(!setErr(el,'ft-text',t?'':'Введите текст сообщения'))return;const w2=pgFeeTgWhy(c);if(w2){toast(w2,'lock',true);return}
       const r=pgFeeSend(c,t);m.close();refreshAll();toast(`Напоминание отправлено в Telegram: получателей — ${r.to.length}`,'tg');

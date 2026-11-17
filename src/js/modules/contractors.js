@@ -100,7 +100,7 @@ function cpKanban(){return {def:'resp',by:['resp','svc','regime','kind','form','
     confirmDlg({title:'Сменить ответственного?',text:`«${esc(c.name)}»: ${esc(empName(c.resp)||'без ответственного')} → ${esc(e.short)}. Новый ответственный получит незавершённые отчёты и открытые задачи контрагента.`,ok:'Передать',run:()=>{transferCp(c,e.id);refreshAll();toast('Ответственный изменён','user')}})}}}
 function respDlg(cs,done){
   openModal({form:true,render:()=>({title:cs.length>1?`Ответственный для ${cs.length} контрагентов`:'Сменить ответственного',sub:cs.length>1?'':esc(cs[0].name),
-    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,e.short]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Новый ответственный получит все незавершённые отчёты (ещё не сданы или налог не оплачен) и открытые задачи этих контрагентов, а также остаток денег на их налоги. Завершённые отчёты остаются за тем, кто их сдал.</span></div>`,
+    body:`${fld('Ответственный бухгалтер',sel('rs-e',EMP.filter(e=>e.active).map(e=>[e.id,e.short]),cs.length===1?cs[0].resp:''),{req:true,id:'rs-e'})}<div class="note">${ic('info')}<span>Перейдут незавершённые отчёты, открытые задачи и остаток денег на налоги. Завершённое останется у прежнего.</span></div>`,
     foot:'<button class="btn ghost" data-close>Отмена</button><button class="btn cta" id="rs-ok">Назначить</button>',
     mount(el,m){$('#rs-ok',el).onclick=()=>{const to=val(el,'rs-e');cs.forEach(c=>transferCp(c,to));m.close();done&&done();refreshAll();toast(cs.length>1?`Ответственный назначен: ${cs.length} контрагентов`:'Ответственный изменён','user')}}})});
 }

@@ -75,12 +75,15 @@ function openModal(o){
   cover.addEventListener('pointerdown',e=>{if(e.target===cover&&!o.sticky)m.tryClose()});
   m.draw=()=>{
     const keep=m.el.querySelector('.mb')?m.el.querySelector('.mb').scrollTop:0;
+    // Раскрытые блоки («Подробности», «История», «Дополнительно», «Настройки оплаты») остаются раскрытыми после перерисовки окна (17.11.2026)
+    const dk=d=>(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40),opn=new Set([...m.el.querySelectorAll('.mb details[open]')].map(dk));
     const r=o.render(m);
     m.el.innerHTML=`<div class="grabber"></div><div class="mh"><div style="flex:1;min-width:0"><h2>${r.title}</h2>${r.sub?`<div class="sub">${r.sub}</div>`:''}</div>${r.head||''}<div class="mh-btns">${m.canMax?`<button class="icon-btn" data-max aria-pressed="${!!m.max}" aria-label="${m.max?'Свернуть окно':'На весь экран'}" title="${m.max?'Свернуть окно':'На весь экран'}${isMobile()?'':' (двойной клик по заголовку)'}">${ic(m.max?'minimize':'maximize')}</button>`:''}<button class="icon-btn" data-x aria-label="Закрыть">${ic('x')}</button></div></div><div class="mb">${r.body}</div>${r.foot?`<div class="mf">${r.foot}</div>`:''}`;
     m.el.querySelector('[data-x]').onclick=()=>m.tryClose();
     if(m.canMax){m.el.querySelector('[data-max]').onclick=()=>m.setMax(!m.max,true);m.el.querySelector('.mh').ondblclick=e=>{if(!e.target.closest('button,a,input,select'))m.setMax(!m.max,true)}}
     $$('[data-close]',m.el).forEach(b=>b.onclick=()=>m.tryClose());
     r.mount&&r.mount(m.el,m);
+    if(opn.size)m.el.querySelectorAll('.mb details:not([open])').forEach(d=>{if(opn.has(dk(d))){d.classList.add('no-anim');d.open=true}});
     m.el.querySelectorAll('.scf').forEach(f=>{if(f.scrollWidth<=f.clientWidth)return;const g=f.querySelector('.scf-s.go')||f.querySelector('.scf-s.c');if(g)f.scrollLeft=Math.max(0,g.offsetLeft+g.offsetWidth-f.clientWidth+12)});
     m.el.querySelector('.mb').scrollTop=keep;
   };
