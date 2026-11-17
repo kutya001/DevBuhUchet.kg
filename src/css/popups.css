@@ -186,3 +186,34 @@
 /* Причина, почему переключатель области в форме роли неактивен — под переключателем (ТЗ «Сотрудники → Роли», 27.10.2026) */
 .pg-scw{flex-wrap:wrap}.pg-scw .pg-why{flex-basis:100%;color:var(--orange);font-size:12px}
 .pg-sc.seg button:disabled{cursor:not-allowed;opacity:.6}
+/* ═══ Строка состояния карточки и свёрнутые блоки (решение заказчика 17.11.2026, «Меньше текста, понятнее, плавнее», ТЗ п. 8) ═══
+   Под шапкой одна строка «шкала коротко · срок · ответственный»; полная шкала — по нажатию на короткую.
+   «Подробности», «История» и «Дополнительно» в формах — свёрнуты, раскрываются плавно */
+.stl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:0 0 12px;margin-bottom:12px;border-bottom:1px solid var(--border);font-size:13.5px}
+.stl-sc{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;background:none;border:1px solid var(--border);border-radius:999px;padding:4px 8px 4px 12px;color:inherit;font:inherit;min-height:32px}
+button.stl-sc{cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast)}
+button.stl-sc:hover{background:var(--hover);border-color:var(--border-strong)}
+.stl-ch{display:inline-flex;color:var(--muted);transition:transform var(--t-base) var(--ease-out)}
+.stl-sc[aria-expanded="true"] .stl-ch{transform:rotate(180deg)}
+.stl-p{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stl-p>.ic,.stl-p>svg{color:var(--muted)}
+.stl-p small{font-size:12px}
+.stl-p .linkbtn{font-size:12.5px}
+.stl-full{margin:-2px 0 14px;animation:slideUp var(--t-base) var(--ease-out)}
+.sum-no{gap:10px;margin:0 0 12px}
+details.fmore,details.rc-det{grid-column:1/-1}
+details.fmore>summary,details.rc-det>summary,details.rc-hist>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;min-height:36px;-webkit-tap-highlight-color:transparent}
+details.fmore>summary::-webkit-details-marker,details.rc-det>summary::-webkit-details-marker,details.rc-hist>summary::-webkit-details-marker{display:none}
+details.fmore>summary::before,details.rc-det>summary::before,details.rc-hist>summary::before{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform var(--t-base) var(--ease-out);margin:0 3px}
+details[open].fmore>summary::before,details[open].rc-det>summary::before,details[open].rc-hist>summary::before{transform:rotate(45deg)}
+details.fmore>summary:hover,details.rc-det>summary:hover,details.rc-hist>summary:hover{color:var(--text)}
+details[open].fmore>.form,details[open].rc-det>.kv,details[open].rc-hist>summary~*{animation:slideUp var(--t-base) var(--ease-out)}
+details.fmore>.form{margin-top:8px}
+details.rc-det{margin-top:8px;border-top:1px solid var(--border);padding-top:4px}
+details.rc-hist>summary h3{margin:0;font:inherit;color:inherit}
+details.rc-hist h4{font-size:12.5px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.btn.danger-o{color:var(--red)}
+@media (max-width:767px){.stl{gap:8px 14px}.stl-sc{min-height:40px}details.fmore>summary,details.rc-det>summary,details.rc-hist>summary{min-height:44px}}
+@media (prefers-reduced-motion:reduce){.stl-full,details[open].fmore>.form,details[open].rc-det>.kv,details[open].rc-hist>summary~*{animation:none}.stl-ch,details>summary::before{transition:none}}
+/* «⋯ Действия» в нижнем ряду карточки: на телефоне — только значок, чтобы ряд оставался один */
+@media (max-width:767px){.mf .act-more .bl{display:none}.mf .act-more{min-width:44px;padding-inline:10px}}

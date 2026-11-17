@@ -150,8 +150,8 @@ function reportActions(r){
   if(r.superseded){if(feat('files')&&can('filesUpload'))it.push({label:'Прикрепить файл',icon:'clip',run:()=>fileDlg(r)});if(st==='Сдан')it.push({sep:true},repBackItem(r,st));return it}
   if(OPEN.has(st)){const w=subPayWhy(r);it.push({label:'Отметить сданным',icon:'send',disabled:!cs||!!w,reason:!cs?no:w,run:()=>submitDlg([r])})}
   if(st==='К сдаче')it.push({label:'Взять в работу',icon:'clock',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'В работе')});
-  if(repWait(r)){const why=repConfWhy(r);it.push({label:'Подтвердить',icon:'check',sub:'Сдача проверена старшим бухгалтером',disabled:!!why,reason:why,run:()=>repConfDlg([r])},{label:'На исправление',icon:'refresh',sub:'Вернуть ответственному с причиной',disabled:!!why,reason:why,run:()=>repFixDlg(r)})}
-  if(st==='Сдан')it.push({label:'Требует исправления',icon:'alert',sub:'Орган не принял отчёт',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'Требует исправления')});
+  if(repWait(r)){const why=repConfWhy(r);it.push({label:'Подтвердить',icon:'check',sub:'Сдача проверена старшим бухгалтером',disabled:!!why,reason:why,run:()=>repConfDlg([r])},{label:'На исправление',icon:'refresh',danger:true,sub:'Вернуть ответственному с причиной',disabled:!!why,reason:why,run:()=>repFixDlg(r)})}
+  if(st==='Сдан')it.push({label:'Орган не принял',icon:'alert',sub:'Статус «Требует исправления»',disabled:!cs,reason:!cs&&no,run:()=>setStatus(r,'Требует исправления')});
   if(OPEN.has(r.status)&&!t.payOnly)it.push({label:'Изменить срок',icon:'calendar',disabled:!can('repDue'),reason:'Нужно право «Изменять срок отчёта»',run:()=>dueEditDlg(r)});
   if(t.sum&&r.status!=='Не требуется')it.push({label:'Указать сумму',icon:'coins',disabled:!can('changeSum'),reason:!can('changeSum')&&'Нет права менять сумму',run:()=>sumDlg(r)});
   if(feat('taxpay')&&t.sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется'){const ok=r.money&&r.money.s==='ok';
