@@ -75,12 +75,12 @@ function pgTgBoxClick(c,x0,redraw){const[k,id]=x0.dataset.pgTg.split(':');
   else run()}
 
 // Страница контрагента, раздел «Telegram»
+// В «Связи» страницы (17.11.2026, «Меньше текста», п. 6): одна строка, состояние, кнопка и что сделать в Telegram; срок ссылки и как отключиться — под «?»
 function pgTgPub(c){const on=pgTgN(c,'on'),wait=pgTgN(c,'wait'),full=pgTgBusy(c)>=PG_TG_MAX;
-  return pubSec('tg','tg','Telegram',on?`подключено ${on}`:wait?'ждёт подтверждения':'',
-    `${PGT('secs','Telegram')?'':'<p class="pub-tgp">Получайте в Telegram суммы налогов к оплате и напоминания.</p>'}
+  return `<div class="pub-sub" data-sec="tg"><h4>Telegram</h4><span>${esc(PGT('secs','Telegram')||'Суммы налогов и напоминания приходят в Telegram')}</span>
     ${on||wait?`<div class="pub-tgst">${on?`<span class="pill green sm">${ic('check')}подключено: ${on}</span>`:''}${wait?`<span class="pill yellow sm">${ic('hourglass')}ждёт подтверждения бухгалтера: ${wait}</span>`:''}</div>`:''}
-    <div class="row"><button type="button" class="btn cta ${full?'dis':''}" data-pub-tgon ${full?`aria-disabled="true" data-why="Подключено или ждёт подтверждения ${PG_TG_MAX} Telegram — больше нельзя. Попросите вашего бухгалтера отключить лишний"`:''}>${ic('tg','sm')}Подключить Telegram</button></div>
-    <span class="hint">Кнопка откроет бота Buhuchet.kg в Telegram — нажмите в нём «Старт». Подключение подтверждает ваш бухгалтер. Ссылка действует ${PG_TG_TTL_H} часа и только один раз. Отключиться можно в любой момент командой «Отключить» в боте.</span>`)}
+    <div class="row"><button type="button" class="btn ${full?'dis':''}" data-pub-tgon ${full?`aria-disabled="true" data-why="Подключено или ждёт подтверждения ${PG_TG_MAX} Telegram — больше нельзя. Попросите вашего бухгалтера отключить лишний"`:''}>${ic('tg','sm')}Подключить Telegram</button></div>
+    <span class="hint pub-tgh">В Telegram нажмите «Старт». Бухгалтер подтвердит.${tipI(`Ссылка действует ${PG_TG_TTL_H} часа и только один раз. Отключиться можно в любой момент командой «Отключить» в боте.`)}</span></div>`}
 // Прототип: переписка клиента с ботом и сообщение бухгалтеру. В продукте кнопка открывает Telegram по одноразовой ссылке
 function pgTgDlg(c){const A=[{day:'Сегодня'}],B=[{day:'Сегодня'}],to=pgTgStaff(c),CA={who:'Чат клиента',list:A},CB={who:to?`Чат бухгалтера · ${to.short||to.fio}`:'Чат бухгалтера',list:B},told=new Set();let cur=null;
   const n=pgTgs(c).length+1,def=n===1&&c.contact?c.contact.split(' ').slice(0,2).join(' '):'Клиент '+n;
