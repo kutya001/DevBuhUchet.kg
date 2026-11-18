@@ -19,13 +19,14 @@ function openCp(c,tab){
        Договор, настройки оплаты, регистрационные данные, таблица ставок и страница клиента — свёрнуты. Баланс целиком — на вкладке «Деньги» */
     if(st.tab==='main'){const ta=c.assign.filter(a=>!a.to);const has=k=>tabs.some(t=>t[0]===k);const ed=can('createCp')&&!c.archived;
       const owe=REPORTS.filter(r=>r.cp===c.id&&!r.superseded&&tR(r).sum&&r.sum>0&&r.paid<r.sum&&r.status!=='Не требуется').reduce((a,r)=>a+r.sum-r.paid,0);
-      const hot=[c.overdue&&has('reports')?[`reports`,`Просрочено отчётов: ${c.overdue}`,'red']:null,owe>0&&has('money')?['money',`Осталось оплатить ${som(owe)}`,owe>c.avail?'orange':'']:null,
-        c.avail>0&&has('money')?['money',`На счёте ${som(c.avail)}`,'']:null,c.feeDebt>0&&has('fee')?['fee',`Долг за обслуживание ${som(c.feeDebt)}`,'red']:null].filter(Boolean);
+      // Что горит — маленькими карточками, как в окне сотрудника (решение заказчика 18.11.2026); нажатие открывает вкладку
+      const hot=[c.overdue&&has('reports')?['reports','Просрочено отчётов',c.overdue,'','red','alert']:null,owe>0&&has('money')?['money','Осталось оплатить',fmtM(owe,false),'сом',owe>c.avail?'orange':'yellow','file']:null,
+        c.avail>0&&has('money')?['money','На счёте',fmtM(c.avail,false),'сом','blue','wallet']:null,c.feeDebt>0&&has('fee')?['fee','Долг за обслуживание',fmtM(c.feeDebt,false),'сом','red','coins']:null].filter(Boolean);
       b=`${stLine('c'+c.id,`${scaleMini0('svc',c.status,c)}${c.kind==='oneoff'?' <span class="tag">разовое</span>':''}`,[
           c.phone?`${ic('phone','sm')}${phoneHtml(c.phone)}`:'',
           `${ic('user','sm')}<span>${c.resp?esc(EM[c.resp].short):'<span class="pill orange">'+ic('alert')+'не назначен</span>'}</span>${can('assign')||can('createCp')?`<button type="button" class="linkbtn" id="cp-resp">сменить</button>`:''}`],
         `${scaleFull('svc',c.status,c.id)}<div class="hint">Периоды обслуживания: ${esc(periodsText(c))}</div>${statusHistHtml('svc',c)?`<details class="sh-d"><summary>${ic('history','sm')}История статусов<span class="grow"></span>${ic('down','sm')}</summary>${statusHistHtml('svc',c)}</details>`:''}`)}
-      ${hot.length?`<div class="cp-hot">${hot.map(([k,l,cl])=>`<button type="button" class="cp-hot-i ${cl}" data-cgo="${k}"><span>${esc(l)}</span>${ic('right','sm')}</button>`).join('')}</div>`:''}
+      ${hot.length?`<div class="plates cp-hot">${hot.map(([k,l,v,u,cl,i])=>`<button type="button" class="plate" data-cgo="${k}" title="Открыть вкладку"><span class="pl-top"><span class="pl-dot ${cl}">${ic(i)}</span>${esc(l)}</span><span class="pl-val ${cl==='red'?'red':''}">${v}${u?`<small>${u}</small>`:''}</span></button>`).join('')}</div>`:''}
       ${c.kind!=='oneoff'||c.gked?gkNote(c):''}<div class="box"><div class="kv">
       ${gkKv(c)}<div><span class="k">Режим налогообложения</span><span class="v">${c.regime?esc(REGIME_FULL[c.regime]||c.regime)+(c.regime2?` <span class="faint">+ дополнительный:</span> ${esc(REGIME_FULL[c.regime2]||c.regime2)}`:''):`<span class="pill yellow">${ic('alert')}не указан</span> ${tipI('Доступны все виды отчётов, назначение проверяется вручную')}`}</span></div>
       <div><span class="k">Льготы и особые статусы</span><span class="v">${benLine(c)} <button class="linkbtn" id="cp-ben" style="font-size:12px">${ed?'выбрать':'описания'}</button>${benSoon(c).map(b=>`<div class="note warn" style="margin-top:6px">${ic('alert')}<span>Льгота «${esc(b.name)}» до ${fmtD(b.until)}: проверьте ставки и отчёты</span></div>`).join('')}</span></div>
