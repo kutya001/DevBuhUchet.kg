@@ -253,7 +253,9 @@ function landGrow(el){const bg=$('#lp-bgsp',el),g=bg&&$('.lp-bgsp-g',bg),lg=$('.
   if(!lg||page.scrollTop>40){bg.classList.remove('pre');return}
   const a=lg.getBoundingClientRect(),b=g.getBoundingClientRect();if(!a.width||!b.width){bg.classList.remove('pre');return}
   bg.classList.add('grow0');bg.classList.remove('pre');g.style.transform=`translate(${(a.left-b.left).toFixed(2)}px,${(a.top-b.top).toFixed(2)}px) scale(${(a.width/b.width).toFixed(5)})`;void g.getBoundingClientRect();
-  requestAnimationFrame(()=>{bg.classList.remove('grow0');bg.classList.add('growing');g.style.transform='translate(0px,0px) scale(1)';clearTimeout(LAND.gt);LAND.gt=setTimeout(()=>bg.classList.remove('growing'),2000)})}
+  requestAnimationFrame(()=>{bg.classList.remove('grow0');bg.classList.add('growing','over');g.style.transform='translate(0px,0px) scale(1)';clearTimeout(LAND.gt);clearTimeout(LAND.gt2);
+    // поверх шапки спираль только в начале, пока выходит из знака; дальше уходит под текст первого экрана и бледнеет
+    LAND.gt2=setTimeout(()=>bg.classList.remove('over'),380);LAND.gt=setTimeout(()=>bg.classList.remove('growing'),2000)})}
 function landTick(el){const page=$('#land-page',el);if(!page)return;const st=page.scrollTop,vh=page.clientHeight,H=page.scrollHeight,anim=page.classList.contains('lp-anim');
   const B=LAND.B||(LAND.B={a:0,to:0});B.to=anim?Math.min(st,30000)*.045:0;if(!anim){B.a=B.to;landBgSet(el)}else if(!LAND.lraf)LAND.lraf=requestAnimationFrame(t=>landBgRun(el,t));
   const ring=$('#lp-bal .b1');if(ring){const q=H>vh?Math.min(1,st/(H-vh)):1;ring.style.strokeDashoffset=q>.002?(1-q).toFixed(4):'1.1'};
@@ -273,7 +275,7 @@ function landFx(el){landFxStop();const page=$('#land-page',el);if(!page)return;c
   const go=()=>{if(!LAND.open)return;if(anim){landBgCalc(el);landGrow(el);LAND.rv=new IntersectionObserver(en=>en.forEach(x=>{const t=x.target;if(t.classList.contains('lp-live'))t.classList.toggle('vis',x.isIntersecting);
       if(x.isIntersecting&&!t.classList.contains('in')){t.classList.add('in');onIn(t);if(!t.classList.contains('lp-live'))LAND.rv.unobserve(t)}}),{root:page,rootMargin:'0px 0px -12% 0px',threshold:0});
     $$('.rv,.lp-live,[data-lp-count]',page).forEach(x=>LAND.rv.observe(x))}
-  else{$$('.rv,.lp-live',page).forEach(x=>x.classList.add('in','vis'));$$('.lp-fc',page).forEach(x=>x.classList.add('now'))}};
+  else{const bs=$('#lp-bgsp',el);if(bs)bs.classList.remove('pre');landBgCalc(el);$$('.rv,.lp-live',page).forEach(x=>x.classList.add('in','vis'));$$('.lp-fc',page).forEach(x=>x.classList.add('now'))}};
   if(LAND.intro&&anim)LAND.afterIntro=go;else go();
   // «Возможности»: значок оживает под мышью, а пока блок на экране — у плиток по очереди
   const tiles=$$('.lp-fcd',page),feat=$('#lp-features',page);let fi=0;

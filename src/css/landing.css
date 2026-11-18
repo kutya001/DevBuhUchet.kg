@@ -209,9 +209,9 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
 :root[data-theme="dark"] .lp-bgsp-g{opacity:.13}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lp-bgsp-g{opacity:.13}}
 .lp-bgsp.pre .lp-bgsp-g{opacity:0}
-.lp-bgsp.grow0,.lp-bgsp.growing{z-index:6;overflow:visible}
+.lp-bgsp.growing{overflow:visible}.lp-bgsp.grow0,.lp-bgsp.over{z-index:6}
 .lp-bgsp.grow0 .lp-bgsp-g{opacity:1;transition:none}
-.lp-bgsp.growing .lp-bgsp-g{transition:transform 1.8s cubic-bezier(.45,0,.15,1),opacity 1.8s cubic-bezier(.6,0,.3,1)}
+.lp-bgsp.growing .lp-bgsp-g{transition:transform 1.8s cubic-bezier(.45,0,.15,1),opacity 1.1s cubic-bezier(.3,0,.2,1)}
 /* Весы в углу: качаются от прокрутки, кольцо — сколько прочитано, нажатие — наверх */
 .lp-bal{position:absolute;right:22px;bottom:22px;z-index:7;width:64px;height:64px;padding:0;border:0;border-radius:50%;background:var(--raised);box-shadow:var(--shadow-l);cursor:pointer}
 .lp-bal[hidden]{display:none}
