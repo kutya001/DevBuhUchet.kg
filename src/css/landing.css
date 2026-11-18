@@ -200,29 +200,18 @@ body.land-on .cover{z-index:102}body.land-on .pop{z-index:103}body.land-on .toas
 .lp-intro.fly .lp-intro-w,.lp-intro.fly .lp-intro-ln{opacity:0}
 .lp-intro-lg.gone{opacity:0;transition:transform .85s cubic-bezier(.65,0,.25,1),opacity .6s ease .2s}
 .bu-intro-tg{opacity:0!important}
-/* Река: спираль логотипа на фоне первого экрана и широкая вода через всю страницу — за содержимым блоков, поверх их фона (18.11.2026) */
-.lp-path{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
-.land-page main .lp-wrap{position:relative;z-index:1}
-.lp-p0,.lp-p1,.lp-p2,.lp-p3,.lp-sp-c{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.lp-p0{stroke:var(--b-blue);stroke-opacity:.05}
-.lp-p1{stroke:var(--b-blue);stroke-opacity:.15}
-.lp-p2{stroke:var(--b-blue);stroke-opacity:.13}
-.lp-p3,.lp-sp-c{stroke:hsl(200 90% 97%);stroke-opacity:.75;stroke-dasharray:14 30}
-.lp-sp-f{fill:var(--b-blue);fill-opacity:.2;transition:fill-opacity 1.8s ease}
-.lp-rsp{transform-box:view-box;transform-origin:0 0}
-.lp-p0,.lp-rw,.lp-knots,.lp-psun{transition:opacity .7s ease}.lp-path.growing :is(.lp-p0,.lp-rw,.lp-knots,.lp-psun){opacity:0;transition:none}
-.lp-rsp.grow{transition:transform 1.8s cubic-bezier(.3,0,.12,1)}
-.lp-rsp.small .lp-sp-f{fill-opacity:.95}.lp-rsp.small .lp-sp-c{opacity:0}
-.lp-anim .lp-p3,.lp-anim .lp-sp-c{animation:lp-flow 1.6s linear infinite}
-@keyframes lp-flow{to{stroke-dashoffset:-44}}
-:root[data-theme="dark"] .lp-p1{stroke-opacity:.24}:root[data-theme="dark"] .lp-p2{stroke-opacity:.2}:root[data-theme="dark"] .lp-sp-f{fill-opacity:.3}:root[data-theme="dark"] .lp-p3,:root[data-theme="dark"] .lp-sp-c{stroke:hsl(200 80% 78%);stroke-opacity:.5}:root[data-theme="dark"] .lp-p0{stroke-opacity:.07}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lp-p1{stroke-opacity:.24}:root:not([data-theme="light"]) .lp-p2{stroke-opacity:.2}:root:not([data-theme="light"]) .lp-sp-f{fill-opacity:.3}:root:not([data-theme="light"]) .lp-p3,:root:not([data-theme="light"]) .lp-sp-c{stroke:hsl(200 80% 78%);stroke-opacity:.5}:root:not([data-theme="light"]) .lp-p0{stroke-opacity:.07}}
-.lp-knots circle{fill:var(--pane);stroke:var(--b-blue);stroke-opacity:.5;stroke-width:1.5;transition:fill .5s,stroke .5s}
-.lp-knots circle.on{fill:var(--b-yellow);stroke:var(--b-yellow);stroke-opacity:1}
-.lp-psun .g{fill:hsl(43 83% 57% / .28)}.lp-psun .c{fill:var(--b-yellow)}.lp-psun .r{fill:none;stroke:var(--b-yellow);stroke-width:2;stroke-linecap:round}
-.lp-anim .lp-psun .r{animation:lp-spin 8s linear infinite}
-.lp-anim .lp-psun .g{transform-box:fill-box;transform-origin:50% 50%;animation:lp-pulse 1.6s ease-in-out infinite alternate}
-.land-page:not(.lp-anim) .lp-psun{display:none}
+/* Спираль логотипа на фоне (18.11.2026): та же, что в знаке; выходит из знака в шапке, при прокрутке поворачивается. Поверх фона блоков, под их содержимым */
+.lp-bgsp{position:absolute;left:0;right:0;z-index:0;overflow:hidden;pointer-events:none}
+.land-page main .lp-wrap,.land-page .lp-foot .lp-wrap{position:relative;z-index:1}
+.lp-bgsp-g{position:absolute;transform-origin:0 0;opacity:.085}
+.lp-bgsp-s{display:block;width:100%;height:auto;overflow:visible;transform-origin:37.6% 54.8%;will-change:transform}
+.lp-bgsp .lg-sp{fill:var(--b-blue)}
+:root[data-theme="dark"] .lp-bgsp-g{opacity:.13}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lp-bgsp-g{opacity:.13}}
+.lp-bgsp.pre .lp-bgsp-g{opacity:0}
+.lp-bgsp.grow0,.lp-bgsp.growing{z-index:6;overflow:visible}
+.lp-bgsp.grow0 .lp-bgsp-g{opacity:1;transition:none}
+.lp-bgsp.growing .lp-bgsp-g{transition:transform 1.8s cubic-bezier(.45,0,.15,1),opacity 1.8s cubic-bezier(.6,0,.3,1)}
 /* Весы в углу: качаются от прокрутки, кольцо — сколько прочитано, нажатие — наверх */
 .lp-bal{position:absolute;right:22px;bottom:22px;z-index:7;width:64px;height:64px;padding:0;border:0;border-radius:50%;background:var(--raised);box-shadow:var(--shadow-l);cursor:pointer}
 .lp-bal[hidden]{display:none}
