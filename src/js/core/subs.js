@@ -92,10 +92,10 @@ const subNextId=()=>'sp'+(SUB_PAYS.reduce((a,x)=>Math.max(a,+String(x.id).slice(
 const subTpl=(k,v)=>(TPL[k]||'').replace(/\{([^{}]+)\}/g,(m,x)=>v[x]??m);
 // Сообщение владельцам организации: Telegram (журнал бота) и колокольчик — у своей организации; open — экран «Подписка» (поток И)
 function subTellOwners(orgId,tplKey,kind,vars,key){const txt=subTpl(tplKey,vars),own=subOwners(orgId),name=subOrgName(orgId);
-  own.forEach(u=>{if(typeof tgSvc==='function')tgSvc(tgOf(u),kind,{org:name});if(typeof bellPut==='function'&&EMP.includes(u))bellPut(u.id,{kind:'other',ev:'sub',open:{k:'mod',id:'org',tab:'sub'},text:txt,key:key||bellOnce('sub:'+orgId)})});return txt}
+  own.forEach(u=>{if(typeof tgSvc==='function')tgSvc(tgOf(u),kind,{org:name});if(typeof bellPut==='function'&&EMP.includes(u))bellPut(u.id,{kind:'other',ev:'sub',open:{k:'sub',id:orgId},text:txt,key:key||bellOnce('sub:'+orgId)})});return txt}
 // Сообщение всем администраторам платформы (новый чек на проверку и повтор каждый день в 09:00, блок 6, пункт 3)
-function subTellAdmins(tplKey,kind,vars,key){const txt=subTpl(tplKey,vars);if(typeof tgSvc==='function')tgSvc({id:'admin',fio:'Администратор платформы',login:'admin',tg:'@buhuchet_admin'},kind,{org:'Платформа'});
-  if(typeof bellPut==='function')bellPut('admin',{kind:'other',ev:'subCheck',open:{k:'mod',id:'orgs',tab:'subs'},text:txt,key:key||bellOnce('subCheck')});return txt}
+function subTellAdmins(orgId,tplKey,kind,vars,key){const txt=subTpl(tplKey,vars);if(typeof tgSvc==='function')tgSvc({id:'admin',fio:'Администратор платформы',login:'admin',tg:'@buhuchet_admin'},kind,{org:'Платформа'});
+  if(typeof bellPut==='function')bellPut('admin',{kind:'other',ev:'subCheck',open:{k:'sub_check',id:orgId},text:txt,key:key||bellOnce('subCheck')});return txt}
 // Заявка владельца с чеком (блок 5, пункт 3): вид, пакет, память и сумма уходят из окна оплаты, статус «Ждёт подтверждения».
 // Доступ открывается сразу, кроме нового чека после отклонения (блок 4, пункт 6). Одна непроверенная заявка за раз (блок 5, пункт 5).
 // x: {what, kind, pack, extraGb, from, file:{name,size,type}}; возвращает оплату или null, если уже есть непроверенная
@@ -103,7 +103,7 @@ function subPaySend(orgId,x){orgId=orgId||'o1';if(subWait(orgId))return null;con
   const p={id:subNextId(),org:orgId,at:nowStamp(),by:S.me,what:x.what||'renew',kind:c.kind,months:c.months,pack:c.pack,extraGb:c.extraGb,from:x.from||'now',sum:c.total,
     lines:c.lines.map(l=>({label:l.label,sum:l.sum})),file:x.file||null,status:'wait',open:!(last&&last.status==='rej'),reason:'',chkBy:'',chkAt:'',paidTo:''};
   SUB_PAYS.push(p);const w=SUB_WHAT[p.what].toLowerCase();log('sub',orgId,`Чек отправлен на проверку: ${w}, ${som(p.sum)}${p.file?`, файл «${p.file.name}»`:''}`);
-  subTellAdmins('tgSubCheckNew','Новый чек на проверку',{организация:subOrgName(orgId),что:w,сумма:som(p.sum)},'subCheck:'+p.id);dbSoon();return p}
+  subTellAdmins(orgId,'tgSubCheckNew','Новый чек на проверку',{организация:subOrgName(orgId),что:w,сумма:som(p.sum)},'subCheck:'+p.id);dbSoon();return p}
 // Замена файла чека до проверки (блок 5, пункт 5)
 function subPayFile(payId,file){const p=SUB_PAYS.find(x=>x.id===payId);if(!p||p.status!=='wait')return false;const was=p.file&&p.file.name;p.file=file;
   log('sub',p.org,`Файл чека заменён${was?`: было «${was}»`:''}, стало «${file.name}»`);dbSoon();return true}

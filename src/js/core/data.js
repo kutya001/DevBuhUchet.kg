@@ -45,12 +45,14 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
   if(db.meta.file==='TemDB.json'&&db.bell==null)db.bell=[];
   // Подписки организаций (доработки 20.11.2026): у данных, сохранённых раньше, — подписки и оплаты из demoDB.json (в демо-режиме) или бесплатный период
   // своей организации (пустой шаблон); даты подписок и оплат демо-данных сдвигаются от дня выгрузки (20.11.2026) к сегодняшнему, чтобы демо не истекало
-  if(db.meta.file==='TemDB.json'&&!db.meta.subs1){db.meta.subs1=1;const dm=db.meta.mode!=='empty',src=dm?DBSRC.demo.db:DBSRC.empty.db;
-    if(db.subPays==null)db.subPays=structuredClone(src.subPays||[]);if(db.organization&&!db.organization.sub&&src.organization&&src.organization.sub)db.organization.sub=structuredClone(src.organization.sub);
-    if(dm&&Array.isArray(db.platformOrgs))db.platformOrgs.forEach(o=>{const f=(src.platformOrgs||[]).find(x=>x.id===o.id);if(f&&f.sub&&!o.sub)o.sub=structuredClone(f.sub)});
+  // v152: оплаты, не попавшие в сохранение v151, возвращаются из того же источника; сдвигается только то, что подставлено сейчас
+  if(db.meta.file==='TemDB.json'&&(!db.meta.subs1||db.subPays==null)){const all=!db.meta.subs1;db.meta.subs1=1;const dm=db.meta.mode!=='empty',src=dm?DBSRC.demo.db:DBSRC.empty.db,put=[];
+    const fillP=db.subPays==null;if(fillP)db.subPays=structuredClone(src.subPays||[]);
+    if(db.organization&&!db.organization.sub&&src.organization&&src.organization.sub){db.organization.sub=structuredClone(src.organization.sub);put.push(db.organization)}
+    if(dm&&Array.isArray(db.platformOrgs))db.platformOrgs.forEach(o=>{const f=(src.platformOrgs||[]).find(x=>x.id===o.id);if(f&&f.sub&&!o.sub){o.sub=structuredClone(f.sub);put.push(o)}});
     const k=Math.round((Date.parse(TODAY)-Date.parse('2026-11-20'))/864e5),sh=v=>v?new Date(Date.parse(v.slice(0,10))+k*864e5).toISOString().slice(0,10)+v.slice(10):v;
-    if(k){[db.organization,...(db.platformOrgs||[])].forEach(o=>{const s=o&&o.sub;if(!s)return;s.paidTo=sh(s.paidTo);if(s.next)s.next.from=sh(s.next.from)});
-      db.subPays.forEach(x=>['at','chkAt','paidTo'].forEach(f=>{if(x[f])x[f]=sh(x[f])}))}}
+    if(k){(all?[db.organization,...(db.platformOrgs||[])]:put).forEach(o=>{const s=o&&o.sub;if(!s)return;s.paidTo=sh(s.paidTo);if(s.next)s.next.from=sh(s.next.from)});
+      if(all||fillP)db.subPays.forEach(x=>['at','chkAt','paidTo'].forEach(f=>{if(x[f])x[f]=sh(x[f])}))}}
   DB_ORG_KEYS.forEach(k=>{if(db[k]==null){miss.push(DB_T[k]||k);db[k]=structuredClone(e[k]!=null?e[k]:DB_OBJ.has(k)?{}:[])}});
   const hadRef=!!db.ref;db.ref=db.ref||{};if(hadRef&&db.ref.videos==null&&!db.meta.v79)db.ref.videos=structuredClone(r.videos||[]);
   if(hadRef)['subKinds','subPrices'].forEach(k=>{if(db.ref[k]==null)db.ref[k]=structuredClone(r[k]||(k==='subPrices'?{}:[]))});
