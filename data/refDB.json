@@ -36181,6 +36181,12 @@
      "total": false
     },
     {
+     "k": "gb",
+     "label": "Память сверх, ГБ",
+     "type": "num",
+     "total": false
+    },
+    {
      "k": "sum",
      "label": "Сумма",
      "type": "money",
@@ -36199,7 +36205,7 @@
      "total": false
     }
    ],
-   "sql": "-- таблицы подписок — миграция 0165 (доработки 20.11.2026, пакет 2)\nSELECT p.created_at::date AS at, o.name AS org,\n       CASE p.what WHEN 'renew' THEN 'Продление' WHEN 'grow' THEN 'Расширение пакета' WHEN 'mem' THEN 'Память сверх'\n                   WHEN 'free' THEN 'Бесплатный период' ELSE 'Изменено администратором' END AS what,\n       p.pack, p.amount AS sum,\n       CASE p.status WHEN 'wait' THEN 'Ждёт подтверждения' WHEN 'ok' THEN 'Подтверждена' ELSE 'Отклонена' END AS status,\n       p.paid_to\nFROM subscription_payments p\nJOIN organizations o ON o.id = p.org_id\nWHERE p.created_at::date BETWEEN :date_from AND :date_to\nORDER BY p.created_at DESC",
+   "sql": "-- оплаты подписок — таблица миграции 0165 (доработки 20.11.2026, пакет 2); суммы — в тыйынах\nSELECT p.created_at::date AS at, o.name AS org,\n       CASE p.kind WHEN 'renew' THEN 'Продление' WHEN 'grow' THEN 'Расширение пакета' WHEN 'mem' THEN 'Память сверх'\n                   WHEN 'free' THEN 'Бесплатный период' ELSE 'Изменено администратором' END AS what,\n       p.seats AS pack, p.extra_gb AS gb, p.amount AS sum,\n       CASE p.status WHEN 'pending' THEN 'Ждёт подтверждения' WHEN 'confirmed' THEN 'Подтверждена' ELSE 'Отклонена' END AS status,\n       p.paid_until AS paid_to\nFROM subscription_payments p\nJOIN organizations o ON o.id = p.org_id\nWHERE p.created_at::date BETWEEN :date_from AND :date_to\nORDER BY p.created_at DESC",
    "id": "dt15",
    "state": "Опубликован",
    "access": "all",
@@ -36211,6 +36217,11 @@
      "at": "2026-11-20 03:00",
      "who": "system",
      "what": "Готовый шаблон: Опубликован"
+    },
+    {
+     "at": "2026-11-20 23:30",
+     "who": "admin",
+     "what": "Изменено: запрос, столбцы — по таблице оплат подписок миграции 0165"
     }
    ],
    "_cb": "system",
