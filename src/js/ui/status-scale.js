@@ -115,7 +115,7 @@ function rollbackDlg(k,id,to){const o=objOf(k,id);if(!o)return;const st=k==='pay
       if(k==='proj'){o.status=to;log('p',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='ind'){o.status=to;log('km',o.id,`Статус: ${st} → ${to} ${tag}`,o.cp)}
       if(k==='lead')leadSet(o,to,' '+tag);
-      if(k==='svc'){if(o.archived){o.archived=false;const l=lastPeriod(o);if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else o.periods.push({from:ym(TODAY),to:null});applyService(o);log('cp',o.id,`Возвращён из архива ${tag}`,o.id)}
+      if(k==='svc'){if(o.archived){if(!seatOk())return;o.archived=false;const l=lastPeriod(o);if(l&&l.to&&l.to>=ym(TODAY))l.to=null;else o.periods.push({from:ym(TODAY),to:null});applyService(o);log('cp',o.id,`Возвращён из архива ${tag}`,o.id)}
         else{const ms=$$('.rb-m',el).filter(x=>x.checked).map(x=>x.value).sort();unpauseActive(o,ms);applyService(o);const nf=fillServiceMonths(o,ms);
           log('cp',o.id,`Приостановка отменена ${tag}${ms.length?'; досоздано за: '+ms.map(ymLabel).join(', ')+(nf?` (отчётов: ${nf})`:''):''}`,o.id)}}
       m.close();refreshAll();toast('Откат выполнен','history')}}})})}
