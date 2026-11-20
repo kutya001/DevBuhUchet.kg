@@ -367,7 +367,8 @@
    "addDisc": 0,
    "firstPaid": false,
    "free": true
-  }
+  },
+  "apiOn": false
  },
  "roles": [
   {
@@ -404,6 +405,8 @@
     "filesView",
     "filesUpload",
     "filesDelete",
+    "dmView",
+    "dmTokens",
     "staffView",
     "staffStats",
     "staff",
@@ -1206,5 +1209,7 @@
    "stuck": [],
    "failed": []
   }
- }
+ },
+ "dmTokens": [],
+ "dmLog": []
 }

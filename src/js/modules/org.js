@@ -88,10 +88,11 @@ function renderOrg(body,tab){
   const fs=allFiles(),mm=subMem(ORG.id),lim=!!subOf(ORG.id)&&isFinite(mm.limit);
   body.innerHTML=`<div class="box" id="org-storage"><h3>Хранилище файлов</h3><div class="row"><span class="grow">Занято <b>${lim?`${subGb(mm.used)} из ${subGb(mm.limit)} ГБ`:fmtSize(mm.used*1048576)}</b> · файлов: ${fs.length}${lim&&subMine()?` · <a class="linkbtn" href="#org.sub">Подписка</a>`:''}</span><span class="hint">Ограничение на один файл — 20 МБ</span></div></div><div class="box"><h3>Общие</h3><div class="form">${fld('Часовой пояс',sel('st-tz',['Asia/Bishkek (UTC+6)','Asia/Almaty (UTC+5)','Asia/Tashkent (UTC+5)','Asia/Dushanbe (UTC+5)','Europe/Moscow (UTC+3)'],ORG.tz,ro?'disabled':''),{id:'st-tz',hint:'«Сегодня» и «эта неделя» считаются по нему'})}${fld('Роль по умолчанию для новых сотрудников',sel('st-role',ROLES.filter(r=>r.id!=='owner').map(r=>[r.id,r.name]),ORG.defaultRole,ro?'disabled':''),{id:'st-role'})}</div></div>
   ${ro?'':`<div class="row"><div class="grow"></div><button class="btn cta" id="st-save">Сохранить настройки</button></div>`}
-  ${tgnHtml()}`;
+  ${tgnHtml()}${dmApiBox()}`;
   // Часовой пояс сохраняется вместе с остальными настройками (расхождение продукта п. 18, 27.10.2026)
   // Пакет 14.11.2026, блок 3: всё о Telegram — в блоке «Telegram-уведомления», сохраняется сразу (tg-notify.js)
   tgnMount(body);
+  dmApiMount(body);
   const sv=$('#st-save',body);if(sv)sv.onclick=()=>{const tz=val(body,'st-tz');if(tz&&tz!==ORG.tz){log('org','settings',`Часовой пояс: ${ORG.tz} → ${tz}`);ORG.tz=tz}ORG.defaultRole=val(body,'st-role');log('org','settings','Изменены настройки');toast('Настройки сохранены')};
 }
 
