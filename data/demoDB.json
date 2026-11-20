@@ -449,7 +449,15 @@
   ],
   "payFirst": true,
   "tgCpDebt": true,
-  "tgCpPay": false
+  "tgCpPay": false,
+  "sub": {
+   "kind": "m3",
+   "pack": 30,
+   "extraGb": 0,
+   "paidTo": "2026-12-24",
+   "addDisc": 0,
+   "firstPaid": true
+  }
  },
  "roles": [
   {
@@ -52721,6 +52729,14 @@
      3168000,
      2746500.0
     ]
+   },
+   "sub": {
+    "kind": "m1",
+    "pack": 70,
+    "extraGb": 0,
+    "paidTo": "2026-11-24",
+    "addDisc": 0,
+    "firstPaid": true
    }
   },
   {
@@ -52782,6 +52798,14 @@
      5841000,
      5130500.0
     ]
+   },
+   "sub": {
+    "kind": "m1",
+    "pack": 120,
+    "extraGb": 0,
+    "paidTo": "2026-10-24",
+    "addDisc": 0,
+    "firstPaid": true
    }
   },
   {
@@ -52840,6 +52864,14 @@
      1138500,
      1064700.0
     ]
+   },
+   "sub": {
+    "kind": "m1",
+    "pack": 30,
+    "extraGb": 0,
+    "paidTo": "2026-10-24",
+    "addDisc": 0,
+    "firstPaid": true
    }
   },
   {
@@ -52899,6 +52931,14 @@
      2029500,
      1811700.0
     ]
+   },
+   "sub": {
+    "kind": "m6",
+    "pack": 50,
+    "extraGb": 0,
+    "paidTo": "2027-03-24",
+    "addDisc": 0,
+    "firstPaid": true
    }
   },
   {
@@ -58104,6 +58144,443 @@
    "login": "erkin",
    "btn": "Открыть «На неделе»",
    "txt": "Нажата кнопка «Открыть «На неделе»»"
+  }
+ ],
+ "subPays": [
+  {
+   "id": "sp1",
+   "org": "o1",
+   "at": "2026-08-25 09:00",
+   "by": "admin",
+   "what": "free",
+   "kind": "m1",
+   "months": 0,
+   "pack": 30,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 0,
+   "lines": [],
+   "file": null,
+   "status": "ok",
+   "open": true,
+   "reason": "Запуск подписок: пакет по числу активных контрагентов и 30 дней до первой оплаты",
+   "chkBy": "admin",
+   "chkAt": "2026-08-25 09:00",
+   "paidTo": "2026-09-24"
+  },
+  {
+   "id": "sp2",
+   "org": "o2",
+   "at": "2026-08-25 09:00",
+   "by": "admin",
+   "what": "free",
+   "kind": "m1",
+   "months": 0,
+   "pack": 70,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 0,
+   "lines": [],
+   "file": null,
+   "status": "ok",
+   "open": true,
+   "reason": "Запуск подписок: пакет по числу активных контрагентов и 30 дней до первой оплаты",
+   "chkBy": "admin",
+   "chkAt": "2026-08-25 09:00",
+   "paidTo": "2026-09-24"
+  },
+  {
+   "id": "sp3",
+   "org": "o3",
+   "at": "2026-08-25 09:00",
+   "by": "admin",
+   "what": "free",
+   "kind": "m1",
+   "months": 0,
+   "pack": 120,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 0,
+   "lines": [],
+   "file": null,
+   "status": "ok",
+   "open": true,
+   "reason": "Запуск подписок: пакет по числу активных контрагентов и 30 дней до первой оплаты",
+   "chkBy": "admin",
+   "chkAt": "2026-08-25 09:00",
+   "paidTo": "2026-09-24"
+  },
+  {
+   "id": "sp4",
+   "org": "o4",
+   "at": "2026-08-25 09:00",
+   "by": "admin",
+   "what": "free",
+   "kind": "m1",
+   "months": 0,
+   "pack": 30,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 0,
+   "lines": [],
+   "file": null,
+   "status": "ok",
+   "open": true,
+   "reason": "Запуск подписок: пакет по числу активных контрагентов и 30 дней до первой оплаты",
+   "chkBy": "admin",
+   "chkAt": "2026-08-25 09:00",
+   "paidTo": "2026-09-24"
+  },
+  {
+   "id": "sp5",
+   "org": "o5",
+   "at": "2026-08-25 09:00",
+   "by": "admin",
+   "what": "free",
+   "kind": "m1",
+   "months": 0,
+   "pack": 50,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 0,
+   "lines": [],
+   "file": null,
+   "status": "ok",
+   "open": true,
+   "reason": "Запуск подписок: пакет по числу активных контрагентов и 30 дней до первой оплаты",
+   "chkBy": "admin",
+   "chkAt": "2026-08-25 09:00",
+   "paidTo": "2026-09-24"
+  },
+  {
+   "id": "sp6",
+   "org": "o1",
+   "at": "2026-09-22 11:40",
+   "by": "e1",
+   "what": "renew",
+   "kind": "m3",
+   "months": 3,
+   "pack": 30,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 7125,
+   "lines": [
+    {
+     "label": "Контрагенты: 30 × 95,00 × 3 мес.",
+     "sum": 8550
+    },
+    {
+     "label": "Скидка первого месяца 50 %",
+     "sum": -1425
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 7125
+    }
+   ],
+   "file": {
+    "name": "Чек_Optima_22.09.2026.pdf",
+    "size": 184320,
+    "type": "application/pdf"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-09-22 15:10",
+   "paidTo": "2026-12-24"
+  },
+  {
+   "id": "sp7",
+   "org": "o2",
+   "at": "2026-09-23 10:05",
+   "by": "b.toktomamatov",
+   "what": "renew",
+   "kind": "m1",
+   "months": 1,
+   "pack": 70,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 3500,
+   "lines": [
+    {
+     "label": "Контрагенты: 70 × 100,00 × 1 мес.",
+     "sum": 7000
+    },
+    {
+     "label": "Скидка первого месяца 50 %",
+     "sum": -3500
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 3500
+    }
+   ],
+   "file": {
+    "name": "IMG_2311.jpg",
+    "size": 1258291,
+    "type": "image/jpeg"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-09-23 12:30",
+   "paidTo": "2026-10-24"
+  },
+  {
+   "id": "sp8",
+   "org": "o2",
+   "at": "2026-10-22 09:48",
+   "by": "b.toktomamatov",
+   "what": "renew",
+   "kind": "m1",
+   "months": 1,
+   "pack": 70,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 7000,
+   "lines": [
+    {
+     "label": "Контрагенты: 70 × 100,00 × 1 мес.",
+     "sum": 7000
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 7000
+    }
+   ],
+   "file": {
+    "name": "Чек_MBank_22.10.2026.pdf",
+    "size": 96256,
+    "type": "application/pdf"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-10-22 11:02",
+   "paidTo": "2026-11-24"
+  },
+  {
+   "id": "sp9",
+   "org": "o3",
+   "at": "2026-09-24 16:20",
+   "by": "aprofi",
+   "what": "renew",
+   "kind": "m1",
+   "months": 1,
+   "pack": 120,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 6000,
+   "lines": [
+    {
+     "label": "Контрагенты: 120 × 100,00 × 1 мес.",
+     "sum": 12000
+    },
+    {
+     "label": "Скидка первого месяца 50 %",
+     "sum": -6000
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 6000
+    }
+   ],
+   "file": {
+    "name": "Платёжка_24.09.pdf",
+    "size": 143360,
+    "type": "application/pdf"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-09-25 09:15",
+   "paidTo": "2026-10-24"
+  },
+  {
+   "id": "sp10",
+   "org": "o3",
+   "at": "2026-11-15 10:12",
+   "by": "aprofi",
+   "what": "renew",
+   "kind": "m6",
+   "months": 6,
+   "pack": 120,
+   "extraGb": 2,
+   "from": "now",
+   "sum": 65880,
+   "lines": [
+    {
+     "label": "Контрагенты: 120 × 90,00 × 6 мес.",
+     "sum": 64800
+    },
+    {
+     "label": "Память сверх: 2 ГБ × 90,00 × 6 мес.",
+     "sum": 1080
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 65880
+    }
+   ],
+   "file": {
+    "name": "Чек_Бакай_15.11.2026.pdf",
+    "size": 211968,
+    "type": "application/pdf"
+   },
+   "status": "wait",
+   "open": true,
+   "reason": "",
+   "chkBy": "",
+   "chkAt": "",
+   "paidTo": ""
+  },
+  {
+   "id": "sp11",
+   "org": "o4",
+   "at": "2026-09-23 18:02",
+   "by": "kasymova",
+   "what": "renew",
+   "kind": "m1",
+   "months": 1,
+   "pack": 30,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 1500,
+   "lines": [
+    {
+     "label": "Контрагенты: 30 × 100,00 × 1 мес.",
+     "sum": 3000
+    },
+    {
+     "label": "Скидка первого месяца 50 %",
+     "sum": -1500
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 1500
+    }
+   ],
+   "file": {
+    "name": "чек.jpg",
+    "size": 884736,
+    "type": "image/jpeg"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-09-24 10:40",
+   "paidTo": "2026-10-24"
+  },
+  {
+   "id": "sp12",
+   "org": "o4",
+   "at": "2026-11-17 19:31",
+   "by": "kasymova",
+   "what": "renew",
+   "kind": "m1",
+   "months": 1,
+   "pack": 30,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 3000,
+   "lines": [
+    {
+     "label": "Контрагенты: 30 × 100,00 × 1 мес.",
+     "sum": 3000
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 3000
+    }
+   ],
+   "file": {
+    "name": "Screenshot_20261117.png",
+    "size": 402432,
+    "type": "image/png"
+   },
+   "status": "rej",
+   "open": true,
+   "reason": "Сумма в чеке 2 000 сом, а нужно 3 000 сом. Доплатите 1 000 сом и прикрепите оба чека одним PDF",
+   "chkBy": "admin",
+   "chkAt": "2026-11-18 09:20",
+   "paidTo": ""
+  },
+  {
+   "id": "sp13",
+   "org": "o5",
+   "at": "2026-09-21 12:00",
+   "by": "uchet.pravo",
+   "what": "renew",
+   "kind": "m6",
+   "months": 6,
+   "pack": 50,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 24750,
+   "lines": [
+    {
+     "label": "Контрагенты: 50 × 90,00 × 6 мес.",
+     "sum": 27000
+    },
+    {
+     "label": "Скидка первого месяца 50 %",
+     "sum": -2250
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 24750
+    }
+   ],
+   "file": {
+    "name": "Оплата_подписки_полгода.pdf",
+    "size": 158720,
+    "type": "application/pdf"
+   },
+   "status": "ok",
+   "open": true,
+   "reason": "",
+   "chkBy": "admin",
+   "chkAt": "2026-09-21 14:45",
+   "paidTo": "2027-03-24"
+  },
+  {
+   "id": "sp14",
+   "org": "o5",
+   "at": "2026-11-19 14:05",
+   "by": "uchet.pravo",
+   "what": "grow",
+   "kind": "m6",
+   "months": 5,
+   "pack": 60,
+   "extraGb": 0,
+   "from": "now",
+   "sum": 4500,
+   "lines": [
+    {
+     "label": "Расширение пакета: +10 × 90,00 × 5 мес.",
+     "sum": 4500
+    },
+    {
+     "label": "Итого к оплате",
+     "sum": 4500
+    }
+   ],
+   "file": {
+    "name": "Чек_доплата_пакет.pdf",
+    "size": 120832,
+    "type": "application/pdf"
+   },
+   "status": "wait",
+   "open": true,
+   "reason": "",
+   "chkBy": "",
+   "chkAt": "",
+   "paidTo": ""
   }
  ]
 }
