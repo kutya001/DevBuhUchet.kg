@@ -171,6 +171,25 @@ const DM_HINT_ADM=[['organizations','name, status, is_demo'],['sessions','user_i
 const dmSqlPars=sql=>[...new Set([...String(sql).replace(/--[^\n]*/g,'').matchAll(/(?<![:\w]):([a-z_][a-z0-9_]*)/gi)].map(m=>m[1]))];
 const dmSqlCols=sql=>[...new Set([...String(sql).replace(/--[^\n]*/g,'').matchAll(/\bAS\s+([a-z_][a-z0-9_]*)\b(?!\s*\()/gi)].map(m=>m[1]))];
 // Проверка текста в прототипе — по словам; в продукте — разборщиком SQL и отдельной ролью базы только для чтения (блок 8, пункты 2–3)
+// Подсветка синтаксиса SQL в редакторе шаблона (Кутман 21.11.2026): ключевые слова, таблицы базы, параметры :имя, строки, числа и комментарии —
+// своим цветом, слева номера строк. Поле ввода остаётся обычным textarea: его текст прозрачный, под ним — подсвеченная копия того же текста.
+// Проверка, сохранение и защита запроса (dmSqlErr) не меняются
+const DM_KW=new Set(('select from where and or not in is null as on join left right inner outer full cross group by order having limit offset distinct case when then else end '+
+  'with recursive union all exists between like ilike asc desc nulls first last over partition filter cast true false interval lateral using any some array '+
+  'sum count avg min max coalesce nullif greatest least extract date_trunc to_char round abs floor ceil now current_date row_number rank dense_rank lag lead string_agg array_agg '+
+  'date numeric int integer bigint text boolean varchar timestamp').split(' '));
+function dmHl(s){const tb=new Set([...DM_HINT,...DM_HINT_ADM].map(x=>String(x[0]).toLowerCase()));
+  return String(s).replace(/(--[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:[^']|'')*'?)|(::?[a-z_][a-z0-9_]*)|(\b\d+(?:\.\d+)?\b)|([a-z_][a-z0-9_]*)|([&<>"])/gi,(m,c,q,p,n,w,h)=>{
+    if(c)return `<span class="sq-c">${esc(c)}</span>`;if(q)return `<span class="sq-s">${esc(q)}</span>`;if(p)return `<span class="${p[1]===':'?'sq-k':'sq-p'}">${esc(p)}</span>`;if(n)return `<span class="sq-n">${n}</span>`;
+    if(w){const l=w.toLowerCase();return DM_KW.has(l)?`<span class="sq-k">${w}</span>`:tb.has(l)?`<span class="sq-t">${w}</span>`:w}return esc(h)})+'\n'}
+const dmLn=s=>Array.from({length:String(s).split('\n').length},(_,i)=>i+1).join('\n');
+// Подключение подсветки к полю: те же отступы и шрифт, что у поля; прокрутка — вместе
+function dmHlBind(ta){const w=ta&&ta.closest('.dm-sqlb');if(!w)return;const pre=$('.dm-hl',w),g=$('.dm-sqlg',w),cs=getComputedStyle(ta);
+  ['paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontFamily','fontSize','lineHeight','letterSpacing','tabSize'].forEach(k=>{pre.style[k]=cs[k]});
+  g.style.paddingTop=cs.paddingTop;g.style.fontSize=cs.fontSize;g.style.lineHeight=cs.lineHeight;g.style.fontFamily=cs.fontFamily;
+  const sync=()=>{pre.scrollTop=ta.scrollTop;pre.scrollLeft=ta.scrollLeft;g.firstChild.style.transform=`translateY(${-ta.scrollTop}px)`};
+  const draw=()=>{pre.innerHTML=dmHl(ta.value);g.firstChild.textContent=dmLn(ta.value);sync()};
+  ta.addEventListener('input',draw);ta.addEventListener('scroll',sync);if(window.ResizeObserver)new ResizeObserver(sync).observe(ta);draw()}
 function dmSqlErr(sql){const s=String(sql).replace(/--[^\n]*/g,'').trim();if(!s)return 'Введите запрос';if(!/^(select|with)\b/i.test(s))return 'Запрос начинается с SELECT или WITH: разрешено только чтение';
   if(/;\s*\S/.test(s))return 'Разрешён один оператор: уберите всё после «;»';
   const bad=s.match(/\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|copy|call|vacuum|lock|set_config|pg_sleep|pg_read_file|pg_ls_dir|dblink|pg_catalog|information_schema)\b/i);
@@ -194,7 +213,7 @@ function dmEdit(t0){const sys=!!t0&&t0.src==='system',pub=!!t0&&t0.state!=='Че
         ${fld('Вид',sel('de-k',[['org','Для организаций'],['adm','Для администратора']],st.kind,dis||(pub?'disabled':'')),{id:'de-k'})}
         ${st.kind==='org'?fld('Модуль',sel('de-m',Object.entries(DM_MODS),st.mod,dis),{id:'de-m',hint:'Шаблон виден, если есть просмотр модуля; «Свои контрагенты» — из его группы прав'})+fld('Ещё одно право',sel('de-p',[['','Не нужно'],['fee','Видеть плату за обслуживание']],st.perm,dis),{id:'de-p'})
           +fld('Доступ',sel('de-a',[['all','Все организации'],['sel','Выбранные организации']],acc,dis),{id:'de-a'})+(acc==='sel'?`<div class="fld full dm-orgs">${ORGS.map(o=>`<label class="check-row"><input type="checkbox" data-dm-org="${o.id}" ${Array.isArray(st.access)&&st.access.includes(o.id)?'checked':''} ${dis}><span>${esc(o.name)}</span></label>`).join('')}</div>`:''):''}</div>
-      ${fld('Запрос',`<textarea class="inp mono dm-sql" id="de-s" spellcheck="false" ${dis}>${esc(st.sql)}</textarea>`,{req:true,full:true,id:'de-s',hint:'Один оператор SELECT. Условие «моя организация» писать не нужно: строки чужих организаций база не отдаёт. Деньги в базе — в тыйынах: столбец типа «Деньги» переводит их в сомы'})}
+      ${fld('Запрос',`<div class="dm-sqlb"><div class="dm-sqlg" aria-hidden="true"><div>${dmLn(st.sql)}</div></div><pre class="dm-hl mono" aria-hidden="true">${dmHl(st.sql)}</pre><textarea class="inp mono dm-sql" id="de-s" spellcheck="false" autocapitalize="off" autocomplete="off" ${dis}>${esc(st.sql)}</textarea></div>`,{req:true,full:true,id:'de-s',hint:'Один оператор SELECT. Условие «моя организация» писать не нужно: строки чужих организаций база не отдаёт. Деньги в базе — в тыйынах: столбец типа «Деньги» переводит их в сомы'})}
       <div class="row dm-chkbar">${fld('Проверить на организации',sel('de-o',ORGS.slice().sort((a,b)=>(b.id===ORG.id)-(a.id===ORG.id)).map(o=>[o.id,o.name+(o.id===ORG.id?' (демо)':'')]),st.org),{id:'de-o'})}<button type="button" class="btn" id="de-chk">${ic('play','sm')}Проверить</button></div><div id="de-res">${chk}</div></div>
       <div class="dm-ed-r"><div class="box"><h3>Параметры · ${st.params.length}</h3>${st.params.length?`<div class="tbl-wrap"><table class="mini dm-pt"><thead><tr><th>В запросе</th><th>Название</th><th>Тип</th><th>Обяз.</th><th>По умолчанию</th></tr></thead><tbody>${st.params.map((x,i)=>`<tr><td class="mono">:${esc(x.k)}</td><td>${inp('dpl-'+i,x.label,dis)}</td><td>${sel('dpt-'+i,Object.entries(DM_PT),x.type,dis)}</td><td><input type="checkbox" id="dpr-${i}" ${x.req?'checked':''} ${dis} aria-label="Обязательный"></td><td>${sel('dpd-'+i,[['','—'],...Object.entries(DM_DEF)],x.def||'',dis)}</td></tr>`).join('')}</tbody></table></div>`:'<span class="faint">В запросе нет параметров</span>'}<span class="hint">Берутся из запроса при «Проверить»: :month, :date_from. Значение уходит в базу как данные и в текст запроса не вклеивается.</span></div>
         <div class="box"><h3>Столбцы · ${st.cols.length}</h3><div class="tbl-wrap"><table class="mini dm-pt"><thead><tr><th>Код</th><th>Название</th><th>Тип</th><th>Итог</th></tr></thead><tbody>${st.cols.map((x,i)=>`<tr><td class="mono">${esc(x.k)}</td><td>${inp('dcl-'+i,x.label,dis)}</td><td>${sel('dct-'+i,Object.entries(DM_CT),x.type,dis)}</td><td><input type="checkbox" id="dcs-${i}" ${x.total?'checked':''} ${dis} aria-label="Итог по столбцу"></td></tr>`).join('')}</tbody></table></div><span class="hint">Столбцы читаются после «Проверить». Тип «Контрагент (для области)» — код контрагента: сотруднику с «Свои контрагенты» остаются строки его контрагентов; шаблон без такого столбца видят владелец и «Все контрагенты».${pub?' Код столбца после публикации не меняется, столбцы можно только добавлять.':''}</span></div>
@@ -204,7 +223,7 @@ function dmEdit(t0){const sys=!!t0&&t0.src==='system',pub=!!t0&&t0.state!=='Че
       :`<button class="btn ghost" data-close>Отмена</button><button class="btn" id="de-save">${pub?'Сохранить':'Сохранить черновик'}</button>${t0&&t0.state==='Опубликован'?'':`<button class="btn cta" id="de-pub" ${ok()?'':'disabled title="Сначала нажмите «Проверить»"'}>${ic('check','sm')}Опубликовать</button>`}`,
     mount(el){const q=s=>$(s,el);
       ['#de-k','#de-a'].forEach(s=>{const x=q(s);if(x)x.onchange=()=>{rd(el);m.draw()}});
-      const sq=q('#de-s');if(sq&&!sys){sq.oninput=()=>{st.sql=sq.value;const b=q('#de-pub');if(b)b.disabled=!ok()};sq.onchange=()=>{st.sql=sq.value}}
+      const sq=q('#de-s');dmHlBind(sq);if(sq&&!sys){sq.oninput=()=>{st.sql=sq.value;const b=q('#de-pub');if(b)b.disabled=!ok()};sq.onchange=()=>{st.sql=sq.value}}
       q('#de-o').onchange=e=>st.org=e.target.value;q('#de-td').onclick=()=>{m.close(true);go('tdocs')};
       if(q('#de-copy'))q('#de-copy').onclick=()=>{m.close();dmCopy(t0)};
       q('#de-chk').onclick=()=>{rd(el);const e=dmSqlErr(st.sql);if(!setErr(el,'de-s',e))return;syncPars();

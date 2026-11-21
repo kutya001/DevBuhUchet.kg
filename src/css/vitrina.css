@@ -14,6 +14,14 @@
 .dm-ed-l,.dm-ed-r{display:flex;flex-direction:column;gap:10px;min-width:0}
 .dm-ed-r .box{margin:0}
 .dm-ed textarea.dm-sql{min-height:240px;font-size:12.5px;line-height:1.5;tab-size:2;white-space:pre}
+/* Подсветка SQL: прозрачный текст поля поверх подсвеченной копии; слева номера строк */
+.dm-sqlb{position:relative;min-width:0}
+.dm-sqlb textarea.dm-sql{position:relative;z-index:1;display:block;width:100%;padding-left:46px;background:transparent;color:transparent;caret-color:var(--text);-webkit-text-fill-color:transparent;overflow:auto;resize:vertical}
+.dm-sqlb textarea.dm-sql::selection{background:var(--blue-bg);-webkit-text-fill-color:transparent}
+.dm-hl{position:absolute;inset:0;margin:0;overflow:hidden;white-space:pre;pointer-events:none;border:solid transparent;border-radius:var(--r-m);background:var(--field);color:var(--text)}
+.dm-sqlg{position:absolute;z-index:2;left:1px;top:1px;bottom:1px;width:38px;overflow:hidden;pointer-events:none;text-align:right;color:var(--faint);background:var(--field);border-right:1px solid var(--border);border-radius:var(--r-m) 0 0 var(--r-m);white-space:pre}
+.dm-sqlg>div{padding-right:6px}
+.sq-k{color:var(--blue)}.sq-t{color:var(--purple)}.sq-p{color:var(--orange)}.sq-s{color:var(--green)}.sq-n{color:var(--red)}.sq-c{color:var(--muted)}
 .dm-chkbar{align-items:flex-end;gap:10px}
 .dm-chkbar .fld{margin:0;flex:1 1 220px}
 .dm-orgs{display:flex;flex-direction:column;gap:2px}
