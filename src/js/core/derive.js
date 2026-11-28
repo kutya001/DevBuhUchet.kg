@@ -11,6 +11,7 @@ function feeAdvSplit(c,adv,paidOf){const use={};feeMonths(c).forEach(m=>{const n
 const feeGot=(c,m)=>(c.feePaid[m]||0)+((c.feeAdvUse||{})[m]||0);
 function derive(){
   // Повторы задач: следующая задача серии ставится после срока предыдущей (в продукте — ночной запуск, в прототипе — при открытии и смене дня)
+  if(typeof reqNormAll==='function')reqNormAll();
   if(typeof tsRun==='function')tsRun();
   kpiIndex();enNorm();
   CPS.forEach(c=>{c.overdue=0;c.avail=0;c.free=0;c.status=cpStatus(c);c.paused=c.status==='Приостановлен'});

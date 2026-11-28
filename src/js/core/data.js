@@ -265,7 +265,9 @@ function dbFill(db){const miss=[],e=DBSRC.empty.db,r=DBSRC.ref.db;db.meta=db.met
     // Новый пароль не совпадает с текущим (решение заказчика 27.10.2026): фраза в статье «Вход и профиль» у данных, сохранённых раньше
     {const a=(db.ref.kbArticles||[]).find(x=>x.id==='a4'),o='при первом входе система попросит сменить его.',n=(((r.kbArticles||[]).find(x=>x.id==='a4')||{}).html||'').match(/при первом входе система попросит сменить его\. Новый пароль не может совпадать с текущим[^<]*/);if(a&&a.html&&n&&!a.html.includes('Новый пароль не может совпадать'))a.html=a.html.replace(o,n[0])}
     // «Мои запросы» (решение заказчика 27.10.2026): у запросов «Попросить добавить» есть ответ администратора; в демо — примеры запросов своей организации
-    {const q=db.dictRequests;if(Array.isArray(q)){q.forEach(x=>{if(x.answer==null)x.answer=''});if(db.meta.mode==='demo'){const k=x=>x._ca+'|'+x.what,have=new Set(q.map(k));q.unshift(...structuredClone((DBSRC.demo.db.dictRequests||[]).filter(x=>x.oid&&!have.has(k(x)))))}}
+    // Запросы администратору (доработки 28.11.2026): прежние демо-запросы «Попросить добавить» заменяются новыми демо-запросами с перепиской; свои — переводит reqNorm (requests.js)
+    {const q=db.dictRequests;if(Array.isArray(q)){q.forEach(x=>{if(x.no==null&&x.answer==null)x.answer=''});if(db.meta.mode==='demo'){const src=DBSRC.demo.db.dictRequests||[],k=x=>x._ca+'|'+(x.topic??x.what),sk=new Set(src.map(k)),gone=new Set();
+      for(let i=q.length-1;i>=0;i--)if(q[i].no==null&&sk.has(k(q[i]))){gone.add(k(q[i]));q.splice(i,1)}const have=new Set(q.map(k));q.unshift(...structuredClone(src.filter(x=>(x.oid||gone.has(k(x)))&&!have.has(k(x)))))}}
       const uk=db.ref.kbUi,rk2=r.kbUi;if(uk&&rk2)[['addItems','Мои запросы'],['forms','Мои запросы'],['forms','Отклонить запрос'],['forms','Запрос выполнен']].forEach(([g,k])=>{uk[g]=uk[g]||{};if(!(k in uk[g])&&rk2[g]&&rk2[g][k])uk[g][k]=rk2[g][k]});
       const ua=(db.ref.kbUi||{}).acts,ra=(r.kbUi||{}).acts;if(ua&&ra)[['Добавлено','Отмечает запрос выполненным: значение добавлено в справочник, организация увидит ответ.'],['Отклонить','Отклоняет запрос организации: значение в справочник не добавляется.']].forEach(([k,o])=>{if(ua[k]===o&&ra[k])ua[k]=ra[k]});
       const art=id=>(db.ref.kbArticles||[]).find(x=>x.id===id),ref=id=>((r.kbArticles||[]).find(x=>x.id===id)||{}).html||'';
@@ -438,6 +440,9 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
   // Повторяющиеся задачи (доработки 28.11.2026): шаблоны строки повтора и сообщений постановщику — из refDB.json
   if(!db.meta.tgT10){db.meta.tgT10=1;const a=db.ref.messageTemplates,n=db.ref.templateNotes,rm=r.messageTemplates||{},rn=r.templateNotes||{},ks=['tgTaskRep','tgSerEnd','tgSerStop'];
     if(a)ks.forEach(k=>{if(a[k]==null&&rm[k]!=null)a[k]=rm[k]});if(n)ks.forEach(k=>{if(n[k]==null&&rn[k]!=null)n[k]=rn[k]})}
+  // Запросы администратору (доработки 28.11.2026): шаблоны уведомлений автору и администраторам
+  if(!db.meta.tgT11){db.meta.tgT11=1;const a=db.ref.messageTemplates,n=db.ref.templateNotes,rm=r.messageTemplates||{},rn=r.templateNotes||{},ks=['tgReqAns','tgReqAsk','tgReqDone','tgReqAdded','tgReqRej','tgReqNew','tgReqReply'];
+    if(a)ks.forEach(k=>{if(a[k]==null&&rm[k]!=null)a[k]=rm[k]});if(n)ks.forEach(k=>{if(n[k]==null&&rn[k]!=null)n[k]=rn[k]})}
   // Справочник «БИК банков» (решение заказчика 14.11.2026): у данных, сохранённых раньше, справочник и «Код банка в БИК» у провайдеров берутся из refDB.json, вкладка — в группе «Органы и банки»
   if(!db.meta.bik1){db.meta.bik1=1;const dd=db.ref.dictionaries,rd=r.dictionaries||{};if(dd&&rd.bik&&!dd.bik)dd.bik=structuredClone(rd.bik);
     if(dd&&dd.banks&&rd.banks)dd.banks.items.forEach(x=>{const f=rd.banks.items.find(y=>y.code===x.code);if(f&&f.bikCode&&x.bikCode==null)x.bikCode=f.bikCode});
@@ -529,6 +534,14 @@ const t=(e.indicators||[]).find(x=>x.name==='ФОТ');
     if(Array.isArray(a)&&!a.some(x=>x.id==='trep')){const x=b.find(y=>y.id==='trep'),i=a.findIndex(y=>y.id==='mtask');if(x)a.splice(i>=0?i+1:a.length,0,structuredClone(x))}
     const u=R.kbUi,ru=r.kbUi||{};if(u){[['tabs','tasks.series'],['fields','tk-rep'],['forms','Повтор']].forEach(([g,n])=>{u[g]=u[g]||{};if(!(n in u[g])&&ru[g]&&ru[g][n]!=null)u[g][n]=structuredClone(ru[g][n])})}
     const x=(R.kbArticles||[]).find(y=>y.id==='a13'),bx=(r.kbArticles||[]).find(y=>y.id==='a13');if(x&&bx&&/13\.7\. Чего пока нет/.test(x.html||''))x.html=x.html.replace(/<h4>13\.7\. Чего пока нет<\/h4><ul>.*?<\/ul>/,(bx.html.match(/<h4>13\.7\. Повторяющиеся задачи<\/h4><ul>.*?<\/ul>/)||[''])[0])}
+  // Запросы администратору (доработки 28.11.2026): статья, шаг урока, подсказки экрана; прежние тексты о «Мои запросы» без уведомлений — из refDB.json
+  if(!db.meta.rqKb169){db.meta.rqKb169=1;const R=db.ref;
+    const add=(k,ids)=>{const a=R[k],b=r[k];if(!Array.isArray(a)||!Array.isArray(b))return;b.filter(x=>ids.includes(x.id)&&!a.some(y=>y.id===x.id)).forEach(x=>{const p=b[b.indexOf(x)-1],i=p?a.findIndex(y=>y.id===p.id):-1;a.splice(i>=0?i+1:a.length,0,structuredClone(x))})};
+    add('kbSteps',['rqbug']);add('kbArticles',['a_rq']);
+    [['a16','Отдельного уведомления об ответе нет'],['a_dm','ответ появится в «Мои запросы»'],['a19_3','ответ организация видит в «Мои запросы»']].forEach(([id,old])=>{const x=(R.kbArticles||[]).find(y=>y.id===id),bx=(r.kbArticles||[]).find(y=>y.id===id);if(x&&bx&&(x.html||'').includes(old))x.html=bx.html});
+    const u=R.kbUi,ru=r.kbUi||{};if(u){if(u.forms)delete u.forms['Попросить шаблон'];
+      [['mods',['reqs']],['tabs',['reqs.new','reqs.work','reqs.wait','reqs.closed','reqs.all']],['buttons',['Написать администратору','Взять в работу','Спросить у автора','Заметка','Ответить','Отозвать запрос','Добавить в справочник']],
+       ['forms',['Задать вопрос','Сообщить об ошибке','Опечатка','Попросить добавить','Попросить добавить в справочник','Мои запросы']]].forEach(([g,ns])=>{u[g]=u[g]||{};ns.forEach(n=>{if(ru[g]&&ru[g][n]!=null)u[g][n]=structuredClone(ru[g][n])})})}}
   if(db.organization&&db.organization.payFirst==null)db.organization.payFirst=true;
   if(db.organization&&db.organization.repConfirm==null)db.organization.repConfirm=true;
   if(db.organization&&db.organization.taskConfirm==null)db.organization.taskConfirm=true;
