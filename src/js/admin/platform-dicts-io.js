@@ -11,6 +11,8 @@ const PER_IN={'месяц':'M','квартал':'Q','полугодие':'H','г
 const KIND_IN={'режимный':'regime','сквозной':'cross','внутренний':'internal'};
 /* Колонки выгрузки: [ключ, заголовок, выгрузить, разобрать → значение или {err}] */
 const intIn=(a,b)=>v=>{if(v==='')return null;const n=parseInt(v,10);return isNaN(n)||n<a||n>b?{err:`должно быть число от ${a} до ${b}`}:n};
+// Дробное число (порядок шагов уроков: 45,5 — между 45 и 46; продукт хранит дробь, О-107): запятая или точка, до двух знаков после неё
+const numIn=(a,b)=>v=>{if(v==='')return null;const t=String(v).trim().replace(',','.');const n=/^-?\d+(\.\d{1,2})?$/.test(t)?+t:NaN;return isNaN(n)||n<a||n>b?{err:`должно быть число от ${a} до ${b}, можно с дробью: 45,5`}:n};
 // «Предупреждать при ГКЭД» (gked.warn) и «Ставится по УГНС» (suggest.ugns) — вложенные поля: колонка пишет в них при загрузке
 const gkWarnCol=['gkwarn','Предупреждать при ГКЭД',x=>(x.gkwarn||(x.gked||{}).warn||[]).join(', '),v=>{const p=gkParse(v);return p.err?{err:p.err}:p.v}];
 // Перечни режима по форме собственности (патент): «Для ИП», «Кроме, для ИП», «Для ИТД» — отдельными колонками
@@ -115,7 +117,7 @@ DX.kbsteps={title:'Шаги уроков',key:'id',items:()=>KBS,cols:[
  ['perm','Необходимое право',i=>i.perm?permT(i.perm):'',permIn],
  ['featk','Функция учётной политики',i=>i.featk?(FEATURES.find(f=>f[0]===i.featk)||[])[1]||'':'',v=>{if(!v||v==='—')return '';const f=FEATURES.find(x=>norm(x[1])===norm(v));return f?f[0]:{err:`функции «${v}» нет`}}],
  ['evk','Условие отметки',i=>(KB_EV[i.evk]||[''])[0],v=>{const e=Object.entries(KB_EV).find(([k,x])=>norm(x[0])===norm(v));return e?e[0]:{err:`условия «${v}» нет в списке событий`}}],
- ['ord','Порядок',i=>i.ord,intIn(1,9999)],
+ ['ord','Порядок',i=>i.ord,numIn(1,9999)],
  ['active','Активен',i=>YN(i.active!==false),ynIn('Активен')]],
  upd:(x,v)=>{Object.keys(v).forEach(f=>{if(v[f]!=null)x[f]=v[f]});if(v.featk!=null&&v.featk!==KB_IFEAT[x.id])x.feat=null;kbBind(x);touch(x);KB.ver++},
  add:v=>{const o=born(Object.assign({active:true,isNew:true,ord:KBS.length+1,w:''},v));kbBind(o);KBS.push(o);KB.ver++}};
