@@ -542,6 +542,7 @@
  "moneyOps": [],
  "history": [],
  "tasks": [],
+ "taskSeries": [],
  "feePayments": [],
  "services": [],
  "projects": [],
